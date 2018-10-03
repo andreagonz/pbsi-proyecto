@@ -1,0 +1,4 @@
+Se encontró actividad sospechosa de ser phishing relacionada a la URL {url} con la dirección IP {ip}.
+Esta actividad afecta a las entidades: {entidades}.
+Por favor revisar indicios de actividad maliciosa en el servidor correspondiente.
+Se adjunta una captura de pantalla de la página en cuestión:

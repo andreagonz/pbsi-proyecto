@@ -83,7 +83,7 @@ WSGI_APPLICATION = 'phishmon.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'phishmondb',
+        'NAME': 'phishdb',
         'USER': 'phishuser',
         'PASSWORD': 'phishmonpass',
         'HOST': 'localhost',
