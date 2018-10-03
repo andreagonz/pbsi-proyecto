@@ -1,0 +1,29 @@
+
+{% load filtros %}
+{{ form.non_field_errors }}
+{% for field in form %}
+
+  {% if field|fieldtype == 'CheckboxInput'  %}
+
+    <div class="form-check">
+      {{ field|addclass:'form-check-input' }}
+      <label class="control-label" for="{{ field.name }}">{{ field.label }}</label>
+    </div>
+  {% else %}
+    <div class="form-group {% if field.errors %}has-error{%endif%}">
+      <label class="control-label" for="{{ field.name }}">{{ field.label }}</label>
+      {% if field|fieldtype == 'ImageField' or field|fieldtype == 'FileField' %}      
+        {{ field }}
+      {% elif field|fieldtype == 'DateTimeField' %}
+        {{ field|addclass:'form-control date-picker' }}
+      {% else %}
+        {{ field|addclass:'form-control' }}
+      {% endif %}
+      {% if field.errors %}
+	{% for error in field.errors %}
+          <span class="text-danger small">{{ error|escape }}</span>
+	{% endfor %}
+      {% endif %}
+    </div>
+  {% endif %}
+{% endfor %}

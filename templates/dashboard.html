@@ -1,0 +1,386 @@
+{% extends 'base.html' %}
+
+  {% block title %} Phishmon Dashboard{% endblock title %}
+
+{% block contenido %}
+
+	<center>
+		<div class="container" style="padding-top: 20px">
+			<b>Dashboard</b>
+		</div>
+	</center>
+	 <a id="link1" download="top5-chart.jpg">Save chart</a>
+	<script type="text/javascript" src="{{ STATIC_URL }} /static/jQuery.js">
+	</script> 
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js"></script>
+	
+			<img id="gr1" />
+			<script>
+				{% block jquery%}
+				var endpoint = '/api/chart/data/'
+				var defaultData = []
+				var labels = []
+				$.ajax({
+					method: "GET",
+					url: endpoint,
+					success: function(graphs){
+						labels1=graphs[0].labels
+						defaultData1 = graphs[0].default
+						labels2=graphs[1].labels
+						defaultData2 = graphs[1].default
+						labels3=graphs[2].labels
+						defaultData3 = graphs[2].default
+						labels4=graphs[3].labels
+						defaultData4 = graphs[3].default
+						colors4=graphs[3].colors
+						labels5=graphs[4].labels
+						defaultData5 = graphs[4].default
+						labels6=graphs[5].labels
+						defaultData6 = graphs[5].default
+						var ctx = document.getElementById("top5-count-chart");
+						var host = document.getElementById("top5-host-chart");
+						var phish_sites = document.getElementById("phishing-sites");
+						var entidades = document.getElementById("ent");
+						var reporte_semana = document.getElementById("report-week");
+						var sitios_activos_24_hrs= document.getElementById("sites-active");
+
+						var myChart = new Chart(ctx, {
+						    type: 'bar',
+						    data: {
+						        labels: labels1,
+						        datasets: [{
+						            label: '',
+						            data: defaultData1,
+						            backgroundColor: [
+					                'rgba(255, 99, 132, 0.2)',
+					                'rgba(54, 162, 235, 0.2)',
+					                'rgba(255, 206, 86, 0.2)',
+					                'rgba(75, 192, 192, 0.2)',
+					                'rgba(153, 102, 255, 0.2)',
+					                'rgba(255, 159, 64, 0.2)'
+					            ],
+					            borderColor: [
+					                'rgba(255,99,132,1)',
+					                'rgba(54, 162, 235, 1)',
+					                'rgba(255, 206, 86, 1)',
+					                'rgba(75, 192, 192, 1)',
+					                'rgba(153, 102, 255, 1)',
+					                'rgba(255, 159, 64, 1)'
+					            ],
+					            borderWidth: 1
+					        }]
+					    },
+					    options: {
+					    	responsive: true,
+			   				maintainAspectRatio: false,
+					        scales: {
+					            yAxes: [{
+					                ticks: {
+					                    beginAtZero:true
+					                }
+					            }]
+					        },
+					        animation : {
+			         			onComplete : function(){    
+			         				var url_base64jp = document.getElementById("top5-count-chart").toDataURL("image/jpg");
+			         				 const imgWrap = document.getElementById('link1')
+									 imgWrap.href = url_base64jp 
+			            			//alert(myChart.toBase64Image());
+			        			}
+			      			},
+			      			title: {
+			            		display: true,
+			            		text: 'Top 5 Countries',
+			            		fontSize: 16
+			        		}
+					    }
+					});
+					//
+					//
+					var myChart = new Chart(host, {
+						    type: 'bar',
+						    data: {
+						        labels: labels2,
+						        datasets: [{
+						            label: '',
+						            data: defaultData2,
+						            backgroundColor: [
+					                'rgba(255, 99, 132, 0.2)',
+					                'rgba(54, 162, 235, 0.2)',
+					                'rgba(255, 206, 86, 0.2)',
+					                'rgba(75, 192, 192, 0.2)',
+					                'rgba(153, 102, 255, 0.2)',
+					                'rgba(255, 159, 64, 0.2)'
+					            ],
+					            borderColor: [
+					                'rgba(255,99,132,1)',
+					                'rgba(54, 162, 235, 1)',
+					                'rgba(255, 206, 86, 1)',
+					                'rgba(75, 192, 192, 1)',
+					                'rgba(153, 102, 255, 1)',
+					                'rgba(255, 159, 64, 1)'
+					            ],
+					            borderWidth: 1
+					        }]
+					    },
+					    options: {
+					    	responsive: true,
+			   				maintainAspectRatio: false,
+					        scales: {
+					            yAxes: [{
+					                ticks: {
+					                    beginAtZero:true
+					                }
+					            }]
+					        },
+					        animation : {
+			         			onComplete : function(){    
+			         				//var url_base64jp = document.getElementById("top5-count-chart").toDataURL("image/jpg");
+			         				 //const imgWrap = document.getElementById('link1')
+									 //imgWrap.href = url_base64jp 
+			            			//alert(myChart.toBase64Image());
+			        			}
+			      			},
+			      			title: {
+			            		display: true,
+			            		text: 'Top 5 Hosting Sites',
+			            		fontSize: 16
+			        		}
+					    }
+					});
+					//
+					//
+					var myChart = new Chart(phish_sites, {
+						    type: 'bar',
+						    data: {
+						        labels: labels3,
+						        datasets: [{
+						            label: '',
+						            data: defaultData3,
+						            backgroundColor: [
+					                'rgba(255, 99, 132, 0.2)',
+					                'rgba(54, 162, 235, 0.2)',
+					                'rgba(255, 206, 86, 0.2)',
+					                'rgba(75, 192, 192, 0.2)',
+					                'rgba(153, 102, 255, 0.2)',
+					                'rgba(255, 159, 64, 0.2)'
+					            ],
+					            borderColor: [
+					                'rgba(255,99,132,1)',
+					                'rgba(54, 162, 235, 1)',
+					                'rgba(255, 206, 86, 1)',
+					                'rgba(75, 192, 192, 1)',
+					                'rgba(153, 102, 255, 1)',
+					                'rgba(255, 159, 64, 1)'
+					            ],
+					            borderWidth: 1
+					        }]
+					    },
+					    options: {
+					    	responsive: true,
+			   				maintainAspectRatio: false,
+					        scales: {
+					            yAxes: [{
+					                ticks: {
+					                    beginAtZero:true
+					                }
+					            }]
+					        },
+					        animation : {
+			         			onComplete : function(){    
+			         				//var url_base64jp = document.getElementById("top5-count-chart").toDataURL("image/jpg");
+			         				 //const imgWrap = document.getElementById('link1')
+									 //imgWrap.href = url_base64jp 
+			            			//alert(myChart.toBase64Image());
+			        			}
+			      			},
+			      			title: {
+			            		display: true,
+			            		text: 'Phishing Sites',
+			            		fontSize: 16
+			        		}
+					    }
+					});
+					//
+					//Reporte Semana
+					var myLineChart = new Chart(reporte_semana, {
+					    type: 'line',
+					    data: {
+					    	labels: labels5,
+					    	datasets: [
+						        {
+						            data: defaultData5,
+						            label: "# Detecciones",
+								    lineTension: 0,
+								    fill: false,
+								    borderColor: 'orange',
+								    backgroundColor: 'transparent',
+								    borderDash: [5, 5],
+								    pointBorderColor: 'orange',
+								    pointBackgroundColor: 'rgba(255,150,0,0.5)',
+								    pointRadius: 5,
+								    pointHoverRadius: 10,
+								    pointHitRadius: 30,
+								    pointBorderWidth: 2,
+								    pointStyle: 'rectRounded'
+						            
+						        }]
+					    },
+					    options: {
+					    	responsive: true,
+			   				maintainAspectRatio: false,
+					        scales: {
+					            yAxes: [{
+					                ticks: {
+					                    beginAtZero:true
+					                }
+					            }]
+					        },
+					        animation : {
+			         			onComplete : function(){    
+			         				//var url_base64jp = document.getElementById("top5-count-chart").toDataURL("image/jpg");
+			         				 //const imgWrap = document.getElementById('link1')
+									 //imgWrap.href = url_base64jp 
+			            			//alert(myChart.toBase64Image());
+			        			}
+			      			},
+			      			title: {
+			            		display: true,
+			            		text: 'Detecciones en últimos 7 días',
+			            		fontSize: 16
+			        		}
+					    }
+					    
+					});
+					//
+					//
+					var HorizontalChart = new Chart(sitios_activos_24_hrs, {
+					    type: 'horizontalBar',
+					    data: {
+					    	labels: labels6,
+    						datasets: [{
+    							label: '# horas activo',
+    							data: defaultData6,
+							  	borderWidth: 2,
+  								hoverBorderWidth: 0
+    						}]
+					    },
+					    options: {
+							responsive: true,
+			   				maintainAspectRatio: false,
+			   				animation : {
+			         			onComplete : function(){    
+			         				//var url_base64jp = document.getElementById("top5-count-chart").toDataURL("image/jpg");
+			         				 //const imgWrap = document.getElementById('link1')
+									 //imgWrap.href = url_base64jp 
+			            			//alert(myChart.toBase64Image());
+			        			}
+			      			},
+			      			title: {
+			            		display: true,
+			            		text: 'Sitios VS Tiempo_vida',
+			            		fontSize: 16
+			        		}
+						}
+					    //
+					});
+					//
+					//
+					var pieChart = new Chart(entidades, {
+					    type: 'pie',
+					    data: {
+					    	labels: labels4,
+						    datasets: [
+						        {
+						            data: defaultData4,
+						            backgroundColor: colors4
+						        }]
+						    },
+						options: {
+							responsive: true,
+			   				maintainAspectRatio: true,
+			   				animation : {
+			         			onComplete : function(){    
+			         				//var url_base64jp = document.getElementById("top5-count-chart").toDataURL("image/jpg");
+			         				 //const imgWrap = document.getElementById('link1')
+									 //imgWrap.href = url_base64jp 
+			            			//alert(myChart.toBase64Image());
+			        			}
+			      			},
+			      			title: {
+			            		display: true,
+			            		text: 'Entidades Afectadas',
+			            		fontSize: 16
+			        		}
+						}
+					   
+					});
+					//
+					//
+					},
+					error: function(error_data) {
+						console.log("error")
+					}
+				})
+
+				{% endblock %}
+				
+				//var url_base64 = document.getElementById("myChart").toDataURL('image/png');
+
+			</script>
+		
+	<div class="container">
+	  <div class="row">
+	    <div class="col">
+			<canvas id="top5-count-chart" width="500px" height="500px"></canvas>
+		</div>
+		<div class="col">
+	      	<canvas id="top5-host-chart" width="500px" height="500px"></canvas>
+	    </div>
+	  </div>
+	  <div class="row">
+	    <div class="col">
+			<br>
+			<br>
+		</div>
+		<div class="col">
+			<br>
+	      	<br>
+	    </div>
+	  </div>
+	  <div class="row  justify-content-center">
+	    <div class="col-4">
+	      <canvas id="phishing-sites" width="500px" height="500px"></canvas>
+	    </div>
+	    <div class="col-4 ">
+	      <canvas id="report-week" width="500px" height="500px"></canvas>
+      	</div>
+      	<div class="col-4">
+	      <canvas id="sites-active" width="500px" height="500px"></canvas>
+      	</div>
+  	  </div>
+  	  <div class="row">
+	    <div class="col">
+			<br>
+			<br>
+		</div>
+		<div class="col">
+			<br>
+	      	<br>
+	    </div>
+	  </div>
+  	  <div class="row  justify-content-center">
+	    <div class="col-12">
+	      <canvas id="ent" width="300px" height="200px"></canvas>
+	    </div>
+  	  </div>
+  	 </div>
+	
+	{% block content %}
+		<div>
+
+
+		</div>
+	{% endblock content %}
+ {% endblock %}
+

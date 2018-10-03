@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block title %}Phish-Mon Histórico{% endblock %}
+
+{% block contenido %}
+  <div class="container">
+    <h1 class="display-3">Histórico</h1>
+Periodo: <pre>{{ inicio }} - {{ fin }}</pre>
+    <form action="" method="post">
+      {% csrf_token %}
+      {% include 'form_nofancy.html' with form=form %}<br/>
+      <input class="btn btn-info" type="submit" value="Aceptar" />
+    </form>
+    {% include 'reporte.html' %}
+  
+    </div>
+  {% endblock %}

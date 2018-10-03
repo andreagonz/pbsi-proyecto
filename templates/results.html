@@ -1,0 +1,96 @@
+	{% extends 'base.html' %}
+	{% block title %}Búsqueda{% endblock %}
+	{% block contenido %}
+	<div class="container" style="padding-top: 30px">
+      Resultados de  <strong>{{match}}</strong>:
+	{% if resultados_ip|length != 0 %}		
+	<ul>
+	  {% for r in resultados_ip %}
+	    <br><strong>Direccion IP</strong><br>
+            <a href='{% url 'url-detalle' pk=r.id %}'>Detalles</a>
+	    <div> 
+	      {% for key, value in r.items %}
+		{{ key }}: {{ value }}
+		<br>
+	      {% endfor %}
+	    </div>
+		
+	{% endfor %}
+	</ul>
+	{%endif%}
+	
+	{% if resultados_mail|length != 0 %}			
+	<ul>
+	  {% for r in resultados_mail %}
+	    <br><strong>Correo Electrónico</strong><br>
+            <a href='{% url 'url-detalle' pk=r.id %}'>Detalles</a>
+	    <div> 
+	      {% for key, value in r.items %}
+		{{ key }}: {{ value }}
+		<br>
+	      {% endfor %}
+	    </div>
+		
+	{% endfor %}
+	</ul>
+		
+	{%endif%}
+
+	<!--   -->
+	{% if resultados_dom|length != 0 %}			
+	<ul>
+	  {% for r in resultados_dom %}
+	    <br><strong>Dominio</strong><br>
+            <a href='{% url 'url-detalle' pk=r.id %}'>Detalles</a>
+	    <div> 
+	      {% for key, value in r.items %}
+		{{ key }}: {{ value }}
+		<br>
+	      {% endfor %}
+	    </div>
+		
+	{% endfor %}
+	</ul>
+		
+	{%endif%}
+
+	<!-- -->
+
+	{% if resultados_hf|length != 0 %}			
+	<ul>
+	  {% for r in resultados_hf %}
+	    <br><strong>MD5 Archivo</strong><br>
+            <a href='{% url 'url-detalle' pk=r.id %}'>Detalles</a>
+	    <div> 
+	      {% for key, value in r.items %}
+		{{ key }}: {{ value }}
+		<br>
+	      {% endfor %}
+	    </div>
+		
+	{% endfor %}
+	</ul>
+	{%endif%}
+	<!-- -->
+		
+	{% if resultados_com|length != 0 %}		
+	<ul>
+	  {% for r in resultados_com %}
+            <a href='{% url 'url-detalle' pk=r.id %}'>Detalles</a>
+	    <br><strong>Comentario</strong><br>
+	    <div> 
+	      {% for key, value in r.items %}
+		{{ key }}: {{ value }}
+		<br>
+	      {% endfor %}
+	    </div>
+		
+	      {% endfor %}
+	</ul>
+	{%endif%}
+	
+	{% if resultados_com|length == 0 and resultados_ip|length == 0 and resultados_mail|length == 0 and resultados_dom|length == 0 and resultados_hf|length == 0 %}
+		<div><b>No hay coincidencias en la búsqueda</b></div>
+	{%endif%}
+	</div>
+	{% endblock %}

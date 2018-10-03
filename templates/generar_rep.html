@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Reporte Doc{% endblock %}
+
+{% block contenido %}
+<div class="container">
+	<center>
+		<b></b>
+	</center>
+	<div class="row">
+	    <div class="col">
+			<br>
+				<form id='formulario' method='POST' action="{% url 'creadoc' %}">
+					{% csrf_token %}
+					<span>Nombre de archivo</span><br>
+					<!-- <input type="text" name="nombre"> <br>	<br> -->
+				  	<!-- <input type="radio" name="frec" value="weekly"> Semanalmente<br><br>
+				  	<input type="radio" name="frec" value="monthly"> Mensualmente<br><br>
+				  	<input type="radio" name="frec" value="quaterly"> Trimestral <br><br> -->
+				  	 {{ form.as_p }}
+				  	<input type="submit" name="enviar" value="Enviar">
+				</form>
+			<br>
+		</div>
+		<div class="col">
+			<br>
+			{% if env %}		
+				<p>Se creó el archivo {{ nom }} </p>
+			{%endif%}
+	
+			
+	      	<br>
+	    </div>
+	 </div>
+
+</div>
+{% endblock %}

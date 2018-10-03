@@ -1,0 +1,26 @@
+
+{% load filtros %}
+
+{{ form.non_field_errors }}
+
+{% for field in form %}
+  <div class="uk-margin">
+    <label class="uk-form-label" for="{{ field.name }}">{{ field.label }}</label>
+    <div class="uk-form-controls">
+      {% if field.errors %}
+        {{ field|addclass:'uk-input uk-form-danger' }}
+      {% else %}
+        {{ field|addclass:'uk-input' }}
+      {% endif %}      
+    </div>
+  </div>
+  {% if field.errors %}
+    {% for error in field.errors %}
+      <div class="uk-alert-danger" uk-alert>
+        <a class="uk-alert-close" uk-close></a>
+        <p>{{ error|escape }}</p>
+      </div>
+    {% endfor %}
+{% endif %}
+
+{% endfor %}

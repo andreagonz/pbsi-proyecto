@@ -1,0 +1,82 @@
+<!-- Plantilla HTMML -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
+
+    <title>{% block title %} {% endblock title %}</title>
+  </head>
+  <body>
+    <!--  Empieza NavBar-->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+      <a class="navbar-brand" href="{% url 'home' %}">Phishmon</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+
+      <div class="collapse navbar-collapse" id="navbarSupportedContent">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'monitoreo' %}">Monitoreo</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'valida-urls' %}">Valida URLs</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'historico' %}">Histórico</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'doc' %}">Reporte</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'ajustes' %}">Ajustes</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'logout' %}">Cerrar Sesión</a>
+          </li>
+        </ul>
+        <form class="form-inline my-2 my-lg-0" method="post" action="/buscar/">
+          {% csrf_token %}
+          <input name="search" class="form-control mr-sm-2" type="search" placeholder="Búsqueda" aria-label="Search">
+          <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Búsqueda</button>
+        </form>
+      </div>
+    </nav>
+
+    <!-- Termina Navbar -->
+    {% block contenido %}
+    {% endblock %}
+
+    <!-- Footer -->
+
+<div class="container"><br><br></div>             
+    
+<!-- Footer -->
+<footer style = "background-color: #333333" class="bd-footer text-muted">
+  <div class="container-fluid p-3 p-md-5">
+    <ul class="bd-footer-links">
+      <li><a href="https://github.com/">GitHub</a></li>
+      <li><a href="https://www.seguridad.unam.mx">UNAM-CERT</a></li>
+      <li><a href="#">About</a></li>
+    </ul>
+    <p>Designed and built by: <div><p>Ulises</p><p>Andrea</p><p>Gerardo</p></div> 
+    <center>
+      <p><a href="https://www.seguridad.unam.mx/ target="_blank" rel="license noopener">UNAM-CERT</a>, 2018.</p>
+    </center>
+  </div>
+</footer>
+<!-- Footer -->
+                
+                  
+    <!-- End footer -->
+  </body>
+  <script type="text/javascript" src="{{ STATIC_URL }} /static/jQuery.js"></script> 
+    <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js" integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js" integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T" crossorigin="anonymous"></script>
+</html>

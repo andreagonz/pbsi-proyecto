@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Phish-Mon Monitoreo{% endblock %}
+
+{% block contenido %}
+  <div class="uk-container uk-container-medium">
+    <h1 class="uk-heading-divider">Detalle de URL</h1>
+  </div>
+  
+  {{ url.identificador }}<br/>
+  {{ url.timestamp }}<br/>
+  {{ url.ip }}<br/>
+  {{ url.codigo }}<br/>
+  {{ url.url }}<br/>
+  {{ url.correos_abuso }}<br/>
+  {{ url.netname }}<br/>
+  {{ url.pais }}<br/>
+  <pre>    
+    {{ whois }}
+    {{ whois_dominio }}
+  </pre>
+  {% if url.codigo >= 200 and url.codigo < 300 %}
+    {{ url.titulo }}<br/>
+    {{ url.entidades }}<br/>
+    {% if url.archivo %}
+      <a href='{{ url.archivo_url }}'>Archivo</a><br/>
+    {% endif %}
+    {{ url.ofuscaciones }}<br/>
+    <img src='{{ url.captura_url }}'/><br/>
+    <img src='{{ url.dominio.captura_url }}'/><br/>
+    {% for x in comentarios %}
+      {{ x }}
+    {% endfor %}
+    {% for x in hashes %}
+      {{ x }}
+    {% endfor %}
+  {% endif %}
+  
+{% endblock %}

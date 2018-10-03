@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="es-MX">
+  <head>
+    <title>Phish Mon - Inicio de Sesión</title>
+    {% load static %}
+    {% load filtros %}
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" href="{% static 'favicon.ico' %}" type="image/x-icon" />
+    <link rel="shortcut icon" href="{% static 'favicon.ico' %}" type="image/x-icon" />
+    <link rel="stylesheet" href="{% static 'css/uikit.min.css' %}" />
+    <link rel="stylesheet" href="{% static 'css/base.css' %}" />
+    
+    <script src="{% static 'js/uikit.min.js' %}"></script>
+    <script src="{% static 'js/uikit-icons.min.js' %}"></script>
+    
+  </head>
+  <body>
+    
+    
+    <div class="uk-position-center uk-text-center" style="width:350px;">
+      
+      <img src="{% static 'logo.png' %}" class="logo-inicio" alt="Logo UNAM-CERT" />
+      
+      {% if form.errors %}
+        <div class="uk-alert-danger" uk-alert>
+          <a class="uk-alert-close" uk-close></a>
+          <p>Usuario y/o contraseña incorrectos.</p>
+        </div>
+      {% endif %}
+      
+      {% if next %}
+        <div class="uk-alert-warning" uk-alert>
+          <a class="uk-alert-close" uk-close></a>
+          <p>Inicia sesión.</p>
+        </div>
+      {% endif %}
+
+      <form method="post" action="{% url 'login' %}" autocomplete="off">
+        {% csrf_token %}
+
+        <div class="uk-margin">
+          <div class="uk-inline campos-inicio">
+            <span class="uk-form-icon" uk-icon="icon: user"></span>
+            {% if field.errors %}
+              {{ form.username|addclass:'uk-input uk-form-danger' }}
+            {% else %}
+              {{ form.username|addclass:'uk-input' }}
+            {% endif %}      
+          </div>
+        </div>
+
+        <div class="uk-margin">
+          <div class="uk-inline campos-inicio">
+            <span class="uk-form-icon uk-form-icon-flip" uk-icon="icon: lock"></span>
+            {% if field.errors %}
+              {{ form.password|addclass:'uk-input uk-form-danger' }}
+            {% else %}
+              {{ form.password|addclass:'uk-input' }}
+            {% endif %}      
+          </div>
+        </div>
+        
+        <div>
+          <input class="uk-button uk-button-primary uk-width-1-1 uk-margin-small-bottom" type="submit" value="Iniciar Sesión" />
+          <input type="hidden" name="next" value="{{ next }}" />
+        </div>
+        
+      </form>
+      
+    </div>
+
+
+  </body>
+</html>

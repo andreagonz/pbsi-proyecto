@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Phish-Mon Monitoreo{% endblock %}
+
+{% block contenido %}
+  <div class="uk-container uk-container-medium">
+    <h1 class="uk-heading-divider">Monitoreo</h1>
+  </div>
+
+  Correo enviado exitósamente <br/>
+  Resumen de correo: <br/>
+  Url: {{ url }} <br/>
+  De: {{ de }} <br/>
+  Para: {{ para }} <br/>
+  Asunto: {{ asunto }} <br/>
+  Mensaje: {{ mensaje }} <br/>
+  Archivo adjunto: <img src='{{ captura }}' /> <br/>
+  
+  <form class="uk-form-horizontal uk-margin-large" action="" method="post">
+    {% csrf_token %}
+    <input type="submit" name="boton-siguiente" class="uk-button uk-button-default" value="Siguiente" />
+  </form>  
+{% endblock %}
