@@ -12,7 +12,8 @@ from .phishing import (
 )
 from .correo import (
     genera_mensaje, manda_correo, obten_asunto, obten_mensaje,
-    lee_plantilla_asunto, lee_plantilla_mensaje, cambia_asunto, cambia_mensaje
+    lee_plantilla_asunto, lee_plantilla_mensaje, cambia_asunto, cambia_mensaje,
+    parsecorreo
 )
 from django.views.generic import TemplateView
 from django.template import loader
@@ -722,3 +723,15 @@ def createDoc(request):
         else:            
             formulario = Doc()
             return render(request,'generar_rep.html',{'form':formulario})
+
+@login_required(login_url=reverse_lazy('login'))
+def entrada(request):
+    if request.method == 'POST':
+        form = UrlsForm(request.POST)
+        if form.is_valid():
+            c = form.cleaned_data['urls']
+            resultados, urls = parsecorreo(c)
+            return render(request, 'entrada_resultados.html', {'resultados':resultados})
+    else:
+        form = UrlsForm()
+    return render(request, 'entrada.html', {'form': form})

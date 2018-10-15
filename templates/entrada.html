@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Phish-Mon Correo{% endblock %}
+
+{% block contenido %}
+  <div class="container">
+    <h1 class="display-3">Procesamiento de Correo</h1>  
+    <form class="uk-form-horizontal uk-margin-large" action="" method="post">
+      {% csrf_token %}
+      {% include 'form.html' with form=form %}
+      <input type="submit" class="btn btn-info" value="Aceptar" />
+    </form>
+  </div>
+{% endblock %}

@@ -5,7 +5,8 @@ from .views import (
     ActualizaRecurso, NuevoRecurso, elimina_recurso,
     ofuscaciones_view, entidades_view,
     ActualizaEntidad, NuevaEntidad, elimina_entidad,
-    ActualizaOfuscacion, NuevaOfuscacion, elimina_ofuscacion, createDoc, DocumentView
+    ActualizaOfuscacion, NuevaOfuscacion, elimina_ofuscacion, createDoc, DocumentView,
+    entrada
 )
 
 urlpatterns = [
@@ -31,4 +32,6 @@ urlpatterns = [
     path('elimina-entidad/<int:pk>', elimina_entidad, name='elimina-entidad'),
     path('doc/', DocumentView.as_view(), name='doc'),
     path('creaDoc/',createDoc, name='creadoc'),
+
+    path('entrada/', entrada, name='entrada'),
 ]

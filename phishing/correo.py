@@ -7,6 +7,9 @@ from email.mime.text import MIMEText
 from email.mime.image import MIMEImage
 from django.conf import settings
 import datetime
+import email
+import re
+import hashlib
 
 def obten_texto(mensaje, archivo):
     if not os.path.exists(archivo):
@@ -119,3 +122,60 @@ def manda_correo(correos, msg):
         server.sendmail(usr, emails, msg)
     finally:
         server.quit()
+
+
+"""
+===========================================
+"""
+
+def erroremail(palabra,mensaje):
+    """
+    Imprime los campos de los headers de cada correo
+    """
+    try:
+        return (palabra+": "+mensaje[palabra])
+    except Exception as e:
+        return (palabra+": No hay informacion de "+palabra)
+
+def md5(fname):
+    hash_md5 = hashlib.md5()
+    hash_md5.update(fname)
+    return hash_md5.hexdigest()
+
+def parsecorreo(texto):
+    """
+    Realiza el parseo del archivo email
+    """
+    mensaje = email.message_from_string(texto)
+    lista = ['From','To','Cc','Bcc','Subject','X-Virus-Scanned','X-Spam-Flag','X-Spam-Score','X-Spam-Status','X-Spam-Level','Received']
+    resultados = []
+    for head in lista:
+        resultados.append(erroremail(head,mensaje))
+    b = email.message_from_string(texto)
+    if b.is_multipart():
+        for part in b.walk():
+            ctype = part.get_content_type()
+            cdispo = str(part.get('Content-Disposition'))
+            if ctype == 'text/plain' and 'attachment' not in cdispo:
+                body = part.get_payload(decode=True)  # decode
+                url=re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',body.decode('utf-8'));
+                break
+    else:
+        body=b.get_payload(decode=True)
+        url=re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',body.decode('utf-8'));
+        for urls in url:
+            resultados.append("URL: "+urls+"\n")
+#Obtener archivo adjunto
+    msg = email.message_from_string(texto)
+    tamanio=len(msg.get_payload())
+    #attachment = msg.get_payload()[1]
+    if tamanio < 20:
+        for x in range(0,tamanio):
+           #print (x)
+            if(x!=0):
+                attachment = msg.get_payload()[x]
+                resultados.append("Tipo de archivo: " + attachment.get_content_type()+"\n")
+                nombre = md5(attachment.get_payload(decode=True))
+                open('%s/archivos/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
+                resultados.append("Nombre de archivo: " + nombre)
+    return resultados, url
