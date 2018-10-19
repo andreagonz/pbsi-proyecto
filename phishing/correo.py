@@ -158,7 +158,7 @@ def parsecorreo(texto):
             cdispo = str(part.get('Content-Disposition'))
             if ctype == 'text/plain' and 'attachment' not in cdispo:
                 body = part.get_payload(decode=True)  # decode
-                url=re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',body.decode('utf-8'));
+                url=re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',body.decode('latin-1'));
                 break
     else:
         body=b.get_payload(decode=True)

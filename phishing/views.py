@@ -3,7 +3,7 @@ from django.urls import reverse_lazy
 from django.contrib.auth.decorators import login_required
 from .forms import (
     UrlsForm, MensajeForm, ProxyForm, Search, HistoricoForm,
-    CambiaAsuntoForm, CambiaMensajeForm, FrecuenciaForm
+    CambiaAsuntoForm, CambiaMensajeForm, FrecuenciaForm, CorreoForm, ArchivoForm
 )
 from .models import Url, Correo, Proxy, Recurso, Ofuscacion, Entidades
 from .phishing import (
@@ -53,6 +53,7 @@ import datetime
 from phishing.phishing import lineas_md5,md5,archivo_hashes
 from docx import Document
 from docx.shared import Inches
+from .entrada import( lee_csv, lee_txt, lee_json )
 
 @login_required(login_url=reverse_lazy('login'))
 def monitoreo(request):
@@ -727,11 +728,33 @@ def createDoc(request):
 @login_required(login_url=reverse_lazy('login'))
 def entrada(request):
     if request.method == 'POST':
-        form = UrlsForm(request.POST)
-        if form.is_valid():
-            c = form.cleaned_data['urls']
-            resultados, urls = parsecorreo(c)
-            return render(request, 'entrada_resultados.html', {'resultados':resultados})
+        if request.POST.get("boton_correo"):
+            form = CorreoForm(request.POST)
+            if form.is_valid():
+                c = form.cleaned_data['correo']
+                resultados, urls = parsecorreo(c)
+                return render(request, 'entrada_resultados.html',
+                              {'resultados': resultados, 'urls': urls})
+        elif request.POST.get("boton_archivo") and request.FILES['file']:
+            form = ArchivoForm(request.POST)
+            f = request.FILES['file'].read().decode('utf-8')
+            name = request.FILES['file'].name
+            urls = []
+            if name.endswith('.txt'):
+                urls = lee_txt(f)
+            elif name.endswith('.json'):
+                urls = lee_json(f)
+            elif name.endswith('.csv'):
+                urls = lee_csv(f)
+            elif name.endswith('.eml'):
+                resultados, urls = parsecorreo(f)
+                return render(request, 'entrada_resultados.html',
+                              {'resultados': resultados, 'urls': urls})
+            sitios = verifica_urls(urls, None, False)
+            context = context_reporte(sitios)
+            return render(request, 'reporte_urls.html', context)
+            # return render(request, 'entrada_urls.html', {'urls': urls})
     else:
-        form = UrlsForm()
-    return render(request, 'entrada.html', {'form': form})
+        form1 = CorreoForm()
+        form2 = ArchivoForm()
+    return render(request, 'entrada.html', {'form1': form1, 'form2': form2})

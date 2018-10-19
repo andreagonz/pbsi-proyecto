@@ -1,17 +1,44 @@
-import re
-import email
-from email.Utils import parseaddr
-from email.Header import decode_header
+# import re
+# import email
+import json
+# from email.Utils import parseaddr
+# from email.Header import decode_header
 
-direccion_re = re.compile('^'+addr_spec+'$')
+# direccion_re = re.compile('^'+addr_spec+'$')
 
-def lee_txt(archivo):
-    with open(archivo) as f:
-        return [x.strip() for x in f.readlines()]
+def lee_txt(f):
+    return [x.strip() for x in f.split('\n')]
 
-def lee_csv(archivo):
-    return lee_txt(csv)
+def lee_csv(f):
+    urls = []
+    for x in f.split('\n'):
+        for y in x.split(','):
+            y = y.strip()
+            if y.startswith('http://') or y.startswith('https://'):
+                urls.append(y)
+    return urls
 
+def itera_json(j, e):
+    if isinstance(j, dict):
+        for k,v in j.items():
+            itera_json(v, e)
+    elif isinstance(j, list):
+        for x in j:
+            itera_json(x, e)
+    else:
+        e.append(j.strip() if isinstance(j, str) else j)
+    
+def lee_json(f):
+    urls = []
+    j = json.loads(f)
+    e = []
+    itera_json(j, e)
+    for y in e:
+        if y.startswith('http://') or y.startswith('https://'):
+            urls.append(y)
+    return urls        
+
+"""
 def get_cabecera(header, default="ascii"):
     try:
         headers = decode_header(header)
@@ -50,3 +77,4 @@ def lee_correo(correo):
     dicc['asunto'] = get_cabecera(msg.get('Subject', ''))
     dicc['adjuntos'] = msg.get_payload()
     
+"""

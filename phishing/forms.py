@@ -54,4 +54,8 @@ class Doc(forms.Form):
     inicio = forms.DateField(widget=SelectDateWidget(years=range(timezone.now().year - 10, timezone.now().year + 1)))
     fin = forms.DateField(widget=SelectDateWidget(years=range(timezone.now().year - 10, timezone.now().year + 1)))
 
-        
+class CorreoForm(forms.Form):
+    correo = forms.CharField(label='Correo', widget=forms.Textarea, required=False)
+    
+class ArchivoForm(forms.Form):
+    file = forms.FileField(label='Archivo (txt, csv, json, eml)', required=False)
