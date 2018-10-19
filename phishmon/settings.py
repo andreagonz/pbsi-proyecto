@@ -26,7 +26,8 @@ SECRET_KEY = '!+v7eriae)k^si!7phn=!x08mch!yxryd50i2=$e=ht93ps69k'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+#Servername
+ALLOWED_HOSTS = ['pocs.seguridad.unam.mx']
 
 
 # Application definition
