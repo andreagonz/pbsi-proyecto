@@ -21,30 +21,47 @@
 
       <div class="collapse navbar-collapse" id="navbarSupportedContent">
         <ul class="navbar-nav mr-auto">
+          {% if user.is_authenticated %}
           <li class="nav-item">
             <a class="nav-link" href="{% url 'monitoreo' %}">Monitoreo</a>
           </li>
+          {% endif %}
           <li class="nav-item">
             <a class="nav-link" href="{% url 'valida-urls' %}">Valida URLs</a>
           </li>
           <li class="nav-item">
+            <a class="nav-link" href="{% url 'entrada' %}">Procesamiento</a>
+          </li>
+          {% if user.is_authenticated %}
+          <li class="nav-item">
             <a class="nav-link" href="{% url 'historico' %}">Histórico</a>
           </li>
+          
           <li class="nav-item">
             <a class="nav-link" href="{% url 'doc' %}">Reporte</a>
           </li>
           <li class="nav-item">
             <a class="nav-link" href="{% url 'ajustes' %}">Ajustes</a>
           </li>
+          
           <li class="nav-item">
             <a class="nav-link" href="{% url 'logout' %}">Cerrar Sesión</a>
           </li>
+          
+        {% endif %}
+        {% if not user.is_authenticated %}
+          <li class="nav-item">
+            <a class="nav-link" href="{% url 'login' %}">Iniciar Sesión</a>
+          </li>
+        {% endif %}
         </ul>
+        {% if user.is_authenticated %}
         <form class="form-inline my-2 my-lg-0" method="post" action="/buscar/">
           {% csrf_token %}
           <input name="search" class="form-control mr-sm-2" type="search" placeholder="Búsqueda" aria-label="Search">
           <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Búsqueda</button>
         </form>
+        {% endif %}
       </div>
     </nav>
 
@@ -64,7 +81,7 @@
       <li><a href="https://www.seguridad.unam.mx">UNAM-CERT</a></li>
       <li><a href="#">About</a></li>
     </ul>
-    <p>Designed and built by: <div><p>Ulises</p><p>Andrea</p><p>Gerardo</p></div> 
+    <!-- <p>Designed and built by: <div><p>Ulises</p><p>Andrea</p><p>Gerardo</p></div>  -->
     <center>
       <p><a href="https://www.seguridad.unam.mx/ target="_blank" rel="license noopener">UNAM-CERT</a>, 2018.</p>
     </center>

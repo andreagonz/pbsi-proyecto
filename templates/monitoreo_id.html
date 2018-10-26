@@ -48,5 +48,12 @@
       {% csrf_token %}
       <input type="submit" name="boton-saltar" class="btn btn-secondary" value="Saltar" />
     </form>
+
+    {% if user.is_superuser %}
+    <form action="" method="post">
+      {% csrf_token %}
+      <input type="submit" name="boton-ignorar" class="btn btn-danger" value="Ignorar" />
+    </form>
+    {% endif %}
   </div>
 {% endblock %}
