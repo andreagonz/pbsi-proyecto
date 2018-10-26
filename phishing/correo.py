@@ -171,13 +171,13 @@ def analisisarchivos(attachment):
     tipo= attachment.get_content_type()
     nombre = sha256(attachment.get_payload(decode=True))
     noentidades=virustotal(nombre)
-    #if noentidades=='No':
-    #    open('%s/archivos/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
-    #else:
-    #    if noentidades=='Si':
-    #        open('%s/archivos/maliciosos/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
-    #    else:
-    #        open('%s/archivos/noclasificado/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
+    if noentidades=='No':
+        open('%s/archivos/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
+    else:
+        if noentidades=='Si':
+            open('%s/archivos/maliciosos/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
+        else:
+            open('%s/archivos/noclasificado/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
     return nombre, noentidades,tipo
             #resultados.append("Nombre de archivo: " + nombre+"\n")
             #resultados.append("\tArchivo malicioso: " +noentidades+"\n")
