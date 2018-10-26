@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import smtplib
 from urllib.parse import urlparse
