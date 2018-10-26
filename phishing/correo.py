@@ -10,6 +10,10 @@ import datetime
 import email
 import re
 import hashlib
+import json
+from virus_total_apis import PublicApi as VirusTotalPublicApi
+import zipfile
+
 
 def obten_texto(mensaje, archivo):
     if not os.path.exists(archivo):
@@ -127,6 +131,24 @@ def manda_correo(correos, msg):
 """
 ===========================================
 """
+def virustotal(HASH_md5):
+    API_KEY = 'ea825868bdd93b5a0cea2159c1786ebbedd35a088ab7db4e96b4e2bcd9fafb66'
+    vt = VirusTotalPublicApi(API_KEY)
+    response = vt.get_file_report(HASH_md5)
+    #print(json.dumps(response, sort_keys=False, indent=4))
+    resultado = json.loads(json.dumps(response, sort_keys=False, indent=4))
+    #print(str(json))
+    try:
+        if resultado['results']['positives']>0:
+            num= resultado['results']['positives']
+            return "Si"
+            #print(resultado['results']['positives'])
+	    ###### Condicion si es mayor a 0 que se guarde en el directorio, si no que no se guarde
+        return "No"
+    except:
+        return "No encontro coincidencias"
+
+
 
 def erroremail(palabra,mensaje):
     """
@@ -141,6 +163,25 @@ def md5(fname):
     hash_md5 = hashlib.md5()
     hash_md5.update(fname)
     return hash_md5.hexdigest()
+
+def analisisarchivos(attachment):
+    """
+    Esta funcion analiza los archivos contenidos en los correos
+    """
+    tipo= attachment.get_content_type()
+    nombre = md5(attachment.get_payload(decode=True))
+    noentidades=virustotal(nombre)
+    #if noentidades=='No':
+    #    open('%s/archivos/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
+    #else:
+    #    if noentidades=='Si':
+    #        open('%s/archivos/maliciosos/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
+    #    else:
+    #        open('%s/archivos/noclasificado/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
+    return nombre, noentidades,tipo
+            #resultados.append("Nombre de archivo: " + nombre+"\n")
+            #resultados.append("\tArchivo malicioso: " +noentidades+"\n")
+            #resultados.append("Mas informacion: https://www.virustotal.com/#/file/"+nombre)
 
 def parsecorreo(texto):
     """
@@ -158,7 +199,7 @@ def parsecorreo(texto):
             cdispo = str(part.get('Content-Disposition'))
             if ctype == 'text/plain' and 'attachment' not in cdispo:
                 body = part.get_payload(decode=True)  # decode
-                url=re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',body.decode('latin-1'));
+                url=re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',body.decode('utf-8'));
                 break
     else:
         body=b.get_payload(decode=True)
@@ -174,8 +215,9 @@ def parsecorreo(texto):
            #print (x)
             if(x!=0):
                 attachment = msg.get_payload()[x]
-                resultados.append("Tipo de archivo: " + attachment.get_content_type()+"\n")
-                nombre = md5(attachment.get_payload(decode=True))
-                open('%s/archivos/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
-                resultados.append("Nombre de archivo: " + nombre)
+                nombre,noentidades,tipo=analisisarchivos(attachment)
+                resultados.append("Tipo de archivo: " +tipo+"\n") #+ attachment.get_content_type()+"\n")
+                resultados.append("Nombre de archivo: " + nombre+"\n")
+                resultados.append("\tArchivo malicioso: " +noentidades+"\n")
+                resultados.append("Mas informacion: https://www.virustotal.com/#/file/"+nombre)
     return resultados, url
