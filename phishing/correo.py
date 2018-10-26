@@ -131,10 +131,10 @@ def manda_correo(correos, msg):
 """
 ===========================================
 """
-def virustotal(HASH_md5):
+def virustotal(HASH_sha256):
     API_KEY = 'ea825868bdd93b5a0cea2159c1786ebbedd35a088ab7db4e96b4e2bcd9fafb66'
     vt = VirusTotalPublicApi(API_KEY)
-    response = vt.get_file_report(HASH_md5)
+    response = vt.get_file_report(HASH_sha256)
     #print(json.dumps(response, sort_keys=False, indent=4))
     resultado = json.loads(json.dumps(response, sort_keys=False, indent=4))
     #print(str(json))
@@ -159,17 +159,17 @@ def erroremail(palabra,mensaje):
     except Exception as e:
         return (palabra+": No hay informacion de "+palabra)
 
-def md5(fname):
-    hash_md5 = hashlib.md5()
-    hash_md5.update(fname)
-    return hash_md5.hexdigest()
+def sha256(fname):
+    hash_sha256 = hashlib.sha256()
+    hash_sha256.update(fname)
+    return hash_sha256.hexdigest()
 
 def analisisarchivos(attachment):
     """
     Esta funcion analiza los archivos contenidos en los correos
     """
     tipo= attachment.get_content_type()
-    nombre = md5(attachment.get_payload(decode=True))
+    nombre = sha256(attachment.get_payload(decode=True))
     noentidades=virustotal(nombre)
     #if noentidades=='No':
     #    open('%s/archivos/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
@@ -199,11 +199,11 @@ def parsecorreo(texto):
             cdispo = str(part.get('Content-Disposition'))
             if ctype == 'text/plain' and 'attachment' not in cdispo:
                 body = part.get_payload(decode=True)  # decode
-                url=re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',body.decode('utf-8'));
+                url=re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',body.decode('utf-8', errors='ignore'));
                 break
     else:
         body=b.get_payload(decode=True)
-        url=re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',body.decode('utf-8'));
+        url=re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',body.decode('utf-8', errors='ignore'));
         for urls in url:
             resultados.append("URL: "+urls+"\n")
 #Obtener archivo adjunto
