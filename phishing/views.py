@@ -57,7 +57,7 @@ from .entrada import( lee_csv, lee_txt, lee_json )
 
 @login_required(login_url=reverse_lazy('login'))
 def monitoreo(request):
-    urls = Url.objects.filter(reportado=False, codigo__lt=300, codigo__gte=200).order_by('-timestamp')
+    urls = Url.objects.filter(reportado=False, codigo__lt=300, codigo__gte=200).order_by('timestamp')
     if len(urls) > 0:
         return redirect('monitoreo-id', pk=urls[0].id)
     return render(request, 'monitoreo.html')
@@ -124,7 +124,7 @@ def monitoreo_id(request, pk):
                         if not proxies.http is None:
                             proxy['http'] = proxies.http
                         if not proxies.https is None:
-                            proxy['https'] = proxies.https                    
+                            proxy['https'] = proxies.https 
                     cpimg(url.captura_url, captura_old)
                     old = {
                         'captura_url': captura_old,
@@ -164,13 +164,19 @@ def monitoreo_id(request, pk):
                         'captura': url.captura_url
                     }
                     return render(request, 'monitoreo_exito.html', context)
-            elif request.POST.get('boton-saltar'):
+            elif request.POST.get('boton-ignorar') and request.user.is_superuser:
                 for x in Url.objects.filter(url=url.url):
                     x.reportado = True
                     x.save()
                 return redirect('monitoreo')
-            elif request.POST.get('boton-siguiente'):
-                return redirect('monitoreo')
+            elif request.POST.get('boton-saltar'):
+                urls = Url.objects.filter(id__gt=url.id,
+                                          reportado=False,
+                                          codigo__lt=300,
+                                          codigo__gte=200).order_by('-timestamp')
+                if len(urls) > 0:
+                    return redirect('monitoreo-id', pk=urls[0].id)
+            return redirect('monitoreo')
     context['mensaje_form'] = mensaje_form
     context['proxy_form'] = proxy_form
     return render(request, 'monitoreo_id.html', context)
