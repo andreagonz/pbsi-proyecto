@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import smtplib
 from urllib.parse import urlparse
@@ -112,6 +113,7 @@ def manda_correo(correos, msg):
     """
     Se envia un correo con el mensaje especificado
     """
+    server = None
     try:
         server = smtplib.SMTP(settings.CORREO_SERVIDOR, settings.CORREO_PUERTO)
         server.ehlo()
@@ -125,7 +127,8 @@ def manda_correo(correos, msg):
         emails = [x.strip() for x in correos.split(',')]
         server.sendmail(usr, emails, msg)
     finally:
-        server.quit()
+        if server:
+            server.quit()
 
 
 """
