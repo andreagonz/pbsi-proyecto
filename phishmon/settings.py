@@ -151,14 +151,14 @@ PLANTILLA_CORREO_ASUNTO = os.path.join(MEDIA_ROOT, 'plantillas', 'correo_asunto.
 
 PLANTILLA_CORREO_MENSAJE = os.path.join(MEDIA_ROOT, 'plantillas', 'correo_mensaje.txt')
 
-CORREO_USR = 'irc.perl.bot@gmail.com'
+CORREO_USR = 'phishing'
 
-CORREO_PASS = '**pbsi_irc**'
+CORREO_PASS = 'ch1k4fr4nc3s4.'
 
-CORREO_DE = 'irc.perl.bot@gmail.com'
+CORREO_DE = 'phishing@pocs.seguridad.unam.mx'
 
-CORREO_TLS = True
+CORREO_TLS = False
 
-CORREO_SERVIDOR = 'smtp.gmail.com'
+CORREO_SERVIDOR = 'localhost'
 
-CORREO_PUERTO = 587
+CORREO_PUERTO = 25
