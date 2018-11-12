@@ -132,7 +132,7 @@ def nslookup(dominio):
     stdout, stderr = process.communicate()
     if stderr:
         return ''
-    for x in stdout.decode('utf-8').split('\n')[2:]:
+    for x in stdout.decode('utf-8', errors='ignore').split('\n')[2:]:
         if 'Address' in x:
             return x.split(' ')[1]
     return ''
@@ -166,7 +166,7 @@ def whois(nombre):
         return ''
     process = Popen(['whois', nombre], stdout=PIPE, stderr=PIPE)
     stdout, stderr = process.communicate()
-    return stdout.decode('utf-8')
+    return stdout.decode('utf-8', errors='ignore')
         
 def genera_id(url, ip):
     if ip is None:
@@ -341,7 +341,7 @@ def verifica_urls(urls, proxy, phistank):
 def cambia_frecuencia(funcion, n):
     process = Popen(['which', 'python3'], stdout=PIPE, stderr=PIPE)
     p, s = process.communicate()
-    python3 = p.decode('utf-8').strip()
+    python3 = p.decode('utf-8', errors='ignore').strip()
     print(python3)
     process = Popen("crontab -l | egrep -v '%s %s/manage.py %s'  | crontab -"
                     % (python3, settings.BASE_DIR, funcion),
