@@ -3,7 +3,7 @@ from django.urls import reverse_lazy
 from django.contrib.auth.decorators import login_required
 from .forms import (
     UrlsForm, MensajeForm, ProxyForm, Search, HistoricoForm,
-    CambiaAsuntoForm, CambiaMensajeForm, FrecuenciaForm, CorreoForm, ArchivoForm
+    CambiaAsuntoForm, CambiaMensajeForm, FrecuenciaForm, CorreoForm, ArchivoForm, CorreoArchivoForm
 )
 from .models import Url, Correo, Proxy, Recurso, Ofuscacion, Entidades
 from .phishing import (
@@ -58,9 +58,8 @@ from .entrada import( lee_csv, lee_txt, lee_json )
 @login_required(login_url=reverse_lazy('login'))
 def monitoreo(request):
     urls = Url.objects.filter(reportado=False, codigo__lt=300, codigo__gte=200).order_by('timestamp')
-    if len(urls) > 0:
-        return redirect('monitoreo-id', pk=urls[0].id)
-    return render(request, 'monitoreo.html')
+    print(len(urls))
+    return render(request, 'monitoreo.html', context={'urls':urls})
 
 def rmimg(img):
     if img is None:
@@ -203,15 +202,31 @@ def context_reporte(sitios):
 # @login_required(login_url=reverse_lazy('login'))
 def valida_urls(request):
     if request.method == 'POST':
-        form = UrlsForm(request.POST)
-        if form.is_valid():
-            urls = form.cleaned_data['urls']
-            sitios = verifica_urls([x.strip() for x in urls.split('\n') if x.strip()], None, False)
+        if request.POST.get("boton_urls"):
+            form = UrlsForm(request.POST) 
+            if form.is_valid():
+                urls = form.cleaned_data['urls']
+                sitios = verifica_urls([x.strip() for x in urls.split('\n') if x.strip()], None, False)
+                context = context_reporte(sitios)
+                return render(request, 'reporte_urls.html', context)
+        elif request.POST.get("boton_archivo") and request.FILES['file']:
+            form = ArchivoForm(request.POST)
+            f = request.FILES['file'].read().decode('utf-8')
+            name = request.FILES['file'].name
+            urls = []
+            if name.endswith('.txt'):
+                urls = lee_txt(f)
+            elif name.endswith('.json'):
+                urls = lee_json(f)
+            elif name.endswith('.csv'):
+                urls = lee_csv(f)
+            sitios = verifica_urls(urls, None, False)
             context = context_reporte(sitios)
             return render(request, 'reporte_urls.html', context)
     else:
-        form = UrlsForm()
-    return render(request, 'valida_urls.html', {'form': form})
+        form1 = UrlsForm()
+        form2 = ArchivoForm()
+    return render(request, 'valida_urls.html', {'form1': form1, 'form2': form2})
 
 message2 = ""
 
@@ -320,7 +335,7 @@ def historico(request):
         if form.is_valid():
             inicio = form.cleaned_data['inicio']
             fin = form.cleaned_data['fin']
-    sitios = Url.objects.filter(timestamp__lte=fin, timestamp__gte=inicio)
+    sitios = Url.objects.filter(timestamp__lte=fin + timedelta(days=1), timestamp__gte=inicio)
     context = context_reporte(sitios)
     context['inicio'] = inicio
     context['fin'] = fin
@@ -707,14 +722,14 @@ def createDoc(request):
             document = Document()
             document.add_heading('Reporte',0)
             p=document.add_paragraph('Reporte elaborado por la herramienta ')
-            p.add_run('Phishmon').bold = True
-                        
+            p.add_run('SAAPM').bold = True
             document.add_heading('Periodo',level=1)
             q = document.add_paragraph('De: ')
             q.add_run(str(context['inicio'])).bold = True
             q.add_run('      ')
             q.add_run('A :  ')
-            q.add_run(str(context['fin'])).bold = True                      
+            q.add_run(str(context['fin'])).bold = True
+            """
             for key,value in context.items():
                 #document.add_paragraph(key + ':' )
                 # if type(value) is str:
@@ -725,7 +740,73 @@ def createDoc(request):
                 response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
                 response['Content-Disposition'] = 'attachment; filename='+nombre_archivo+'.docx'
                 document.save(response)
-                return response
+            """
+            response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+            response['Content-Disposition'] = 'attachment; filename='+nombre_archivo+'.docx'
+            activas = urls_activas(sitios)
+            inactivas = urls_inactivas(sitios)
+            redirecciones = urls_redirecciones(sitios)
+            dominios = urls_dominios(sitios)
+            q = document.add_paragraph("URLs analizadas: %d\n" % cuenta_urls(sitios))
+            q.add_run("URLs activas: %d\n" % len(activas))
+            q.add_run("URLs inactivas: %d\n" % len(inactivas))
+            q.add_run("URLs redirecciones: %d\n" % len(redirecciones))
+            q.add_run("Dominios afectados: %d" % len(dominios))
+            q = document.add_paragraph("")
+            q.add_run("Entidades:\n").bold = True            
+            for e in urls_entidades(sitios):
+                q.add_run("%s\n" % e)
+            q = document.add_paragraph("")
+            q.add_run("Dominios:").bold = True
+            for e in dominios:
+                q.add_run("%s\n" % e)
+            q = document.add_paragraph("")
+            q.add_run("Países:\n").bold = True
+            for e in urls_paises(sitios):
+                q.add_run("%s\n" % e)
+            q = document.add_paragraph("")
+            q.add_run("SITIOS ACTIVOS:\n\n").bold = True
+            for u in activas:
+                q.add_run("Identificador: %s\n" % u.identificador)
+                q.add_run("Timestamp: %s\n" % u.timestamp)
+                q.add_run("IP: %s\n" % u.ip)
+                q.add_run("Código: %d\n" % u.codigo)
+                q.add_run("URL: %s\n" % u.url)
+                q.add_run("Reportado: %s\n" % u.reportado)
+                q.add_run("Título: %s\n" % u.titulo)
+                q.add_run("Entidades: %s\n" % u.entidades)
+                q.add_run("Ofuscacion: %s\n" % u.ofuscacion)
+                q.add_run("Correos: %s\n" % u.correos)
+                q.add_run("Netname: %s\n" % u.netname)
+                q.add_run("País: %s\n\n" % u.pais)
+
+            q = document.add_paragraph("")
+            q.add_run("SITIOS INACTIVOS:\n\n").bold = True
+            for u in inactivas:
+                q.add_run("Identificador: %s\n" % u.identificador)
+                q.add_run("Timestamp: %s\n" % u.timestamp)
+                q.add_run("IP: %s\n" % u.ip)
+                q.add_run("Código: %d\n" % u.codigo)
+                q.add_run("URL: %s\n" % u.url)
+                q.add_run("Reportado: %s\n" % u.reportado)
+                q.add_run("Correos: %s\n" % u.correos)
+                q.add_run("Netname: %s\n" % u.netname)
+                q.add_run("País: %s\n\n" % u.pais)
+
+            q = document.add_paragraph("")
+            q.add_run("REDIRECCIONES:\n\n").bold = True
+            for u in redirecciones:
+                q.add_run("Identificador: %s\n" % u.identificador)
+                q.add_run("Timestamp: %s\n" % u.timestamp)
+                q.add_run("IP: %s\n" % u.ip)
+                q.add_run("Código: %d\n" % u.codigo)
+                q.add_run("URL: %s\n" % u.url)
+                q.add_run("Correos: %s\n" % u.correos)
+                q.add_run("Netname: %s\n" % u.netname)
+                q.add_run("País: %s\n\n" % u.pais)
+                
+            document.save(response)
+            return response
             # return render(request,'generar_rep.html',{'nom':nombre_archivo,'env':True})
         else:            
             formulario = Doc()
@@ -742,25 +823,14 @@ def entrada(request):
                 return render(request, 'entrada_resultados.html',
                               {'resultados': resultados, 'urls': urls})
         elif request.POST.get("boton_archivo") and request.FILES['file']:
-            form = ArchivoForm(request.POST)
+            form = CorreoArchivoForm(request.POST)
             f = request.FILES['file'].read().decode('utf-8')
             name = request.FILES['file'].name
             urls = []
-            if name.endswith('.txt'):
-                urls = lee_txt(f)
-            elif name.endswith('.json'):
-                urls = lee_json(f)
-            elif name.endswith('.csv'):
-                urls = lee_csv(f)
-            elif name.endswith('.eml'):
-                resultados, urls = parsecorreo(f)
-                return render(request, 'entrada_resultados.html',
-                              {'resultados': resultados, 'urls': urls})
-            sitios = verifica_urls(urls, None, False)
-            context = context_reporte(sitios)
-            return render(request, 'reporte_urls.html', context)
-            # return render(request, 'entrada_urls.html', {'urls': urls})
+            resultados, urls = parsecorreo(f)
+            return render(request, 'entrada_resultados.html',
+                          {'resultados': resultados, 'urls': urls})
     else:
         form1 = CorreoForm()
-        form2 = ArchivoForm()
+        form2 = CorreoArchivoForm()
     return render(request, 'entrada.html', {'form1': form1, 'form2': form2})

@@ -11,7 +11,7 @@ import email
 import re
 import hashlib
 import json
-from virus_total_apis import PublicApi as VirusTotalPublicApi
+# from virus_total_apis import PublicApi as VirusTotalPublicApi
 import zipfile
 
 
@@ -131,6 +131,7 @@ def manda_correo(correos, msg):
 """
 ===========================================
 """
+"""
 def virustotal(HASH_sha256):
     API_KEY = 'ea825868bdd93b5a0cea2159c1786ebbedd35a088ab7db4e96b4e2bcd9fafb66'
     vt = VirusTotalPublicApi(API_KEY)
@@ -147,7 +148,7 @@ def virustotal(HASH_sha256):
         return "No"
     except:
         return "No encontro coincidencias"
-
+"""
 
 
 def erroremail(palabra,mensaje):
@@ -170,7 +171,7 @@ def analisisarchivos(attachment):
     """
     tipo= attachment.get_content_type()
     nombre = sha256(attachment.get_payload(decode=True))
-    noentidades=virustotal(nombre)
+    # noentidades=virustotal(nombre)
     #if noentidades=='No':
     #    open('%s/archivos/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
     #else:
@@ -178,7 +179,8 @@ def analisisarchivos(attachment):
     #        open('%s/archivos/maliciosos/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
     #    else:
     #        open('%s/archivos/noclasificado/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
-    return nombre, noentidades,tipo
+    # return nombre, noentidades,tipo
+    return nombre, None, tipo
             #resultados.append("Nombre de archivo: " + nombre+"\n")
             #resultados.append("\tArchivo malicioso: " +noentidades+"\n")
             #resultados.append("Mas informacion: https://www.virustotal.com/#/file/"+nombre)
