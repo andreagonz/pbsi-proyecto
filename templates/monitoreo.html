@@ -9,7 +9,28 @@
     </div>
   </div>
   <div class="container">
-    <h4>No hay ninguna URL por mostrar</h4>
+    {% for url in urls %}
+
+      <div class="card flex-row flex-wrap">
+        <div class="card-header border-0">
+          <img src='{{ url.captura_url }}' class="img-thumbnail" style="object-fit: cover;width: 200px;height: 200px;"/>
+        </div>
+        <div class="card-block px-2">
+          <h4 class="card-title">{{ url }}</h4>
+          <p class="card-text">
+            Timestamp: {{ url.timestamp }} <br/>
+            IP: {{ url.ip }} <br/>
+            Código: {{ url.codigo }} <br/>
+            Título: {{ url.titulo }} <br/>
+            País: {{ url.pais }} <br/>
+          </p>
+          <a href='{% url 'monitoreo-id' url.pk %}' class="btn btn-primary">Reportar</a>
+        </div>
+        <div class="w-100"></div>
+      </div>
+    {% empty %}
+      <h4>No hay ninguna URL por mostrar</h4>        
+    {% endfor %}
   </div>
   
 {% endblock %}

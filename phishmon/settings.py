@@ -27,7 +27,7 @@ SECRET_KEY = '!+v7eriae)k^si!7phn=!x08mch!yxryd50i2=$e=ht93ps69k'
 DEBUG = True
 
 #Servername
-ALLOWED_HOSTS = ['pocs.seguridad.unam.mx']
+ALLOWED_HOSTS = ['pocs.seguridad.unam.mx','127.0.0.1', 'localhost']
 
 
 # Application definition
@@ -162,3 +162,6 @@ CORREO_TLS = False
 CORREO_SERVIDOR = 'localhost'
 
 CORREO_PUERTO = 25
+#CORREO_PUERTO = 587
+
+DIR_CORREOS = '/home/phishing/mail/new'

@@ -58,4 +58,7 @@ class CorreoForm(forms.Form):
     correo = forms.CharField(label='Correo', widget=forms.Textarea, required=False)
     
 class ArchivoForm(forms.Form):
-    file = forms.FileField(label='Archivo (txt, csv, json, eml)', required=False)
+    file = forms.FileField(label='Archivo (txt, csv, json)', required=False)
+
+class CorreoArchivoForm(forms.Form):
+    file = forms.FileField(label='Archivo', required=False)
