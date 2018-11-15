@@ -8,9 +8,11 @@
     {% for r in resultados %}
       {{ r }}</br>
     {% endfor %}
-    <h3>URLs</h3>
+    <h3>URLs analizadas</h3>
     {% for r in urls %}
       {{ r }}</br>
     {% endfor %}
+    <a href="{% url 'monitoreo' %}" class="btn btn-primary">Ir a monitoreo</a>
+    <a href="{% url 'entrada' %}" class="btn btn-primary">Analizar otro correo</a>
   </div>
 {% endblock %}

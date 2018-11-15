@@ -5,7 +5,7 @@ from .forms import (
     UrlsForm, MensajeForm, ProxyForm, Search, HistoricoForm,
     CambiaAsuntoForm, CambiaMensajeForm, FrecuenciaForm, CorreoForm, ArchivoForm, CorreoArchivoForm
 )
-from .models import Url, Correo, Proxy, Recurso, Ofuscacion, Entidades
+from .models import Url, Correo, Proxy, Recurso, Ofuscacion, Entidades, Dominio
 from .phishing import (
     verifica_urls, archivo_texto, monitorea_url,
     whois, archivo_comentarios, archivo_hashes, cambia_frecuencia
@@ -57,9 +57,10 @@ from .entrada import( lee_csv, lee_txt, lee_json )
 
 @login_required(login_url=reverse_lazy('login'))
 def monitoreo(request):
-    urls = Url.objects.filter(reportado=False, codigo__lt=300, codigo__gte=200).order_by('timestamp')
-    print(len(urls))
-    return render(request, 'monitoreo.html', context={'urls':urls})
+    dominios = Dominio.objects.all()
+    activos = [x for x in dominios
+               if len(x.url_set.filter(reportado=False, codigo__lt=300, codigo__gte=200)) > 0]
+    return render(request, 'monitoreo.html', context={'dominios':activos})
 
 def rmimg(img):
     if img is None:
@@ -78,68 +79,60 @@ def cpimg(img, img2):
     
 @login_required(login_url=reverse_lazy('login'))
 def monitoreo_id(request, pk):
-    url = get_object_or_404(Url, pk=pk)
-    if url.codigo < 0 or url.codigo >= 300 or url.reportado == True:
+    dominio = get_object_or_404(Dominio, pk=pk)
+    if not dominio.activo:
         raise Http404()
     mensaje_form = MensajeForm()
     proxy_form = ProxyForm()
+    urls = dominio.urls_activas
     context = {
-        'url': url,
-        'dominio': url.dominio.captura_url,
-        'dominio_nombre': url.dominio.dominio
+        'dominio': dominio,
+        'urls': urls
     }
-    if url.captura_url is None:
-        captura_old = None
-    else:
-        captura_old = '%s_monitoreo.png' % url.captura_url[:url.captura_url.rindex('.')]
-    if not url is None:
-        datos = {
-            'de': settings.CORREO_DE,
-            'para': ', '.join([x.correo for x in url.correos.all()]),
-            'asunto': obten_asunto(url),
-            'mensaje': obten_mensaje(url)
-        }
-        mensaje_form = MensajeForm(initial=datos)
-        if request.method == 'POST' and not url is None:
-            if request.POST.get('boton-curl'):
-                proxy_form = ProxyForm(request.POST)
-                if proxy_form.is_valid():
-                    http = proxy_form.cleaned_data['http']
-                    https = proxy_form.cleaned_data['https']
-                    tor = proxy_form.cleaned_data['tor']
-                    proxies = proxy_form.cleaned_data['proxy']
-                    proxy = None
-                    if tor:
-                        proxy = {'http':  'socks5://127.0.0.1:9050', 'https': 'socks5://127.0.0.1:9050'}
-                    elif http or https:
-                        proxy = {}
-                        if http:
-                            proxy['http'] = http
-                        if https:
-                            proxy['https'] = https
-                    elif not proxies is None and (not proxies.http is None or
-                                                  not proxies.http is None):
-                        proxy = {}
-                        if not proxies.http is None:
-                            proxy['http'] = proxies.http
-                        if not proxies.https is None:
-                            proxy['https'] = proxies.https 
-                    cpimg(url.captura_url, captura_old)
-                    old = {
-                        'captura_url': captura_old,
-                        'url': url.url,
-                        'ip': url.ip,
-                        'codigo_estado': url.codigo_estado,
-                        'timestamp': url.timestamp,
-                        'codigo_estado': url.codigo_estado,
-                        'pais': url.pais,
-                        'netname': url.netname,
-                        'pk': url.pk
-                    }
-                    context['dominio_nombre'] = url.dominio.dominio,
-                    context['url'] = old
+    """
+    for url in urls_activas:
+        if url.captura_url is None:
+            captura_old = None
+        else:
+            captura_old = '%s_monitoreo.png' % url.captura_url[:url.captura_url.rindex('.')]
+    """
+    correos = []
+    for url in urls:
+        for x in url.correos.all():
+            correos.append(str(x))
+    datos = {
+        'de': settings.CORREO_DE,
+        'para': ', '.join(correos),
+        'asunto': obten_asunto(dominio),
+        'mensaje': obten_mensaje(dominio)
+    }
+    mensaje_form = MensajeForm(initial=datos)
+    if request.method == 'POST':
+        if request.POST.get('boton-curl'):
+            proxy_form = ProxyForm(request.POST)
+            if proxy_form.is_valid():
+                http = proxy_form.cleaned_data['http']
+                https = proxy_form.cleaned_data['https']
+                tor = proxy_form.cleaned_data['tor']
+                proxies = proxy_form.cleaned_data['proxy']
+                proxy = None
+                if tor:
+                    proxy = {'http':  'socks5://127.0.0.1:9050', 'https': 'socks5://127.0.0.1:9050'}
+                elif http or https:
+                    proxy = {}
+                    if http:
+                        proxy['http'] = http
+                    if https:
+                        proxy['https'] = https
+                elif not proxies is None and (not proxies.http is None or
+                                              not proxies.http is None):
+                    proxy = {}
+                    if not proxies.http is None:
+                        proxy['http'] = proxies.http
+                    if not proxies.https is None:
+                        proxy['https'] = proxies.https
+                for url in urls_activas:
                     sitio = monitorea_url(url, proxy)
-                    context['nuevo'] = sitio
             elif request.POST.get('boton-mensaje'):
                 mensaje_form = MensajeForm(request.POST)
                 if mensaje_form.is_valid():
@@ -160,21 +153,24 @@ def monitoreo_id(request, pk):
                         'para': para,
                         'asunto': asunto,
                         'mensaje': mensaje,
-                        'captura': url.captura_url
+                        'captura': dominio.captura_url
                     }
                     return render(request, 'monitoreo_exito.html', context)
             elif request.POST.get('boton-ignorar') and request.user.is_superuser:
-                for x in Url.objects.filter(url=url.url):
+                for x in urls_activas:
                     x.reportado = True
                     x.save()
                 return redirect('monitoreo')
             elif request.POST.get('boton-saltar'):
+                """
                 urls = Url.objects.filter(id__gt=url.id,
                                           reportado=False,
                                           codigo__lt=300,
                                           codigo__gte=200).order_by('-timestamp')
                 if len(urls) > 0:
                     return redirect('monitoreo-id', pk=urls[0].id)
+                """
+                return redirect('monitoreo')
             return redirect('monitoreo')
     context['mensaje_form'] = mensaje_form
     context['proxy_form'] = proxy_form
@@ -235,14 +231,14 @@ def url_detalle(request, pk):
     url = get_object_or_404(Url, pk=pk)
     comentarios = archivo_comentarios(url)
     hashes = archivo_hashes(url)
-    wi = whois(url.ip)
-    wi_dom = whois(url.dominio.dominio)
+    # wi = whois(url.ip)
+    # wi_dom = whois(url.dominio.dominio)
     context = {
         'url': url,
         'comentarios': comentarios,
         'hashes': hashes,
-        'whois': wi,
-        'whois_dominio': wi_dom,
+        # 'whois': wi,
+        # 'whois_dominio': wi_dom,
     }
     return render(request, 'url_detalle.html', context)
 
@@ -820,6 +816,7 @@ def entrada(request):
             if form.is_valid():
                 c = form.cleaned_data['correo']
                 resultados, urls = parsecorreo(c)
+                verifica_urls(urls, None, False)
                 return render(request, 'entrada_resultados.html',
                               {'resultados': resultados, 'urls': urls})
         elif request.POST.get("boton_archivo") and request.FILES['file']:
@@ -828,6 +825,7 @@ def entrada(request):
             name = request.FILES['file'].name
             urls = []
             resultados, urls = parsecorreo(f)
+            verifica_urls(urls, None, False)
             return render(request, 'entrada_resultados.html',
                           {'resultados': resultados, 'urls': urls})
     else:

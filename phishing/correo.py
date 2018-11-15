@@ -12,7 +12,7 @@ import email
 import re
 import hashlib
 import json
-from virus_total_apis import PublicApi as VirusTotalPublicApi
+# from virus_total_apis import PublicApi as VirusTotalPublicApi
 import zipfile
 
 
@@ -27,6 +27,7 @@ def obten_texto(mensaje, archivo):
             return f.readline()
     
 def crea_diccionario(sitio):
+    """
     dicc = {
         'id': sitio.identificador,
         'url': sitio.url.replace('.', '(dot)'),
@@ -41,6 +42,21 @@ def crea_diccionario(sitio):
         'netname': 'Unknown' if sitio.netname is None else sitio.netname,
         'entidades': 'Unknown' if len(sitio.entidades_afectadas.all()) == 0 \
         else ', '.join([e.nombre.title() for e in sitio.entidades_afectadas.all()]),
+    }
+    """
+    dicc = {
+        'id': "",
+        'url': '\n'.join([str(x) for x in sitio.urls_activas]),
+        'timestamp': '',
+        'ip': 'Unknown',
+        'codigo': 'Unresponsive',
+        'titulo': 'Unknown',
+        'ofuscacion': ', ',
+        'hash': '',
+        'pais': '',
+        'dominio': str(sitio),
+        'netname': 'Unknown',
+        'entidades': 'Unknown',
     }
     return dicc
 
@@ -134,7 +150,7 @@ def manda_correo(correos, msg):
 """
 ===========================================
 """
-
+"""
 def virustotal(HASH_sha256):
     API_KEY = 'ea825868bdd93b5a0cea2159c1786ebbedd35a088ab7db4e96b4e2bcd9fafb66'
     vt = VirusTotalPublicApi(API_KEY)
@@ -151,7 +167,7 @@ def virustotal(HASH_sha256):
         return "No"
     except:
         return "No encontro coincidencias"
-
+"""
 def erroremail(palabra,mensaje):
     """
     Imprime los campos de los headers de cada correo
@@ -176,7 +192,8 @@ def analisisarchivos(attachment):
     if not payload:
         return "Ninguno", "Ninguno", "Ninguno"
     nombre = sha256(payload)
-    noentidades=virustotal(nombre)
+    # noentidades=virustotal(nombre)
+    noentidades=""
     if noentidades=='No':
         open('%s/archivos/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
     else:

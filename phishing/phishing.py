@@ -74,7 +74,6 @@ def leeComentariosHTML(texto):
     comments = [x.strip() for x in soup.findAll(text=lambda text:isinstance(text, Comment))]
     match = re.findall('(?:^[\s]*//| //)(.+)', texto)
     match += re.findall('/[*](.*\n?.*)[*]/', texto)
-    # match += re.findall(r'\*(([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*)\*+',texto)
     for m in match:
         comments.append(m.strip())
     return comments
@@ -190,7 +189,6 @@ def obten_sesion(proxy):
         return requests
     sesion = requests.session()
     sesion.proxies = proxy
-    # print(sesion.proxies)
     return sesion
 
 def guarda_captura(url, out, proxy=None):
@@ -199,9 +197,9 @@ def guarda_captura(url, out, proxy=None):
     se guarda el resultado en out
     """
     if proxy is None:
-        process = Popen('xvfb-run --server-args="-screen 0, 1280x1200x24" cutycapt --url="%s" --out="%s"' % (url, out), shell=True, stdout=PIPE, stderr=PIPE)
+        process = Popen('xvfb-run --server-args="-screen 0, 1280x1200x24" cutycapt --url="%s" --out="%s" --min-width=400 --min-height=300' % (url, out), shell=True, stdout=PIPE, stderr=PIPE)
     else:
-        process = Popen('xvfb-run --server-args="-screen 0, 1280x1200x24" cutycapt --url="%s" --out="%s" --http-proxy="%s"' % (url, out, proxy), shell=True, stdout=PIPE, stderr=PIPE)
+        process = Popen('xvfb-run --server-args="-screen 0, 1280x1200x24" cutycapt --url="%s" --out="%s" --min-width=400 --min-height=300 --http-proxy="%s"' % (url, out, proxy), shell=True, stdout=PIPE, stderr=PIPE)
     stdout, stderr = process.communicate()
     return not stderr is None
 
