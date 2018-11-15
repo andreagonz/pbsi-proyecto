@@ -11,7 +11,7 @@ import email
 import re
 import hashlib
 import json
-# from virus_total_apis import PublicApi as VirusTotalPublicApi
+from virus_total_apis import PublicApi as VirusTotalPublicApi
 import zipfile
 
 
