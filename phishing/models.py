@@ -49,6 +49,14 @@ class Dominio(models.Model):
     def captura_url(self):
         if self.captura and hasattr(self.captura, 'url'):
             return self.captura.url
+
+    @property
+    def activo(self):
+        return len(self.url_set.filter(reportado=False, codigo__lt=300, codigo__gte=200)) > 0
+
+    @property
+    def urls_activas(self):
+        return self.url_set.filter(reportado=False, codigo__lt=300, codigo__gte=200)
     
     def __str__(self):
         return self.dominio

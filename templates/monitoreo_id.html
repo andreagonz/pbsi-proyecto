@@ -14,29 +14,32 @@
       {% include 'form.html' with form=proxy_form %}
       <input type="submit" name="boton-curl" class="uk-button uk-button-default" value="Aceptar" />
     </form>
-    
-    <a href='{% url 'url-detalle' pk=url.pk %}'>Ver detalles</a><br/>
-    URL: {{ url.url }}<br/>
-    Código: {{ url.codigo_estado }}<br/>
-    Timestamp: {{ url.timestamp }}<br/>
-    País: {{ url.pais }}<br/>
-    IP: {{ url.ip }}<br/>
-    Netname: {{ url.netname }}<br/>
-    <img src='{{ url.captura_url }}' width='500px' /><br/>
-    {% if nuevo %}
-      <br>
-      Segunda Búsqueda: <br>
-      <img src='{{ nuevo.captura_url }}' width='500px' /> <br>
-      {{ nuevo.ip }}<br/>
-      {{ nuevo.netname }}<br/>
-      {{ nuevo.codigo_estado }}<br/>
-      {{ nuevo.pais }}<br/>
-      {{ nuevo.timestamp }}<br/>
-      <br>
-    {% endif %}
 
     Dominio: {{ dominio_nombre }}<br/>
     <img src='{{ dominio }}' width='500px' /><br/>
+
+    {% for url in urls %}
+      <a href='{% url 'url-detalle' pk=url.pk %}'>Ver detalles</a><br/>
+      URL: {{ url.url }}<br/>
+      Código: {{ url.codigo_estado }}<br/>
+      Timestamp: {{ url.timestamp }}<br/>
+      País: {{ url.pais }}<br/>
+      IP: {{ url.ip }}<br/>
+      Netname: {{ url.netname }}<br/>
+      <img src='{{ url.captura_url }}' width='500px' /><br/>
+      {% if nuevo %}
+        <br>
+        Segunda Búsqueda: <br>
+        <img src='{{ nuevo.captura_url }}' width='500px' /> <br>
+        {{ nuevo.ip }}<br/>
+        {{ nuevo.netname }}<br/>
+        {{ nuevo.codigo_estado }}<br/>
+        {{ nuevo.pais }}<br/>
+        {{ nuevo.timestamp }}<br/>
+        <br>
+      {% endif %}
+
+{% endfor %}
 
     <form action="" method="post">
       {% csrf_token %}
