@@ -11,7 +11,7 @@ import email
 import re
 import hashlib
 import json
-from virus_total_apis import PublicApi as VirusTotalPublicApi
+# from virus_total_apis import PublicApi as VirusTotalPublicApi
 import zipfile
 
 
@@ -131,6 +131,7 @@ def manda_correo(correos, msg):
 """
 ===========================================
 """
+
 def virustotal(HASH_sha256):
     API_KEY = 'ea825868bdd93b5a0cea2159c1786ebbedd35a088ab7db4e96b4e2bcd9fafb66'
     vt = VirusTotalPublicApi(API_KEY)
@@ -148,8 +149,6 @@ def virustotal(HASH_sha256):
     except:
         return "No encontro coincidencias"
 
-
-
 def erroremail(palabra,mensaje):
     """
     Imprime los campos de los headers de cada correo
@@ -161,6 +160,7 @@ def erroremail(palabra,mensaje):
 
 def sha256(fname):
     hash_sha256 = hashlib.sha256()
+    print(fname)
     hash_sha256.update(fname)
     return hash_sha256.hexdigest()
 
@@ -169,7 +169,10 @@ def analisisarchivos(attachment):
     Esta funcion analiza los archivos contenidos en los correos
     """
     tipo= attachment.get_content_type()
-    nombre = sha256(attachment.get_payload(decode=True))
+    payload = attachment.get_payload(decode=True)
+    if not payload:
+        return "Ninguno", "Ninguno", "Ninguno"
+    nombre = sha256(payload)
     noentidades=virustotal(nombre)
     if noentidades=='No':
         open('%s/archivos/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
