@@ -121,21 +121,6 @@ def hacer_peticion(sitios, sesion, sitio, entidades, ofuscaciones, dominios_inac
     finally:
         return codigo, texto, titulo
 
-def nslookup(dominio):
-    """
-    Se realiza la resolucion de la direccion IP para el dominio
-    """
-    if re.match("[0-9]{1,3}(.[0-9]{1,3}){3}", dominio):
-        return dominio
-    process = Popen(['nslookup', dominio], stdout=PIPE, stderr=PIPE)
-    stdout, stderr = process.communicate()
-    if stderr:
-        return ''
-    for x in stdout.decode('utf-8', errors='ignore').split('\n')[2:]:
-        if 'Address' in x:
-            return x.split(' ')[1]
-    return ''
-
 def get_correo(correo):
     try:
         c = Correo.objects.get(correo=correo)
@@ -145,28 +130,6 @@ def get_correo(correo):
         c.save()
     return c
 
-def procesa_whois(w):
-    correos, netname, country = [], None, None
-    remail = r"([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)"
-    for x in w.splitlines():
-        f = re.findall(remail, x)
-        if len(f) > 0 and 'abuse' in f[0].lower():
-            correos.append(f[0])
-        elif netname is None and 'netname' in x.lower():
-            netname = x.strip().split(' ')[-1]
-        elif country is None and 'country' in x.lower():
-            country = x.strip().split(' ')[-1].upper()
-        elif 'ORGABUSEEMAIL' in x.upper() and len(f) > 0:
-            correos.append(f[0])
-    return correos, netname, country
-
-def whois(nombre):
-    if nombre is None:
-        return ''
-    process = Popen(['whois', nombre], stdout=PIPE, stderr=PIPE)
-    stdout, stderr = process.communicate()
-    return stdout.decode('utf-8', errors='ignore')
-        
 def genera_id(url, ip):
     if ip is None:
         ip = ''
@@ -262,11 +225,85 @@ def verifica_url_aux(sitios, sitio, existe, entidades, ofuscaciones,
             sitio.correos.add(get_correo(x))
     sitio.save()
 
-def obten_dominio(dominio, captura=False, proxy=None):
+def correos_whois(w):
+    correos = []
+    remail = r"([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)"
+    for x in w.splitlines():
+        f = re.findall(remail, x)
+        if len(f) > 0 and 'abuse' in f[0].lower():
+            correos.append(f[0])
+        if 'ORGABUSEEMAIL' in x.upper() and len(f) > 0:
+            correos.append(f[0])
+    return list(set(correos))
+
+def whois(ip):
+    if ip is None:
+        return ''
+    process = Popen(['whois', ip], stdout=PIPE, stderr=PIPE)
+    stdout, stderr = process.communicate()
+    return stdout.decode('utf-8', errors='ignore')
+
+def dig(dominio):
+    if dominio is None:
+        return ''
+    process = Popen(['dig', '+short', 'NS', dominio], stdout=PIPE, stderr=PIPE)
+    stdout, stderr = process.communicate()
+    return stdout.decode('utf-8', errors='ignore')
+
+def crea_dominio(dominio, sesion):
+    d = Dominio(dominio=dominio)
+    r = sesion.get("http://ip-api.com/json/%s/?fields=status,countryCode,isp,as,query" % dominio)
+    j = json.dumps(r.text)
+    if j['status'] == 'success':
+        d.pais = j['country'] if j['country'] else None
+        d.isp = j['isp'] if j['isp'] else None
+        d.asn = j['as'] if j['as'] else None
+        d.ip = j['query'] if j['query'] else None
+    r = sesion.head(dominio)
+    d.servidor = r.headers['Server']
+    if d.ip:
+        rir = None
+        w = whois('whois', d.ip)
+        if w:            
+            if 'LACNIC' in w:
+                rir = 'Latin American and Caribbean IP address Regional Registry'
+            elif 'RIPE' in w:
+                rir = 'RIPE Network Coordination Centre'
+            elif 'AFRINIC' in w or 'AfriNIC' in w:
+                rir = 'African Network Information Centre'
+            elif 'APNIC' in w:
+                rir = 'Asia-Pacific Network Information Centre'
+            elif 'ARIN' in w:
+                rir = 'American Registry for Internet Numbers'
+            if rir:
+                try:
+                    rirdb = RIR.objects.get(nombre=rir)
+                except:
+                    rirdb = RIR(nombre=rir)
+                d.rir = rirdb
+            correos = correos_whois(w)
+            for x in correos:
+                try:
+                    c = Correo.objects.get(correo=x)
+                except:
+                    c = Correo(correo=x)
+                d.correos.add(c)
+    dig = dig(dominio)
+    if dig:
+        for x in dig.split('\n'):
+            try:
+                dns = DNS.objects.get(nombre=x)
+            except:
+                dns = DNS(nombre=x)
+            d.dns.add(dns)
+    d.save()
+    return d
+
+def obten_dominio(dominio, sesion, captura=False, proxy=None):
     try:
         d = Dominio.objects.get(dominio=dominio)
     except:
-        d = Dominio(dominio=dominio)
+        d = crea_dominio(dominio, sesion)
         captura = True
     if captura:
         nombre = 'capturas/%s.png' % genera_id(dominio, None)
@@ -276,18 +313,17 @@ def obten_dominio(dominio, captura=False, proxy=None):
         d.save()
     return d
 
-def obten_sitio(url, proxy=None):
+def obten_sitio(url, sesion, proxy=None):
     dominio = urlparse(url).netloc
-    ip = nslookup(dominio)
     existe = False
     try:
-        sitio = Url.objects.get(url=url, ip=ip)
+        sitio = Url.objects.get(url=url)
         sitio.timestamp = timezone.now()
         existe = True
     except:
-        sitio = Url(ip=ip, url=url, identificador=genera_id(url, ip))
+        sitio = Url(url=url, identificador=genera_id(url, ip))
         sitio.save()
-        sitio.dominio = obten_dominio(dominio, proxy=proxy)
+        sitio.dominio = obten_dominio(dominio, sesion, proxy=proxy)
         sitio.save()
     finally:
         return sitio, existe
@@ -296,7 +332,7 @@ def verifica_url(sitios, url, entidades, ofuscaciones, dominios_inactivos,
                  sesion, max_redir, entidades_afectadas=None):
     if not re.match("^https?://.+", url):
         url = 'http://' + url
-    sitio, existe = obten_sitio(url)
+    sitio, existe = obten_sitio(url, sesion)
     verifica_url_aux(sitios, sitio, existe, entidades, Ofuscacion.objects.all(),
                      dominios_inactivos, sesion, max_redir, entidades_afectadas)
     sitios.append(sitio)

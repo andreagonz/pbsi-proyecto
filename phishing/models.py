@@ -5,10 +5,18 @@ from .storage import OverwriteStorage
 from django.utils.translation import ugettext_lazy as _
 from django.core.exceptions import ValidationError
 
+class Clasificacion_entidad(models.Model):
+
+    nombre = models.CharField(max_length=128, unique=True)
+
+    def __str__(self):
+        return self.nombre
+    
 class Entidades(models.Model):
     
     nombre = models.CharField(max_length=128, unique=True)
-
+    clasificacion = models.ForeignKey(Clasificacion_entidad, on_delete=models.PROTECT)
+    
     def __str__(self):
         return self.nombre
 
@@ -39,12 +47,34 @@ class Correo(models.Model):
     def __str__(self):
         return self.correo
 
+class RIR(models.Model):
+
+    nombre = models.CharField(max_length=128, unique=True, null=False)
+    
+    def __str__(self):
+        return self.nombre
+
+class DNS(models.Model):
+    
+    nombre = models.CharField(max_length=128, unique=True)
+
+    def __str__(self):
+        return self.nombre
+    
 class Dominio(models.Model):
     
     dominio = models.CharField(max_length=256, unique=True)
+    ip = models.CharField(max_length=15, blank=True)
     captura = models.ImageField(storage=OverwriteStorage(),
                                 upload_to='capturas', blank=True, null=True)
-
+    pais = CountryField(null=True)
+    correos = models.ManyToManyField(Correo)
+    servidor = models.CharField(max_length=128, null=True)
+    asn = models.CharField(max_length=128, null=True)
+    isp = models.CharField(max_length=128, null=True)
+    dns = models.ManyToManyField(DNS)
+    rir = models.ForeignKey(RIR, on_delete=models.PROTECT)
+    
     @property
     def captura_url(self):
         if self.captura and hasattr(self.captura, 'url'):
@@ -61,12 +91,20 @@ class Dominio(models.Model):
     def __str__(self):
         return self.dominio
 
+    @property
+    def correos_abuso(self):
+        if len(self.correos.all()) == 0:
+            return ''
+        s = []
+        for x in self.correos.all():
+            s.append(x.correo)
+        return ', '.join(s)
+
 class Url(models.Model):
 
     identificador = models.CharField(max_length=32, unique=True)
-    url = models.URLField(max_length=512)
+    url = models.URLField(max_length=512, unique=True)
     timestamp = models.DateTimeField(auto_now_add=True)
-    ip = models.CharField(max_length=15, blank=True)
     codigo = models.IntegerField(default=-1)
     titulo = models.CharField(max_length=512, null=True)
     captura = models.ImageField(storage=OverwriteStorage(),
@@ -75,16 +113,10 @@ class Url(models.Model):
     hash_archivo = models.CharField(max_length=32, null=True)
     entidades_afectadas = models.ManyToManyField(Entidades)
     reportado = models.BooleanField(default=False)
-    pais = CountryField(null=True)
-    correos = models.ManyToManyField(Correo)
     dominio = models.ForeignKey(Dominio, on_delete=models.PROTECT, null=True)
-    netname = models.CharField(max_length=128, null=True)
     archivo = models.FileField(storage=OverwriteStorage(),
                                upload_to='archivos', blank=True, null=True)
     
-    class Meta:
-        unique_together = ('url', 'ip',)
-
     @property
     def captura_url(self):
         if self.captura and hasattr(self.captura, 'url'):
@@ -114,15 +146,6 @@ class Url(models.Model):
         return ', '.join(s)
 
     @property
-    def correos_abuso(self):
-        if len(self.correos.all()) == 0:
-            return ''
-        s = []
-        for x in self.correos.all():
-            s.append(x.correo)
-        return ', '.join(s)
-
-    @property
     def codigo_estado(self):
         if self.codigo >= 0:
             return str(self.codigo)
@@ -136,13 +159,13 @@ class Recurso(models.Model):
     es_phishtank = models.BooleanField(default=False,
                                        verbose_name= _('Es llave de API de phistank (No seleccionar si se trata de una URL)'))
     recurso = models.CharField(max_length=256, unique=True,
-                               verbose_name=_("URL o llade de API de phishtank"))
+                               verbose_name=_("URL o llave de API de phishtank"))
     max_urls = models.IntegerField(default=-1,
                                    verbose_name=_("Número máximo de URLs a extraer por consulta (si es negativo se extraen todas)"))
 
     def __str__(self):
         return self.recurso
-    
+
 class Proxy(models.Model):
 
     http = models.URLField(max_length=256)

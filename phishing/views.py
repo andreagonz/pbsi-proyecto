@@ -89,13 +89,6 @@ def monitoreo_id(request, pk):
         'dominio': dominio,
         'urls': urls
     }
-    """
-    for url in urls_activas:
-        if url.captura_url is None:
-            captura_old = None
-        else:
-            captura_old = '%s_monitoreo.png' % url.captura_url[:url.captura_url.rindex('.')]
-    """
     correos = []
     for url in urls:
         for x in url.correos.all():
@@ -195,7 +188,6 @@ def context_reporte(sitios):
     }
     return context
 
-# @login_required(login_url=reverse_lazy('login'))
 def valida_urls(request):
     if request.method == 'POST':
         if request.POST.get("boton_urls"):
@@ -226,7 +218,6 @@ def valida_urls(request):
 
 message2 = ""
 
-# @login_required(login_url=reverse_lazy('login'))
 def url_detalle(request, pk):
     url = get_object_or_404(Url, pk=pk)
     comentarios = archivo_comentarios(url)
