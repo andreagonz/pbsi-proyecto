@@ -207,11 +207,11 @@ def parsecorreo(texto):
             cdispo = str(part.get('Content-Disposition'))
             if ctype == 'text/plain' and 'attachment' not in cdispo:
                 body = part.get_payload(decode=True)  # decode
-                url=re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',body.decode('utf-8', errors='ignore'));
+                url=re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',body.decode('utf-8', errors='ignore'));
                 break
     else:
         body=b.get_payload(decode=True)
-        url=re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\), ]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',body.decode('utf-8', errors='ignore'));
+        url=re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',body.decode('utf-8', errors='ignore'));
         for urls in url:
             resultados.append("URL: "+urls+"\n")
 #Obtener archivo adjunto
