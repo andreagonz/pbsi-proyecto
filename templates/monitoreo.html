@@ -18,7 +18,7 @@
       ISP: {{ dominio.isp }} <br/>
       ASN: {{ dominio.asn }} <br/>
       Servidor: {{ dominio.servidor }} <br/>
-      {% for url in dominio.url_set.all %}
+      {% for url in dominio.urls_activas %}
         <div class="card flex-row flex-wrap">
           <div class="card-header border-0">
             <img src='{{ url.captura_url }}' class="img-thumbnail" style="object-fit: cover;width: 100px;height: 100px;"/>

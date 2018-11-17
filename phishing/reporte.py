@@ -48,7 +48,8 @@ def urls_dominios(sitios):
 def urls_paises(sitios):
     paises = {}
     for x in sitios:
-        pais = x.dominio.pais
-        if pais:
-            paises[pais] = paises.get(pais, 0) + 1
+        if x.dominio:
+            pais = x.dominio.pais
+            if pais:
+                paises[pais] = paises.get(pais, 0) + 1
     return paises

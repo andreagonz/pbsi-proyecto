@@ -58,8 +58,7 @@ from .entrada import( lee_csv, lee_txt, lee_json )
 @login_required(login_url=reverse_lazy('login'))
 def monitoreo(request):
     dominios = Dominio.objects.all()
-    activos = [x for x in dominios
-               if len(x.url_set.filter(reportado=False, codigo__lt=300, codigo__gte=200)) > 0]
+    activos = [x for x in dominios if x.activo]
     return render(request, 'monitoreo.html', context={'dominios':activos})
 
 def rmimg(img):
