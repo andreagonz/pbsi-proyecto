@@ -7,6 +7,12 @@ from phishing.phishing import verifica_urls
 class Command(BaseCommand):
 
     def handle(self, *args, **options):
+        #Fecha de inicio de la ejecucion del script
+        bitacora = open("correo.log","a")
+        salida = os.popen('date')
+        procesado = salida.read()
+        bitacora.write("Inicia ejecucion del script: " + str(procesado))
+        #Escanea las urls de los correos recibidos
         d = settings.DIR_CORREOS
         p = os.path.join(d, "procesados")
         if not os.path.exists(p):
@@ -17,4 +23,15 @@ class Command(BaseCommand):
             with open(a) as f:
                 _, urls = correo.parsecorreo(f.read())
                 verifica_urls(list(set(urls)), None, False)
+                bitacora.write("\n")
+                bitacora.write(str(urls))
             os.rename(a, os.path.join(p, x))
+            bitacora.write("\n")
+            bitacora.write(str(a))
+
+        salida = os.popen('date')
+        procesado = salida.read()
+
+        bitacora.write("\nTermina ejecucion del script: " + str(procesado))
+        salida.close()
+        bitacora.close()

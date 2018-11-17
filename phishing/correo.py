@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import os
 import smtplib
 from urllib.parse import urlparse
@@ -115,6 +116,7 @@ def manda_correo(para, cc, cco, msg):
     """
     Se envia un correo con el mensaje especificado
     """
+    server = None
     try:
         server = smtplib.SMTP(settings.CORREO_SERVIDOR, settings.CORREO_PUERTO)
         server.ehlo()
@@ -129,7 +131,8 @@ def manda_correo(para, cc, cco, msg):
     except Exception as e:
         print(str(e))
     finally:
-        server.quit()
+        if server:
+            server.quit()
 
 
 """
@@ -174,18 +177,22 @@ def analisisarchivos(attachment):
     """
     tipo= attachment.get_content_type()
     payload = attachment.get_payload(decode=True)
-    if not payload:
-        return "Ninguno", "Ninguno", "Ninguno"
-    nombre = sha256(payload)
-    # noentidades=virustotal(nombre)
-    noentidades=""
-    if noentidades=='No':
-        open('%s/archivos/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
-    else:
-        if noentidades=='Si':
-            open('%s/archivos/maliciosos/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
+    try:
+        if not payload:
+            return "Ninguno", "Ninguno", "Ninguno"
+        nombre = sha256(payload)
+            # noentidades=virustotal(nombre)
+        noentidades=""
+        if noentidades=='No':
+            open('%s/archivos/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
         else:
-            open('%s/archivos/noclasificado/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
+            if noentidades=='Si':
+                open('%s/archivos/maliciosos/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
+            else:
+                open('%s/archivos/noclasificado/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
+    except:
+
+        return "1", "1", "1"
     return nombre, noentidades,tipo
             #resultados.append("Nombre de archivo: " + nombre+"\n")
             #resultados.append("\tArchivo malicioso: " +noentidades+"\n")
@@ -195,37 +202,47 @@ def parsecorreo(texto):
     """
     Realiza el parseo del archivo email
     """
-    mensaje = email.message_from_string(texto)
-    lista = ['From','To','Cc','Bcc','Subject','X-Virus-Scanned','X-Spam-Flag','X-Spam-Score','X-Spam-Status','X-Spam-Level','Received']
     resultados = []
-    for head in lista:
-        resultados.append(erroremail(head,mensaje))
-    b = email.message_from_string(texto)
-    if b.is_multipart():
-        for part in b.walk():
-            ctype = part.get_content_type()
-            cdispo = str(part.get('Content-Disposition'))
-            if ctype == 'text/plain' and 'attachment' not in cdispo:
-                body = part.get_payload(decode=True)  # decode
-                url=re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',body.decode('utf-8', errors='ignore'));
-                break
-    else:
-        body=b.get_payload(decode=True)
-        url=re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',body.decode('utf-8', errors='ignore'));
-        for urls in url:
-            resultados.append("URL: "+urls+"\n")
-#Obtener archivo adjunto
-    msg = email.message_from_string(texto)
-    tamanio=len(msg.get_payload())
-    #attachment = msg.get_payload()[1]
-    if tamanio < 20:
-        for x in range(0,tamanio):
-           #print (x)
-            if(x!=0):
-                attachment = msg.get_payload()[x]
-                nombre,noentidades,tipo=analisisarchivos(attachment)
-                resultados.append("Tipo de archivo: " +tipo+"\n") #+ attachment.get_content_type()+"\n")
-                resultados.append("Nombre de archivo: " + nombre+"\n")
-                resultados.append("\tArchivo malicioso: " +noentidades+"\n")
-                resultados.append("Mas informacion: https://www.virustotal.com/#/file/"+nombre)
+    url=[]
+    error=["El texto ingresado no corresponde a un correo o el archivo esta corrupto"]
+    mensaje = email.message_from_string(texto)
+    if(erroremail("To",mensaje)=="To: No hay informacion de To"):
+        resultados.append("EL TEXTO INGRESADO NO CORRESPONDE A UN CORREO O EL ARCHIVO ESTA CORRUPTO.\nINTENTE CON OTRO\n") 
+        return resultados, url
+    else:        
+        lista = ['From','To','Cc','Bcc','Subject','X-Virus-Scanned','X-Spam-Flag','X-Spam-Score','X-Spam-Status','X-Spam-Level','Received']
+
+        for head in lista:
+            resultados.append(erroremail(head,mensaje))
+        b = email.message_from_string(texto)
+        if b.is_multipart():
+            for part in b.walk():
+                ctype = part.get_content_type()
+                cdispo = str(part.get('Content-Disposition'))
+                if ctype == 'text/plain' and 'attachment' not in cdispo:
+                    body = part.get_payload(decode=True)  # decode
+                    url=re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',body.decode('utf-8', errors='ignore'));
+                    break
+        else:
+            body=b.get_payload(decode=True)
+            url=re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',body.decode('utf-8', errors='ignore'));
+            for urls in url:
+                resultados.append("URL: "+urls+"\n")
+    #Obtener archivo adjunto
+        msg = email.message_from_string(texto)
+        tamanio=len(msg.get_payload())
+        #attachment = msg.get_payload()[1]
+        if tamanio < 20:
+            for x in range(0,tamanio):
+            #print (x)
+                if(x!=0):
+                    attachment = msg.get_payload()[x]
+                    nombre,noentidades,tipo=analisisarchivos(attachment)
+                    if(noentidades=="1"):
+                       return error,error 
+                    else:
+                        resultados.append("Tipo de archivo: " +tipo+"\n") #+ attachment.get_content_type()+"\n")
+                        resultados.append("Nombre de archivo: " + nombre+"\n")
+                        resultados.append("\tArchivo malicioso: " +noentidades+"\n")
+                        resultados.append("Mas informacion: https://www.virustotal.com/#/file/"+nombre)
     return resultados, url
