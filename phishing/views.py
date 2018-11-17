@@ -91,7 +91,7 @@ def monitoreo_id(request, pk):
     }
     correos = []
     for url in urls:
-        for x in url.correos.all():
+        for x in url.dominio.correos.all():
             correos.append(str(x))
     datos = {
         'de': settings.CORREO_DE,
@@ -124,46 +124,40 @@ def monitoreo_id(request, pk):
                         proxy['http'] = proxies.http
                     if not proxies.https is None:
                         proxy['https'] = proxies.https
-                for url in urls_activas:
-                    sitio = monitorea_url(url, proxy)
-            elif request.POST.get('boton-mensaje'):
+                for url in dominio.urls_activas:
+                    sitio = monitorea_url(url, proxy)                    
+        elif request.POST.get('boton-mensaje'):
+            mensaje_form = MensajeForm(request.POST)
+            if mensaje_form.is_valid():
+                de = mensaje_form.cleaned_data['de']
+                para = [x.strip() for x in mensaje_form.cleaned_data['para'].split(',')]
+                cc = [x.strip() for x in mensaje_form.cleaned_data['cc']]
+                cco = [x.strip() for x in mensaje_form.cleaned_data['cco']]
+                asunto = mensaje_form.cleaned_data['asunto']
+                mensaje = mensaje_form.cleaned_data['mensaje']
                 mensaje_form = MensajeForm(request.POST)
-                if mensaje_form.is_valid():
-                    de = mensaje_form.cleaned_data['de']
-                    para = mensaje_form.cleaned_data['para']
-                    asunto = mensaje_form.cleaned_data['asunto']
-                    mensaje = mensaje_form.cleaned_data['mensaje']
-                    mensaje_form = MensajeForm(request.POST)
-                    msg = genera_mensaje(url, de, para, asunto, mensaje)
-                    manda_correo(para, msg)
-                    for x in Url.objects.filter(url=url.url):
-                        x.reportado = True
-                        x.save()
-                    rmimg(captura_old)
-                    context = {
-                        'url': url,
-                        'de': de,
-                        'para': para,
-                        'asunto': asunto,
-                        'mensaje': mensaje,
-                        'captura': dominio.captura_url
-                    }
-                    return render(request, 'monitoreo_exito.html', context)
-            elif request.POST.get('boton-ignorar') and request.user.is_superuser:
-                for x in urls_activas:
+                msg = genera_mensaje(dominio, de, para, cc, cco, asunto, mensaje)
+                manda_correo(para, cc, cco, msg)
+                for x in Url.objects.filter(url=url.url):
                     x.reportado = True
                     x.save()
-                return redirect('monitoreo')
-            elif request.POST.get('boton-saltar'):
-                """
-                urls = Url.objects.filter(id__gt=url.id,
-                                          reportado=False,
-                                          codigo__lt=300,
-                                          codigo__gte=200).order_by('-timestamp')
-                if len(urls) > 0:
-                    return redirect('monitoreo-id', pk=urls[0].id)
-                """
-                return redirect('monitoreo')
+                context = {
+                    'url': url,
+                    'de': de,
+                    'para': ', '.join(para),
+                    'cc': ', '.join(cc),
+                    'cco': ', '.join(cco),
+                    'asunto': asunto,
+                    'mensaje': mensaje,
+                    'captura': dominio.captura_url
+                }
+                return render(request, 'monitoreo_exito.html', context)
+        elif request.POST.get('boton-ignorar') and request.user.is_superuser:
+            for x in urls_activas:
+                x.reportado = True
+                x.save()
+            return redirect('monitoreo')
+        elif request.POST.get('boton-saltar'):
             return redirect('monitoreo')
     context['mensaje_form'] = mensaje_form
     context['proxy_form'] = proxy_form
@@ -483,8 +477,8 @@ class ChartData(LoginRequiredMixin, APIView):
     #Url.objects.filter(timestamp__range=(start_hour,end_hour)).annotate(hour=Extract('timestamp','hour')).filter(codigo=200).values('hour','titulo').order_by('-hour')
     
     def get(self, request, format=None):
-        dataset_gr1=Url.objects.values('pais').annotate(country_count=Count('pais')).order_by('-country_count')
-        dataset_gr2=Url.objects.values('netname').annotate(hosting_count=Count('netname')).order_by('-hosting_count')
+        dataset_gr1=Url.objects.values('dominio__pais').annotate(country_count=Count('dominio__pais')).order_by('-country_count')
+        # dataset_gr2=Url.objects.values('netname').annotate(hosting_count=Count('netname')).order_by('-hosting_count')
         dataset_gr3_activos= Url.objects.values('codigo').annotate(active_count=Count('codigo')).filter(codigo=200)
         dataset_gr3_reportados = Url.objects.values('reportado').annotate(reported_count=Count('reportado')).filter(reportado=True) 
         dataset_gr3_detectados = Url.objects.all().count()
@@ -513,6 +507,7 @@ class ChartData(LoginRequiredMixin, APIView):
             "labels":labels,
             "default": default_items,
         }
+        """
         for rec in dataset_gr2[:5]:
             hosting.append(rec['netname'])
             counted_hosting.append(rec['hosting_count'])
@@ -522,10 +517,13 @@ class ChartData(LoginRequiredMixin, APIView):
             "labels":labels,
             "default": items,
         }
+        """
+        """
         data3={
             "labels":["Activos","Reportados","Detectados"],
-            "default":[dataset_gr3_activos.get()['active_count'],dataset_gr3_reportados.get()['reported_count'],dataset_gr3_detectados]
+            "default":[dataset_gr3_activos.get()['active_count'],dataset_gr3_reportados.get()['reportado_count'],dataset_gr3_detectados]
         }
+        """
         for rec in dataset_gr4:
             entities.append(rec['entidades_afectadas__nombre'])
             counted_ent.append(rec['ent_count'])
@@ -556,7 +554,7 @@ class ChartData(LoginRequiredMixin, APIView):
             "labels":labels_sit,
             "default":items_sit
         }
-        graphs = list([data1,data2,data3,data4,data5,data6])
+        graphs = list([data1,data4,data5,data6])
         return Response(graphs)
 
 message2 = ""

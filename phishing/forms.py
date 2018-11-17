@@ -18,6 +18,8 @@ class ProxyForm(forms.Form):
 class MensajeForm(forms.Form):
     para = forms.CharField(label='Para')
     de = forms.CharField(label='De')
+    cc = forms.CharField(label='CC', required=False)
+    cco = forms.CharField(label='CCO', required=False)
     asunto = forms.CharField(label='Asunto')
     mensaje = forms.CharField(label='Mensaje', widget=forms.Textarea)
 

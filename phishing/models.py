@@ -16,6 +16,7 @@ class Entidades(models.Model):
     
     nombre = models.CharField(max_length=128, unique=True)
     clasificacion = models.ForeignKey(Clasificacion_entidad, on_delete=models.PROTECT)
+    formularios = models.CharField(max_length=1024, null=True)
     
     def __str__(self):
         return self.nombre
@@ -28,7 +29,13 @@ class Entidades(models.Model):
                 raise ValidationError('Ya existe una entidad con este nombre.')
         except Entidades.DoesNotExist:
             pass
-                
+
+    @property
+    def formularios_lst(self):
+        if formularios:
+            return str(formularios).split('\n')
+        return ''
+    
 class Ofuscacion(models.Model):
 
     regex = models.CharField(max_length=128)
@@ -73,7 +80,7 @@ class Dominio(models.Model):
     asn = models.CharField(max_length=128, null=True)
     isp = models.CharField(max_length=128, null=True)
     dns = models.ManyToManyField(DNS)
-    rir = models.ForeignKey(RIR, on_delete=models.PROTECT)
+    rir = models.ForeignKey(RIR, on_delete=models.PROTECT, null=True)
     
     @property
     def captura_url(self):
@@ -92,12 +99,27 @@ class Dominio(models.Model):
         return self.dominio
 
     @property
+    def servidor_web(self):
+        if self.servidor:
+            return self.servidor
+        return 'No identificado'
+            
+    @property
     def correos_abuso(self):
         if len(self.correos.all()) == 0:
             return ''
         s = []
         for x in self.correos.all():
             s.append(x.correo)
+        return ', '.join(s)
+
+    @property
+    def servidores_dns(self):
+        if len(self.dns.all()) == 0:
+            return 'No identificados'
+        s = []
+        for x in self.dns.all():
+            s.append(x.nombre)
         return ', '.join(s)
 
 class Url(models.Model):
@@ -150,6 +172,10 @@ class Url(models.Model):
         if self.codigo >= 0:
             return str(self.codigo)
         return 'Sin respuesta'
+
+    @property
+    def activo(self):
+        return self.codigo >= 200 and self.codigo < 300
 
     def __str__(self):
         return self.url
