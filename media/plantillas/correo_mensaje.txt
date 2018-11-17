@@ -1,4 +1,15 @@
-Se encontró actividad sospechosa de ser phishing relacionada a la URL {url} con la dirección IP {ip}.
+Se encontró actividad sospechosa de ser phishing relacionada al dominio {dominio}, en las siguientes direcciones URL:
+
+{urls}
+
+DATOS DE DOMINIO:
+Dirección IP: {ip}
+País: {pais}
+RIR: {rir}
+ASN: {asn}
+Servidor web: {servidor}
+Servidores DNS autoritativos: {dns}
+
 Esta actividad afecta a las entidades: {entidades}.
 Por favor revisar indicios de actividad maliciosa en el servidor correspondiente.
 Se adjunta una captura de pantalla de la página en cuestión:
