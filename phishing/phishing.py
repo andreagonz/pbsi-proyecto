@@ -1,5 +1,6 @@
 import os
 import sys
+import json
 import re
 import smtplib
 import requests
@@ -10,7 +11,7 @@ from lxml import html
 import hashlib
 from bs4 import BeautifulSoup, Comment
 from django.conf import settings
-from .models import Url, Entidades, Correo, Dominio, Ofuscacion
+from .models import Url, Entidades, Correo, Dominio, Ofuscacion, DNS, RIR
 from django.conf import settings
 from django.utils import timezone
 from django.core.files import File
@@ -107,6 +108,10 @@ def hacer_peticion(sitios, sesion, sitio, entidades, ofuscaciones, dominios_inac
         codigo = req.status_code
         if codigo < 400 and codigo >= 300:
             redireccion = req.headers['location']
+            if redireccion.startswith('/'):
+                u = urlparse(sitio.url).netloc
+                d = '{uri.scheme}://{uri.netloc}/'.format(uri=u)
+                redireccion = urlparse.urljoin(d, redireccion)
             if redireccion != sitio.url and max_redir > 0:
                 verifica_url(sitios, redireccion, entidades, ofuscaciones, dominios_inactivos,
                              sesion, max_redir - 1, entidades_afectadas)
@@ -121,21 +126,6 @@ def hacer_peticion(sitios, sesion, sitio, entidades, ofuscaciones, dominios_inac
     finally:
         return codigo, texto, titulo
 
-def nslookup(dominio):
-    """
-    Se realiza la resolucion de la direccion IP para el dominio
-    """
-    if re.match("[0-9]{1,3}(.[0-9]{1,3}){3}", dominio):
-        return dominio
-    process = Popen(['nslookup', dominio], stdout=PIPE, stderr=PIPE)
-    stdout, stderr = process.communicate()
-    if stderr:
-        return ''
-    for x in stdout.decode('utf-8', errors='ignore').split('\n')[2:]:
-        if 'Address' in x:
-            return x.split(' ')[1]
-    return ''
-
 def get_correo(correo):
     try:
         c = Correo.objects.get(correo=correo)
@@ -145,32 +135,8 @@ def get_correo(correo):
         c.save()
     return c
 
-def procesa_whois(w):
-    correos, netname, country = [], None, None
-    remail = r"([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)"
-    for x in w.splitlines():
-        f = re.findall(remail, x)
-        if len(f) > 0 and 'abuse' in f[0].lower():
-            correos.append(f[0])
-        elif netname is None and 'netname' in x.lower():
-            netname = x.strip().split(' ')[-1]
-        elif country is None and 'country' in x.lower():
-            country = x.strip().split(' ')[-1].upper()
-        elif 'ORGABUSEEMAIL' in x.upper() and len(f) > 0:
-            correos.append(f[0])
-    return correos, netname, country
-
-def whois(nombre):
-    if nombre is None:
-        return ''
-    process = Popen(['whois', nombre], stdout=PIPE, stderr=PIPE)
-    stdout, stderr = process.communicate()
-    return stdout.decode('utf-8', errors='ignore')
-        
-def genera_id(url, ip):
-    if ip is None:
-        ip = ''
-    return md5(('%s%s' % (url, ip)).encode('utf-8'))[::2]
+def genera_id(url):
+    return md5(url.encode('utf-8', 'backslashreplace'))[::2]
 
 def mkdir(d):
     if not os.path.exists(d):
@@ -229,17 +195,7 @@ def verifica_url_aux(sitios, sitio, existe, entidades, ofuscaciones,
         sitio.codigo, texto, titulo = hacer_peticion(sitios, sesion, sitio, entidades, ofuscaciones,
                                              dominios_inactivos, max_redir, entidades_afectadas)
         sitio.titulo = titulo
-        if (not existe and (sitio.codigo >= 200 and sitio.codigo < 300)) or monitoreo:
-            proxy = get_proxy(sesion)
-            nombre = 'capturas/%s.png' % sitio.identificador
-            captura = genera_captura(sitio.url, nombre, proxy)
-            with open(captura, 'rb') as f:
-                sitio.captura.save(os.path.basename(captura), File(f), True)
-            nombre = 'archivos/%s.txt' % sitio.identificador
-            archivo = guarda_archivo(texto, nombre)
-            with open(archivo, 'rb') as f:
-                sitio.archivo.save(os.path.basename(archivo), File(f), True)
-            sitio.hash_archivo = md5(texto.encode('utf-8'))
+        if not existe and sitio.activo:
             if entidades_afectadas is None:
                 for x in obten_entidades_afectadas(entidades, texto):
                     sitio.entidades_afectadas.add(x)
@@ -252,63 +208,163 @@ def verifica_url_aux(sitios, sitio, existe, entidades, ofuscaciones,
                     sitio.entidades_afectadas.add(e)
             for x in encuentra_ofuscacion(ofuscaciones, texto):
                 sitio.ofuscacion.add(x)
+            if monitoreo or not existe:
+                proxy = get_proxy(sesion)
+                nombre = 'capturas/%s.png' % sitio.identificador
+                captura = genera_captura(sitio.url, nombre, proxy)
+                with open(captura, 'rb') as f:
+                    sitio.captura.save(os.path.basename(captura), File(f), True)
+                nombre = 'archivos/%s.txt' % sitio.identificador
+                archivo = guarda_archivo(texto, nombre)
+                with open(archivo, 'rb') as f:
+                    sitio.archivo.save(os.path.basename(archivo), File(f), True)
+                sitio.hash_archivo = md5(texto.encode('utf-8'))
         elif sitio.codigo < 0:
             dominios_inactivos[dominio] = 1
     else:
         sitio.codigo = -1
-    if not existe:
-        correos, sitio.netname, sitio.pais = procesa_whois(whois(sitio.ip))
-        for x in correos:
-            sitio.correos.add(get_correo(x))
     sitio.save()
 
-def obten_dominio(dominio, captura=False, proxy=None):
+def correos_whois(w):
+    correos = []
+    remail = r"([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)"
+    for x in w.splitlines():
+        f = re.findall(remail, x)
+        if len(f) > 0 and 'abuse' in f[0].lower():
+            correos.append(f[0])
+        if 'ORGABUSEEMAIL' in x.upper() and len(f) > 0:
+            correos.append(f[0])
+    return list(set(correos))
+
+def whois(ip):
+    if ip is None:
+        return ''
+    process = Popen(['whois', ip], stdout=PIPE, stderr=PIPE)
+    stdout, stderr = process.communicate()
+    return stdout.decode('utf-8', errors='ignore')
+
+def dig_ns(dominio):
+    if dominio is None:
+        return ''
+    process = Popen(['dig', '+short', 'NS', dominio], stdout=PIPE, stderr=PIPE)
+    stdout, stderr = process.communicate()
+    return stdout.decode('utf-8', errors='ignore')
+
+def get_dns(dominio):
+    if len(dominio.dns.all()) > 0:
+        return
+    dig = dig_ns(dominio.dominio)
+    if dig:
+        for x in dig.split('\n'):
+            x = x.strip()
+            if x:
+                try:
+                    dns = DNS.objects.get(nombre=x)
+                except:
+                    dns = DNS(nombre=x)
+                    dns.save()
+                dominio.dns.add(dns)
+        dominio.save()
+    
+def get_head(dominio, schema, w, sesion):
+    if not dominio.ip:
+        return
+    if not dominio.servidor:
+        r = sesion.head('%s://%s' % (schema, dominio.dominio))
+        dominio.servidor = r.headers.get('Server', None)
+    if dominio.rir:
+        return
+    rir = None
+    if w:           
+        if 'LACNIC' in w:
+            rir = 'Latin American and Caribbean IP address Regional Registry'
+        elif 'RIPE' in w:
+            rir = 'RIPE Network Coordination Centre'
+        elif 'AFRINIC' in w or 'AfriNIC' in w:
+            rir = 'African Network Information Centre'
+        elif 'APNIC' in w:
+            rir = 'Asia-Pacific Network Information Centre'
+        elif 'ARIN' in w:
+            rir = 'American Registry for Internet Numbers'
+        if rir:
+            try:
+                rirdb = RIR.objects.get(nombre=rir)
+            except:
+                rirdb = RIR(nombre=rir)
+                rirdb.save()
+            dominio.rir = rirdb
+            dominio.save()
+
+def get_info(dominio, sesion):
+    if dominio.pais and dominio.isp and dominio.asn and dominio.ip:
+        return
+    r = sesion.get("http://ip-api.com/json/%s?fields=status,countryCode,isp,as,query" % dominio.dominio)
+    j = json.loads(r.text)
+    if j['status'] == 'success':
+        dominio.pais = j['countryCode'] if j['countryCode'] else None
+        dominio.isp = j['isp'] if j['isp'] else None
+        dominio.asn = j['as'] if j['as'] else None
+        dominio.ip = j['query'] if j['query'] else None
+        dominio.save()
+        
+def obten_dominio(dominio, scheme, sesion, captura=False, proxy=None):
+    captura = False
     try:
         d = Dominio.objects.get(dominio=dominio)
     except:
         d = Dominio(dominio=dominio)
+        d.save()
         captura = True
+    get_info(d, sesion)
+    get_dns(d)
+    if d.ip:
+        w = whois(d.ip)
+        get_head(d, scheme, w, sesion)
+        if len(d.correos.all()) == 0:
+            correos = correos_whois(w)
+            for x in correos:                
+                d.correos.add(get_correo(x))
+            d.save()
     if captura:
-        nombre = 'capturas/%s.png' % genera_id(dominio, None)
+        nombre = 'capturas/%s.png' % genera_id(dominio)
         captura = genera_captura(dominio, nombre, proxy)
         with open(captura, 'rb') as f:
             d.captura.save(os.path.basename(captura), File(f), True)
         d.save()
     return d
 
-def obten_sitio(url, proxy=None):
-    dominio = urlparse(url).netloc
-    ip = nslookup(dominio)
+def obten_sitio(url, sesion, proxy=None):
+    u = urlparse(url)
+    dominio = u.netloc
     existe = False
+    sitio = None
     try:
-        sitio = Url.objects.get(url=url, ip=ip)
+        sitio = Url.objects.get(url=url)
         sitio.timestamp = timezone.now()
         existe = True
     except:
-        sitio = Url(ip=ip, url=url, identificador=genera_id(url, ip))
-        sitio.save()
-        sitio.dominio = obten_dominio(dominio, proxy=proxy)
+        sitio = Url(url=url, identificador=genera_id(url))
         sitio.save()
     finally:
+        sitio.dominio = obten_dominio(dominio, u.scheme, sesion, proxy=proxy)
+        sitio.save()
         return sitio, existe
 
 def verifica_url(sitios, url, entidades, ofuscaciones, dominios_inactivos,
                  sesion, max_redir, entidades_afectadas=None):
     if not re.match("^https?://.+", url):
         url = 'http://' + url
-    sitio, existe = obten_sitio(url)
+    sitio, existe = obten_sitio(url, sesion)
     verifica_url_aux(sitios, sitio, existe, entidades, Ofuscacion.objects.all(),
                      dominios_inactivos, sesion, max_redir, entidades_afectadas)
     sitios.append(sitio)
 
 def monitorea_url(sitio, proxy):
     sesion = obten_sesion(proxy)
-    dominio = urlparse(sitio.url).netloc
-    obten_dominio(dominio, True, get_proxy(sesion))
     entidades = {}
     for x in Entidades.objects.all():
         entidades[x.nombre.lower()] = x
-    sitio2, existe = obten_sitio(sitio.url)
+    sitio2, existe = obten_sitio(sitio.url, sesion)
     verifica_url_aux([], sitio2, False, entidades, Ofuscacion.objects.all(),
                      {}, sesion, settings.MAX_REDIRECCIONES, None)
     return sitio2
@@ -340,7 +396,6 @@ def cambia_frecuencia(funcion, n):
     process = Popen(['which', 'python3'], stdout=PIPE, stderr=PIPE)
     p, s = process.communicate()
     python3 = p.decode('utf-8', errors='ignore').strip()
-    print(python3)
     process = Popen("crontab -l | egrep -v '%s %s/manage.py %s'  | crontab -"
                     % (python3, settings.BASE_DIR, funcion),
                     shell=True, stdout=PIPE, stderr=PIPE)

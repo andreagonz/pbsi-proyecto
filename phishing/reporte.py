@@ -34,7 +34,8 @@ def urls_entidades(sitios):
 def urls_titulos(sitios):
     titulos = {}
     for x in sitios:
-        titulos[x.titulo] = titulos.get(x.titulo, 0) + 1
+        if x.titulo:
+            titulos[x.titulo] = titulos.get(x.titulo, 0) + 1
     return titulos
 
 def urls_dominios(sitios):
@@ -47,5 +48,7 @@ def urls_dominios(sitios):
 def urls_paises(sitios):
     paises = {}
     for x in sitios:
-        paises[x.pais] = paises.get(x.pais, 0) + 1
+        pais = x.dominio.pais
+        if pais:
+            paises[pais] = paises.get(pais, 0) + 1
     return paises

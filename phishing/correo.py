@@ -26,37 +26,22 @@ def obten_texto(mensaje, archivo):
         else:
             return f.readline()
     
-def crea_diccionario(sitio):
-    """
+def crea_diccionario(dominio):
+    entidades = {}
+    for x in dominio.urls_activas:
+        for e in x.entidades_afectadas.all():
+            entidades[e] = str(e)
     dicc = {
-        'id': sitio.identificador,
-        'url': sitio.url.replace('.', '(dot)'),
-        'timestamp': sitio.timestamp,
-        'ip': 'Unknown' if sitio.ip is None else sitio.ip,
-        'codigo': 'Unresponsive' if sitio.codigo is None else sitio.codigo,
-        'titulo': 'Unknown' if sitio.titulo is None else sitio.titulo,
-        'ofuscacion': ', '.join([o.nombre for o in sitio.ofuscacion.all()]),
-        'hash': sitio.hash_archivo,
-        'pais': sitio.pais,
-        'dominio': urlparse(sitio.url).netloc,
-        'netname': 'Unknown' if sitio.netname is None else sitio.netname,
-        'entidades': 'Unknown' if len(sitio.entidades_afectadas.all()) == 0 \
-        else ', '.join([e.nombre.title() for e in sitio.entidades_afectadas.all()]),
-    }
-    """
-    dicc = {
-        'id': "",
-        'url': '\n'.join([str(x) for x in sitio.urls_activas]),
-        'timestamp': '',
-        'ip': 'Unknown',
-        'codigo': 'Unresponsive',
-        'titulo': 'Unknown',
-        'ofuscacion': ', ',
-        'hash': '',
-        'pais': '',
-        'dominio': str(sitio),
-        'netname': 'Unknown',
-        'entidades': 'Unknown',
+        'urls': '\n'.join([str(x) for x in dominio.urls_activas]),
+        'ip': dominio.ip,
+        'pais': dominio.pais,
+        'dominio': dominio,
+        'asn': dominio.asn,
+        'isp': dominio.isp,
+        'rir': dominio.rir,
+        'servidor': dominio.servidor_web,
+        'dns': dominio.servidores_dns,
+        'entidades': ', '.join(entidades.values()) if len(entidades) > 0 else 'No identificadas',
     }
     return dicc
 
@@ -111,7 +96,7 @@ def adjunta_imagen(msg, sitio):
     except:
         return
         
-def genera_mensaje(sitio, fromadd, toadd, asunto, mensaje):
+def genera_mensaje(sitio, fromadd, toadd, cc, bcc, asunto, mensaje):
     """
     Se genera el mensaje destinado para la cuenta de abuso
     """
@@ -119,13 +104,15 @@ def genera_mensaje(sitio, fromadd, toadd, asunto, mensaje):
     msg = MIMEMultipart()
     msg['Subject'] = asunto
     msg['From'] = fromadd
-    msg['To'] = toadd
+    msg['To'] = ', '.join(toadd)
+    msg['Cc'] = ', '.join(cc)
+    msg['Bcc'] = ', '.join(bcc)
     mensaje = mensaje.replace('\n', '<br/>').replace(' ', '&nbsp;')
     msg.attach(MIMEText(mensaje, 'html'))
     adjunta_imagen(msg, sitio)
     return msg.as_string()
 
-def manda_correo(correos, msg):
+def manda_correo(para, cc, cco, msg):
     """
     Se envia un correo con el mensaje especificado
     """
@@ -140,8 +127,9 @@ def manda_correo(correos, msg):
         passw = settings.CORREO_PASS
         if usr and passw:
             server.login(usr, passw)
-        emails = [x.strip() for x in correos.split(',')]
-        server.sendmail(usr, emails, msg)
+        server.sendmail(usr, [para, cc, bcc], msg)
+    except Exception as e:
+        print(str(e))
     finally:
         if server:
             server.quit()
