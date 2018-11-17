@@ -36,6 +36,7 @@ def lineas_md5(texto):
     return hashes
 
 def obten_entidades_afectadas(entidades, texto):
+    print("\n\n\n entra a entidades")
     if not texto:
         return []
     tree = html.fromstring(texto)
@@ -63,6 +64,7 @@ def archivo_hashes(sitio):
     return lineas_md5(archivo_texto(sitio))
     
 def encuentra_ofuscacion(ofuscaciones, texto):
+    print("\n\n\n entra a ofuscacion")
     of = []
     for x in ofuscaciones:        
         if len(re.findall(x.regex, texto)) > 0:
@@ -168,6 +170,7 @@ def whois(nombre):
     return stdout.decode('utf-8', errors='ignore')
         
 def genera_id(url, ip):
+    print("\n\n\nEntra a genera_id")
     if ip is None:
         ip = ''
     return md5(('%s%s' % (url, ip)).encode('utf-8'))[::2]
@@ -204,6 +207,7 @@ def guarda_captura(url, out, proxy=None):
     return not stderr is None
 
 def genera_captura(url, nombre, proxy=None):
+    print("\n\n\nEntra a genera captura")
     captura = os.path.join(settings.MEDIA_ROOT, nombre)
     guarda_captura(url, captura, proxy)
     return captura
@@ -215,6 +219,7 @@ def guarda_archivo(texto, nombre):
     return archivo
     
 def get_proxy(sesion):
+    print("\n\n\nentra a proxy")
     proxy = None
     if not getattr(sesion, 'proxies', None) is None:
         proxy = sesion.proxies.get('http', None)
@@ -223,6 +228,7 @@ def get_proxy(sesion):
 
 def verifica_url_aux(sitios, sitio, existe, entidades, ofuscaciones,
                      dominios_inactivos, sesion, max_redir, entidades_afectadas, monitoreo=False):
+    print("\n\n\nEntra a verifica_url_aux")
     texto = ''
     dominio = urlparse(sitio.url).netloc
     if dominios_inactivos.get(dominio, None) is None:
@@ -263,6 +269,7 @@ def verifica_url_aux(sitios, sitio, existe, entidades, ofuscaciones,
     sitio.save()
 
 def obten_dominio(dominio, captura=False, proxy=None):
+    print("\n\n\nEntra a obten dominio")
     try:
         d = Dominio.objects.get(dominio=dominio)
     except:
@@ -278,6 +285,7 @@ def obten_dominio(dominio, captura=False, proxy=None):
 
 def obten_sitio(url, proxy=None):
     dominio = urlparse(url).netloc
+    print("\n\n\n Entra a obten_sitio")
     ip = nslookup(dominio)
     existe = False
     try:
@@ -296,10 +304,15 @@ def verifica_url(sitios, url, entidades, ofuscaciones, dominios_inactivos,
                  sesion, max_redir, entidades_afectadas=None):
     if not re.match("^https?://.+", url):
         url = 'http://' + url
+    bitacora = open("/opt/pbsi-proyecto/phishing/logs/url.log","a")
+    bitacora.write = ("\nUrl: " + url + "\n")
+    print("Url: " + url)
     sitio, existe = obten_sitio(url)
     verifica_url_aux(sitios, sitio, existe, entidades, Ofuscacion.objects.all(),
                      dominios_inactivos, sesion, max_redir, entidades_afectadas)
     sitios.append(sitio)
+    bitacora = open("/opt/pbsi-proyecto/phishing/logs/urls.log","a")
+    bitacora.write("\nUrl: " + str(url) )
 
 def monitorea_url(sitio, proxy):
     sesion = obten_sesion(proxy)
