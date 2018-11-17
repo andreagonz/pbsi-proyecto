@@ -28,9 +28,10 @@ Países:
 
 SITIOS ACTIVOS
 {% for url in activas %}
+<a href='{{ url.captura_url }}'><img src='{{ url.captura_url }}' style="max-width:300px;max-height:300px;" /><br/></a>
 Identificador: <a href='{% url "url-detalle" pk=url.pk %}'>{{ url.identificador }}</a>
 Timestamp: {{ url.timestamp }}
-IP: {{ url.ip }}
+IP: {{ url.dominio.ip }}
 Código: {{ url.codigo_estado }}
 URL: {{ url.url }}
 Reportado: {{ url.reportado }}
@@ -38,34 +39,45 @@ Título: {{ url.titulo }}
 Entidades: {{ url.entidades }}
 Archivo: <a href='{{ url.archivo_url }}'>Descarga</a>
 Ofuscación: {{ url.ofuscaciones }}
-Correos: {{ url.correos_abuso }}
-Netname: {{ url.netname }}
-País: {{ url.pais }}
-Captura: <a href='{{ url.captura_url }}'>Descarga</a> 
+Correos: {{ url.dominio.correos_abuso }}
+ISP: {{ url.dominio.isp }}
+País: {{ url.dominio.pais }}
+ASN: {{ url.dominio.asn }}
+Servidor: {{ url.dominio.servidor }}
+RIR: {{ url.dominio.rir }}
+Servidores DNS: {{ url.dominio.servidores_dns }}
 {% endfor %}
 
 SITIOS INACTIVOS
 {% for url in inactivas %}
 Identificador: <a href='{% url "url-detalle" pk=url.pk %}'>{{ url.identificador }}</a>
 Timestamp: {{ url.timestamp }}
-IP: {{ url.ip }}
-Cödigo: {{ url.codigo_estado }}
+IP: {{ url.dominio.ip }}
+Codigo: {{ url.codigo_estado }}
 URL: {{ url.url }}
 Reportado: {{ url.reportado }}
-Correos: {{ url.correos_abuso }}
-Netname: {{ url.netname }}
-País: {{ url.pais }}
+Correos: {{ url.dominio.correos_abuso }}
+ISP: {{ url.dominio.isp }}
+País: {{ url.dominio.pais }}
+ASN: {{ url.dominio.asn }}
+Servidor: {{ url.dominio.servidor }}
+RIR: {{ url.dominio.rir }}
+Servidores DNS: {{ url.dominio.servidores_dns }}
 {% endfor %}
 
 REDIRECCIONES
 {% for url in redirecciones %}
 Identificador: <a href='{% url "url-detalle" pk=url.pk %}'>{{ url.identificador }}</a>
 Timestamp: {{ url.timestamp }}
-IP: {{ url.ip }}
+IP: {{ url.dominio.ip }}
 Código: {{ url.codigo_estado }}
 URL: {{ url.url }}
-Correos: {{ url.correos_abuso }}
-Netname: {{ url.netname }}
-País: {{ url.pais }}
+Correos: {{ url.dominio.correos_abuso }}
+ISP: {{ url.dominio.isp }}
+País: {{ url.dominio.pais }}
+ASN: {{ url.dominio.asn }}
+Servidor: {{ url.dominio.servidor }}
+RIR: {{ url.dominio.rir }}
+Servidores DNS: {{ url.dominio.servidores_dns }}
 {% endfor %}
 </pre>

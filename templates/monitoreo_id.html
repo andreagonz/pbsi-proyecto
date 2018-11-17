@@ -15,17 +15,20 @@
       <input type="submit" name="boton-curl" class="uk-button uk-button-default" value="Aceptar" />
     </form>
 
-    Dominio: {{ dominio_nombre }}<br/>
-    <img src='{{ dominio }}' width='500px' /><br/>
+    Dominio: {{ dominio }}<br/>
+    País: {{ dominio.pais }}<br/>
+    IP: {{ dominio.ip }}<br/>
+    ASN: {{ dominio.asn }}<br/>
+    Sevidores DNS: {{ dominio.servidores_dns }}<br/>
+    Servidor: {{ dominio.servidor }}<br/>
+    RIR: {{ dominio.rir }}<br/>
+    <img src='{{ dominio.captura_url }}' width='500px' /><br/>
 
     {% for url in urls %}
       <a href='{% url 'url-detalle' pk=url.pk %}'>Ver detalles</a><br/>
       URL: {{ url.url }}<br/>
       Código: {{ url.codigo_estado }}<br/>
       Timestamp: {{ url.timestamp }}<br/>
-      País: {{ url.pais }}<br/>
-      IP: {{ url.ip }}<br/>
-      Netname: {{ url.netname }}<br/>
       <img src='{{ url.captura_url }}' width='500px' /><br/>
       {% if nuevo %}
         <br>

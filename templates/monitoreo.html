@@ -11,6 +11,13 @@
   <div class="container">
     {% for dominio in dominios %}
       <h2>{{ dominio }}</h2>
+      IP: {{ dominio.ip }} <br/>
+      País: {{ dominio.pais }} <br/>
+      RIR: {{ dominio.rir }} <br/>
+      Servidores DNS: {{ dominio.servidores_dns }} <br/>
+      ISP: {{ dominio.isp }} <br/>
+      ASN: {{ dominio.asn }} <br/>
+      Servidor: {{ dominio.servidor }} <br/>
       {% for url in dominio.url_set.all %}
         <div class="card flex-row flex-wrap">
           <div class="card-header border-0">
@@ -20,10 +27,8 @@
             <h4 class="card-title">{{ url }}</h4>
             <p class="card-text">
               Timestamp: {{ url.timestamp }} <br/>
-              IP: {{ url.ip }} <br/>
               Código: {{ url.codigo }} <br/>
               Título: {{ url.titulo }} <br/>
-              País: {{ url.pais }} <br/>
             </p>
           </div>
           <div class="w-100"></div>
