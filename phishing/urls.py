@@ -1,13 +1,5 @@
 from django.urls import path
-from .views import (
-    monitoreo, valida_urls, busca, monitoreo_id, url_detalle, historico,
-    ajustes, ActualizaProxy, NuevoProxy, elimina_proxy,
-    ActualizaRecurso, NuevoRecurso, elimina_recurso,
-    ofuscaciones_view, entidades_view,
-    ActualizaEntidad, NuevaEntidad, elimina_entidad,
-    ActualizaOfuscacion, NuevaOfuscacion, elimina_ofuscacion, createDoc, DocumentView,
-    entrada
-)
+from .views import *
 
 urlpatterns = [
     path('monitoreo', monitoreo, name='monitoreo'),
@@ -29,7 +21,10 @@ urlpatterns = [
     path('entidades', entidades_view, name='entidades'),
     path('crea-entidad', NuevaEntidad.as_view(), name='crea-entidad'),
     path('actualiza-entidad/<int:pk>', ActualizaEntidad.as_view(), name='actualiza-entidad'),
+    path('crea-clasificacion', NuevaClasificacionEntidad.as_view(), name='crea-clasificacion'),
+    path('actualiza-clasificacion/<int:pk>', ActualizaClasificacionEntidad.as_view(), name='actualiza-clasificacion'),
     path('elimina-entidad/<int:pk>', elimina_entidad, name='elimina-entidad'),
+    path('elimina-clasificacion/<int:pk>', elimina_clasificacion, name='elimina-clasificacion'),
     path('doc/', DocumentView.as_view(), name='doc'),
     path('creaDoc/',createDoc, name='creadoc'),
 

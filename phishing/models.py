@@ -15,10 +15,10 @@ class Clasificacion_entidad(models.Model):
 class Entidades(models.Model):
     
     nombre = models.CharField(max_length=128, unique=True)
-    clasificacion = models.ForeignKey(Clasificacion_entidad, on_delete=models.PROTECT)
+    clasificacion = models.ForeignKey(Clasificacion_entidad, on_delete=models.SET_NULL, null=True)
     formularios = models.CharField(max_length=1024, null=True)
     
-    def __str__(self):
+    def __str__(self):        
         return self.nombre
 
     def clean(self):
@@ -32,9 +32,15 @@ class Entidades(models.Model):
 
     @property
     def formularios_lst(self):
-        if formularios:
-            return str(formularios).split('\n')
-        return ''
+        if self.formularios:
+            return [x.strip() for x in str(self.formularios).split('\n') if x.strip()]
+        return []
+
+    @property
+    def formularios_coma(self):
+        if self.formularios:
+            return ', '.join(self.formularios_lst)
+        return 'No asignados'
     
 class Ofuscacion(models.Model):
 
@@ -135,7 +141,7 @@ class Url(models.Model):
     hash_archivo = models.CharField(max_length=32, null=True)
     entidades_afectadas = models.ManyToManyField(Entidades)
     reportado = models.BooleanField(default=False)
-    dominio = models.ForeignKey(Dominio, on_delete=models.PROTECT, null=True)
+    dominio = models.ForeignKey(Dominio, on_delete=models.PROTECT)
     archivo = models.FileField(storage=OverwriteStorage(),
                                upload_to='archivos', blank=True, null=True)
     
@@ -152,10 +158,10 @@ class Url(models.Model):
     @property
     def entidades(self):
         if len(self.entidades_afectadas.all()) == 0:
-            return 'No Identificada'
+            return 'No Identificadas'
         s = []
         for x in self.entidades_afectadas.all():
-            s.append(x.nombre.title())
+            s.append(x.nombre.title() + (' (%s)' % x.clasificacion) if x.clasificacion else '')
         return ', '.join(s)
 
     @property

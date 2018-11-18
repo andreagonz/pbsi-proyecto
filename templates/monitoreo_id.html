@@ -15,21 +15,22 @@
       <input type="submit" name="boton-curl" class="uk-button uk-button-default" value="Aceptar" />
     </form>
 
-    Dominio: {{ dominio }}<br/>
+    <h2>Datos de dominio {{ dominio }}</h2>
     País: {{ dominio.pais }}<br/>
     IP: {{ dominio.ip }}<br/>
     ASN: {{ dominio.asn }}<br/>
     Sevidores DNS: {{ dominio.servidores_dns }}<br/>
     Servidor: {{ dominio.servidor }}<br/>
     RIR: {{ dominio.rir }}<br/>
-    <img src='{{ dominio.captura_url }}' width='500px' /><br/>
+    <a href='{{ dominio.captura_url }}'><img src='{{ dominio.captura_url }}' style="max-width:500px;max-height:500px;" /></a><br/>
 
+    <h3>Direcciones URL:</h3>
     {% for url in urls %}
-      <a href='{% url 'url-detalle' pk=url.pk %}'>Ver detalles</a><br/>
+      <a href='{% url 'url-detalle' pk=url.pk %}'><h4>{{ url }}</h4></a>
       URL: {{ url.url }}<br/>
       Código: {{ url.codigo_estado }}<br/>
       Timestamp: {{ url.timestamp }}<br/>
-      <img src='{{ url.captura_url }}' width='500px' /><br/>
+      <a href='{{ url.captura_url }}'><img src='{{ url.captura_url }}' style="max-width:500px;max-height:500px;" /></a><br/>
       {% if nuevo %}
         <br>
         Segunda Búsqueda: <br>

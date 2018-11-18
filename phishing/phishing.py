@@ -195,7 +195,7 @@ def verifica_url_aux(sitios, sitio, existe, entidades, ofuscaciones,
         sitio.codigo, texto, titulo = hacer_peticion(sitios, sesion, sitio, entidades, ofuscaciones,
                                              dominios_inactivos, max_redir, entidades_afectadas)
         sitio.titulo = titulo
-        if not existe and sitio.activo:
+        if len(sitio.entidades_afectadas.all()) == 0:
             if entidades_afectadas is None:
                 for x in obten_entidades_afectadas(entidades, texto):
                     sitio.entidades_afectadas.add(x)
@@ -205,7 +205,8 @@ def verifica_url_aux(sitios, sitio, existe, entidades, ofuscaciones,
                     if e is None:
                         e = Entidades(nombre=x)
                         e.save()
-                    sitio.entidades_afectadas.add(e)
+                    sitio.entidades_afectadas.add(e)                
+        if not existe and sitio.activo:
             for x in encuentra_ofuscacion(ofuscaciones, texto):
                 sitio.ofuscacion.add(x)
             if monitoreo or not existe:
@@ -341,12 +342,12 @@ def obten_sitio(url, sesion, proxy=None):
     try:
         sitio = Url.objects.get(url=url)
         sitio.timestamp = timezone.now()
+        sitio.dominio = obten_dominio(dominio, u.scheme, sesion, proxy=proxy)
         existe = True
     except:
-        sitio = Url(url=url, identificador=genera_id(url))
-        sitio.save()
+        d = obten_dominio(dominio, u.scheme, sesion, proxy=proxy)
+        sitio = Url(url=url, identificador=genera_id(url), dominio=d)
     finally:
-        sitio.dominio = obten_dominio(dominio, u.scheme, sesion, proxy=proxy)
         sitio.save()
         return sitio, existe
 

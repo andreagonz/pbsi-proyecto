@@ -1,11 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.forms import Textarea
 from django.urls import reverse_lazy
 from django.contrib.auth.decorators import login_required
 from .forms import (
     UrlsForm, MensajeForm, ProxyForm, Search, HistoricoForm,
     CambiaAsuntoForm, CambiaMensajeForm, FrecuenciaForm, CorreoForm, ArchivoForm, CorreoArchivoForm
 )
-from .models import Url, Correo, Proxy, Recurso, Ofuscacion, Entidades, Dominio
+from .models import Url, Correo, Proxy, Recurso, Ofuscacion, Entidades, Dominio, Clasificacion_entidad
 from .phishing import (
     verifica_urls, archivo_texto, monitorea_url,
     whois, archivo_comentarios, archivo_hashes, cambia_frecuencia
@@ -411,9 +412,9 @@ def ofuscaciones_view(request):
 
 @login_required(login_url=reverse_lazy('login'))
 def entidades_view(request):
-    of = Entidades.objects.all()
     context = {
-        'entidades': of
+        'clasificaciones': Clasificacion_entidad.objects.all(),
+        'entidades': Entidades.objects.all()
     }
     return render(request, 'entidades.html', context)
 
@@ -445,13 +446,57 @@ class ActualizaEntidad(LoginRequiredMixin, UpdateView):
     model = Entidades
     template_name = 'actualiza_entidad.html'
     success_url = reverse_lazy('entidades')
-    fields = ('nombre',)
+    fields = ('nombre', 'formularios', 'clasificacion',)
+
+    def get_form(self, form_class=None):
+        form = super(ActualizaEntidad, self).get_form(form_class)
+        form.fields['formularios'].required = False
+        form.fields['clasificacion'].required = False
+        form.fields['formularios'].widget = Textarea()
+        form.fields['formularios'].label = 'Formularios de abuso (separados por un salto de línea)'
+        return form
     
 class NuevaEntidad(LoginRequiredMixin, CreateView):
     model = Entidades
     template_name = 'nueva_entidad.html'
     success_url = reverse_lazy('entidades')
+    fields = ('nombre', 'formularios', 'clasificacion',)
+
+    def get_form(self, form_class=None):
+        form = super(NuevaEntidad, self).get_form(form_class)
+        form.fields['formularios'].required = False
+        form.fields['clasificacion'].required = False
+        form.fields['formularios'].widget = Textarea()
+        form.fields['formularios'].label = 'Formularios de abuso (separados por un salto de línea)'
+        return form
+
+@login_required(login_url=reverse_lazy('login'))
+def elimina_clasificacion(request, pk):
+    c = get_object_or_404(Clasificacion_entidad, pk=pk)
+    c.delete()
+    return redirect('entidades')
+
+class NuevaClasificacionEntidad(LoginRequiredMixin, CreateView):
+    model = Clasificacion_entidad
+    template_name = 'nueva_clasificacion.html'
+    success_url = reverse_lazy('entidades')
     fields = ('nombre',)
+
+    def get_form(self, form_class=None):
+        form = super(NuevaClasificacionEntidad, self).get_form(form_class)
+        form.fields['nombre'].label = 'Clasificación'
+        return form
+
+class ActualizaClasificacionEntidad(LoginRequiredMixin, UpdateView):
+    model = Clasificacion_entidad
+    template_name = 'actualiza_clasificacion.html'
+    success_url = reverse_lazy('entidades')
+    fields = ('nombre',)
+
+    def get_form(self, form_class=None):
+        form = super(ActualizaClasificacionEntidad, self).get_form(form_class)
+        form.fields['nombre'].label = 'Clasificación'
+        return form
 
 #User = get_user_model()
 days=['Sunday',
