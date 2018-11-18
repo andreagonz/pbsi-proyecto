@@ -133,6 +133,9 @@ class Url(models.Model):
     identificador = models.CharField(max_length=32, unique=True)
     url = models.URLField(max_length=512, unique=True)
     timestamp = models.DateTimeField(auto_now_add=True)
+    timestamp_creacion = models.DateTimeField(auto_now_add=True)
+    timestamp_reportado = models.DateTimeField(null=True)
+    timestamp_desactivado = models.DateTimeField(null=True)
     codigo = models.IntegerField(default=-1)
     titulo = models.CharField(max_length=512, null=True)
     captura = models.ImageField(storage=OverwriteStorage(),

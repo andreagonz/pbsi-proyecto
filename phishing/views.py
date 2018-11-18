@@ -81,6 +81,7 @@ def redirecciones_reporta(url):
         return
     print('url:' + str(url))
     url.reportado = True
+    url.timestamp_reportado = timezone.now()
     url.save()
     for p in Url.objects.filter(redireccion=url.url):
         redirecciones_reporta(p)
@@ -502,7 +503,15 @@ class ActualizaClasificacionEntidad(LoginRequiredMixin, UpdateView):
 class HomeView(View):
     def get(self,request, *args, **kwargs):
         return render(request, 'dashboard.html', {})
-            
+
+def obtener_dias():
+    """
+    Obtinene una lista de los últimos 7 días
+    """
+    dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
+    hoy = datetime.datetime.today().weekday() + 1
+    return dias[hoy:] + dias[:hoy]
+
 class ChartData(LoginRequiredMixin, APIView):
     
     def get(self, request, format=None):
@@ -525,34 +534,36 @@ class ChartData(LoginRequiredMixin, APIView):
         sectores = Url.objects.filter(~Q(entidades_afectadas__clasificacion=None)).values(
             'entidades_afectadas__clasificacion__nombre').annotate(
                 cuenta_sectores=Count('entidades_afectadas__clasificacion__nombre'))
-        no_sectores = Url.objects.filter(Q(entidades_afectadas__clasificacion=None))
         labels = [e['entidades_afectadas__clasificacion__nombre'] for e in sectores]
-        default = [e['cuenta_sectores'] for e in sectores]
-        if len(no_sectores) > 0:
-            labels.append('No identificado')
-            default.append(len(no_sectores))
         sectores_data = {
             "labels":  labels,
-            "default": default,
+            "default": [e['cuenta_sectores'] for e in sectores],
             "colores": rand_color.generate(count=len(labels))
+        }
+        
+        dias = obtener_dias()
+        num_detecciones = []        
+        hoy = timezone.now().date()
+        for x in range(6, -1, -1):
+            num_detecciones.append(Url.objects.filter(
+                timestamp_creacion__date=hoy - datetime.timedelta(days=x),
+            ).count())
+        detecciones_data = {
+            'labels': dias,
+            'default': num_detecciones
         }
         
         entidades = Url.objects.filter(~Q(entidades_afectadas=None)).values(
             'entidades_afectadas__nombre').annotate(
                 cuenta_entidades=Count('entidades_afectadas__nombre'))
-        no_entidades = Url.objects.filter(entidades_afectadas=None)
         labels = [e['entidades_afectadas__nombre'] for e in entidades]
-        default = [e['cuenta_entidades'] for e in entidades]
-        if len(no_entidades) > 0:
-            labels.append('No identificada')
-            default.append(len(no_entidades))
         entidades_data = {
             "labels":  labels,
-            "default": default,
+            "default": [e['cuenta_entidades'] for e in entidades],
             "colores": rand_color.generate(count=len(labels))
         }
         
-        graphs = [top_paises_data, top_hosting_data, [], [], sectores_data, [], entidades_data, []]
+        graphs = [top_paises_data, top_hosting_data, [], [], sectores_data, detecciones_data, entidades_data, []]
         return Response(graphs)
 
 """
@@ -570,12 +581,6 @@ end_hour = monitor_hour.replace(hour=23,minute=59,second=59)
 authentication_classes = []
 permission_classes =  []
 """
-
-def rotateListDays(l,current_day):
-    """
-    Obtinene una lista de los últimos 7 días
-    """
-    return l[l.index(current_day):]+l[:l.index(current_day)]
 
 def dash(request):
         #top5 = top5_countries(request)

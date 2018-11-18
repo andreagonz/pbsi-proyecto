@@ -106,6 +106,9 @@ def hacer_peticion(sitios, sesion, sitio, entidades, ofuscaciones, dominios_inac
         headers = {'User-Agent': settings.USER_AGENT}
         req = sesion.get(sitio.url, headers=headers, allow_redirects=False)
         codigo = req.status_code
+        sitio.timestamp = timezone.now()
+        if sitio.activo and codigo >= 400:
+            sitio.timestamp_desactivado = sitio.timestamp
         if codigo < 400 and codigo >= 300:
             redireccion = req.headers['location']
             if redireccion.startswith('/'):
@@ -346,8 +349,7 @@ def obten_sitio(url, sesion, proxy=None, monitoreo=False):
     existe = False
     sitio = None
     try:
-        sitio = Url.objects.get(url=url)
-        sitio.timestamp = timezone.now()
+        sitio = Url.objects.get(url=url)        
         sitio.dominio = obten_dominio(dominio, u.scheme, sesion, proxy=proxy, captura=monitoreo)
         existe = True
     except:

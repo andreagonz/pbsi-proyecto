@@ -114,6 +114,7 @@ $.ajax({
 	    }
 	});
 
+
         var sectores = graphs[4].labels
 	var cuenta_sectores = graphs[4].default
 	var sectores_canvas = document.getElementById("sectores");
@@ -144,6 +145,59 @@ $.ajax({
 	    
 	});
         
+        var dias = graphs[5].labels
+	var cuenta_detecciones = graphs[5].default
+        var detecciones_canvas = document.getElementById("detecciones");
+        var deteccionesGraph = new Chart(detecciones_canvas, {
+	    type: 'line',
+	    data: {
+		labels: dias,
+		datasets: [
+		    {
+			data: cuenta_detecciones,
+			label: "Número de Detecciones",
+			lineTension: 0,
+			fill: false,
+			borderColor: 'orange',
+			backgroundColor: 'transparent',
+			borderDash: [5, 5],
+			pointBorderColor: 'orange',
+			pointBackgroundColor: 'rgba(255,150,0,0.5)',
+			pointRadius: 5,
+			pointHoverRadius: 10,
+			pointHitRadius: 30,
+			pointBorderWidth: 2,
+			pointStyle: 'rectRounded'
+			
+		    }]
+	    },
+	    options: {
+		responsive: true,
+		maintainAspectRatio: false,
+		scales: {
+		    yAxes: [{
+			ticks: {
+			    beginAtZero:true
+			}
+		    }]
+		},
+		animation : {
+		    onComplete : function(){    
+			//var url_base64jp = document.getElementById("top5-count-chart").toDataURL("image/jpg");
+			//const imgWrap = document.getElementById('link1')
+			//imgWrap.href = url_base64jp 
+			//alert(myChart.toBase64Image());
+		    }
+		},
+		title: {
+		    display: true,
+		    text: 'Detecciones en últimos 7 días',
+		    fontSize: 16
+		}
+	    }
+	    
+	});
+
         var entidades = graphs[6].labels
 	var cuenta_entidades = graphs[6].default
 	var entidades_canvas = document.getElementById("entidades");
