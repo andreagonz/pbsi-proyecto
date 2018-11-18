@@ -118,7 +118,6 @@ def manda_correo(para, cc, cco, msg):
     """
     server = None
     try:
-        server.ehlo()
         if settings.CORREO_SSL:
             server = smtplib.SMTP_SSL(settings.CORREO_SERVIDOR, settings.CORREO_PUERTO)
             server.ehlo()
