@@ -176,7 +176,7 @@ def genera_captura(url, nombre, proxy=None):
 
 def guarda_archivo(texto, nombre):
     archivo = os.path.join(settings.MEDIA_ROOT, nombre)
-    with open(archivo, 'w') as w:
+    with open(archivo, 'w', encoding='utf-8') as w:
         w.write(texto)
     return archivo
     
