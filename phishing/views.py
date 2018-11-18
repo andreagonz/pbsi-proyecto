@@ -524,10 +524,10 @@ class ChartData(LoginRequiredMixin, APIView):
             "default": [p['cuenta_pais'] for p in top_paises]
         }
 
-        top_hosting = Dominio.objects.filter(~Q(asn=None)).values('asn').annotate(
-            cuenta_asn=Count('asn')).order_by('-cuenta_asn')[:5]
+        top_hosting = Url.objects.filter(~Q(dominio__asn=None)).values('dominio__asn').annotate(
+            cuenta_asn=Count('dominio__asn')).order_by('-cuenta_asn')[:5]
         top_hosting_data = {
-            "labels": [p['asn'] for p in top_hosting],
+            "labels": [p['dominio__asn'] for p in top_hosting],
             "default": [p['cuenta_asn'] for p in top_hosting]
         }
         
