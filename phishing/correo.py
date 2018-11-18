@@ -117,6 +117,7 @@ def manda_correo(para, cc, cco, msg):
     Se envia un correo con el mensaje especificado
     """
     server = None
+    b = True
     try:
         if settings.CORREO_SSL:
             server = smtplib.SMTP_SSL(settings.CORREO_SERVIDOR, settings.CORREO_PUERTO)
@@ -127,12 +128,19 @@ def manda_correo(para, cc, cco, msg):
         passw = settings.CORREO_PASS
         if usr and passw:
             server.login(usr, passw)
-        server.sendmail(usr, [para, cc, bcc], msg)
+        recipientes = [para]
+        if cc:
+            recipientes.append(cc)
+        if cco:
+            recipientes.append(cco)
+        server.sendmail(usr, recipientes, msg)
     except Exception as e:
         print(str(e))
+        b = False
     finally:
         if server:
             server.quit()
+        return b
 
 
 """
