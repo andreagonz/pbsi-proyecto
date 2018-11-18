@@ -213,13 +213,15 @@ def verifica_url_aux(sitios, sitio, existe, entidades, ofuscaciones,
                 proxy = get_proxy(sesion)
                 nombre = 'capturas/%s.png' % sitio.identificador
                 captura = genera_captura(sitio.url, nombre, proxy)
-                with open(captura, 'rb') as f:
-                    sitio.captura.save(os.path.basename(captura), File(f), True)
+                if os.path.exists(captura):
+                    with open(captura, 'rb') as f:
+                        sitio.captura.save(os.path.basename(captura), File(f), True)
                 nombre = 'archivos/%s.txt' % sitio.identificador
                 archivo = guarda_archivo(texto, nombre)
-                with open(archivo, 'rb') as f:
-                    sitio.archivo.save(os.path.basename(archivo), File(f), True)
-                sitio.hash_archivo = md5(texto.encode('utf-8'))
+                if os.path.exists(archivo):
+                    with open(archivo, 'rb') as f:
+                        sitio.archivo.save(os.path.basename(archivo), File(f), True)
+                    sitio.hash_archivo = md5(texto.encode('utf-8'))
         elif sitio.codigo < 0:
             dominios_inactivos[dominio] = 1
     else:
@@ -332,8 +334,9 @@ def obten_dominio(dominio, scheme, sesion, captura=False, proxy=None):
     if captura:
         nombre = 'capturas/%s.png' % genera_id(dominio)
         captura = genera_captura(dominio, nombre, proxy)
-        with open(captura, 'rb') as f:
-            d.captura.save(os.path.basename(captura), File(f), True)
+        if os.path.exists(captura):
+            with open(captura, 'rb') as f:
+                d.captura.save(os.path.basename(captura), File(f), True)
         d.save()
     return d
 
@@ -346,14 +349,14 @@ def obten_sitio(url, sesion, proxy=None):
         sitio = Url.objects.get(url=url)
         sitio.timestamp = timezone.now()
         sitio.dominio = obten_dominio(dominio, u.scheme, sesion, proxy=proxy)
-        if not sitio.dominio:
-            return None, False
         existe = True
     except:
         d = obten_dominio(dominio, u.scheme, sesion, proxy=proxy)
-        sitio = Url(url=url, identificador=genera_id(url), dominio=d)
+        if d:
+            sitio = Url(url=url, identificador=genera_id(url), dominio=d)
     finally:
-        sitio.save()
+        if sitio:
+            sitio.save()
         return sitio, existe
 
 def verifica_url(sitios, url, entidades, ofuscaciones, dominios_inactivos,
