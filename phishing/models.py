@@ -77,7 +77,7 @@ class DNS(models.Model):
 class Dominio(models.Model):
     
     dominio = models.CharField(max_length=256, unique=True)
-    ip = models.CharField(max_length=15, blank=True)
+    ip = models.CharField(max_length=128, blank=True)
     captura = models.ImageField(storage=OverwriteStorage(),
                                 upload_to='capturas', blank=True, null=True)
     pais = CountryField(null=True)

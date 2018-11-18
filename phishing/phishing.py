@@ -314,7 +314,10 @@ def obten_dominio(dominio, scheme, sesion, captura=False, proxy=None):
         d = Dominio.objects.get(dominio=dominio)
     except:
         d = Dominio(dominio=dominio)
-        d.save()
+        if d:
+            d.save()
+        else:
+            return None
         captura = True
     get_info(d, sesion)
     get_dns(d)
@@ -343,6 +346,8 @@ def obten_sitio(url, sesion, proxy=None):
         sitio = Url.objects.get(url=url)
         sitio.timestamp = timezone.now()
         sitio.dominio = obten_dominio(dominio, u.scheme, sesion, proxy=proxy)
+        if not sitio.dominio:
+            return None, False
         existe = True
     except:
         d = obten_dominio(dominio, u.scheme, sesion, proxy=proxy)
@@ -356,6 +361,8 @@ def verifica_url(sitios, url, entidades, ofuscaciones, dominios_inactivos,
     if not re.match("^https?://.+", url):
         url = 'http://' + url
     sitio, existe = obten_sitio(url, sesion)
+    if not sitio:
+        return
     verifica_url_aux(sitios, sitio, existe, entidades, Ofuscacion.objects.all(),
                      dominios_inactivos, sesion, max_redir, entidades_afectadas)
     sitios.append(sitio)
