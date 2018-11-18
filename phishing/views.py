@@ -508,14 +508,14 @@ class ChartData(LoginRequiredMixin, APIView):
     def get(self, request, format=None):
         rand_color = randomcolor.RandomColor()
         
-        top_paises = Url.objects.values('dominio__pais').annotate(
+        top_paises = Url.objects.filter(~Q(dominio__pais=None)).values('dominio__pais').annotate(
             cuenta_pais=Count('dominio__pais')).order_by('-cuenta_pais')[:5]
         top_paises_data = {
             "labels": [p['dominio__pais'] for p in top_paises],
             "default": [p['cuenta_pais'] for p in top_paises]
         }
 
-        top_hosting = Dominio.objects.values('asn').annotate(
+        top_hosting = Dominio.objects.filter(~Q(asn=None)).values('asn').annotate(
             cuenta_asn=Count('asn')).order_by('-cuenta_asn')[:5]
         top_hosting_data = {
             "labels": [p['asn'] for p in top_hosting],
