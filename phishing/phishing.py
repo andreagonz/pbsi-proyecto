@@ -113,7 +113,8 @@ def hacer_peticion(sitios, sesion, sitio, entidades, ofuscaciones, dominios_inac
                 d = '{uri.scheme}://{uri.netloc}/'.format(uri=u)
                 redireccion = urlparse.urljoin(d, redireccion)
             if redireccion != sitio.url and max_redir > 0:
-                verifica_url(sitios, redireccion, entidades, ofuscaciones, dominios_inactivos,
+                sitio.redireccion = redireccion[:-1] if redireccion.endswith('#') else redireccion
+                verifica_url(sitios, sitio.redireccion, entidades, ofuscaciones, dominios_inactivos,
                              sesion, max_redir - 1, entidades_afectadas)
         elif codigo < 300 and codigo >= 200:
             texto = req.text
@@ -163,9 +164,9 @@ def guarda_captura(url, out, proxy=None):
     se guarda el resultado en out
     """
     if proxy is None:
-        process = Popen('xvfb-run --server-args="-screen 0, 1280x1200x24" cutycapt --url="%s" --out="%s" --min-width=400 --min-height=300' % (url, out), shell=True, stdout=PIPE, stderr=PIPE)
+        process = Popen('xvfb-run -a --server-args="-screen 0, 1280x1200x24" cutycapt --url="%s" --out="%s" --min-width=400 --min-height=300 --max-wait=25000' % (url, out), shell=True, stdout=PIPE, stderr=PIPE)
     else:
-        process = Popen('xvfb-run --server-args="-screen 0, 1280x1200x24" cutycapt --url="%s" --out="%s" --min-width=400 --min-height=300 --http-proxy="%s"' % (url, out, proxy), shell=True, stdout=PIPE, stderr=PIPE)
+        process = Popen('xvfb-run -a --server-args="-screen 0, 1280x1200x24" cutycapt --url="%s" --out="%s" --min-width=400 --min-height=300 --max-wait=25000 --http-proxy="%s"' % (url, out, proxy), shell=True, stdout=PIPE, stderr=PIPE)
     stdout, stderr = process.communicate()
     return not stderr is None
 
@@ -311,7 +312,6 @@ def get_info(dominio, sesion):
         dominio.save()
         
 def obten_dominio(dominio, scheme, sesion, captura=False, proxy=None):
-    captura = False
     try:
         d = Dominio.objects.get(dominio=dominio)
     except:
@@ -340,7 +340,7 @@ def obten_dominio(dominio, scheme, sesion, captura=False, proxy=None):
         d.save()
     return d
 
-def obten_sitio(url, sesion, proxy=None):
+def obten_sitio(url, sesion, proxy=None, monitoreo=False):
     u = urlparse(url)
     dominio = u.netloc
     existe = False
@@ -348,10 +348,10 @@ def obten_sitio(url, sesion, proxy=None):
     try:
         sitio = Url.objects.get(url=url)
         sitio.timestamp = timezone.now()
-        sitio.dominio = obten_dominio(dominio, u.scheme, sesion, proxy=proxy)
+        sitio.dominio = obten_dominio(dominio, u.scheme, sesion, proxy=proxy, captura=monitoreo)
         existe = True
     except:
-        d = obten_dominio(dominio, u.scheme, sesion, proxy=proxy)
+        d = obten_dominio(dominio, u.scheme, sesion, proxy=proxy, captura=monitoreo)
         if d:
             sitio = Url(url=url, identificador=genera_id(url), dominio=d)
     finally:
@@ -375,7 +375,7 @@ def monitorea_url(sitio, proxy):
     entidades = {}
     for x in Entidades.objects.all():
         entidades[x.nombre.lower()] = x
-    sitio2, existe = obten_sitio(sitio.url, sesion)
+    sitio2, existe = obten_sitio(sitio.url, sesion, monitoreo=True)
     verifica_url_aux([], sitio2, False, entidades, Ofuscacion.objects.all(),
                      {}, sesion, settings.MAX_REDIRECCIONES, None)
     return sitio2

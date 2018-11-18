@@ -16,8 +16,8 @@ class ProxyForm(forms.Form):
                                    empty_label="Ninguno", required=False)
     
 class MensajeForm(forms.Form):
-    para = forms.CharField(label='Para')
     de = forms.CharField(label='De')
+    para = forms.CharField(label='Para')
     cc = forms.CharField(label='CC', required=False)
     cco = forms.CharField(label='CCO', required=False)
     asunto = forms.CharField(label='Asunto')

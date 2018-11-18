@@ -48,7 +48,6 @@ from django.db.models.functions import Extract
 import json
 from rest_framework.views import APIView
 from rest_framework.response import Response
-#from django.contrib.auth import get_user_model
 import randomcolor
 import datetime
 from phishing.phishing import lineas_md5,md5,archivo_hashes
@@ -77,6 +76,15 @@ def cpimg(img, img2):
     if os.path.exists(f):
         copyfile(f, f2)
     
+def redirecciones_reporta(url):
+    if url.reportado:
+        return
+    print('url:' + str(url))
+    url.reportado = True
+    url.save()
+    for p in Url.objects.filter(redireccion=url.url):
+        redirecciones_reporta(p)
+        
 @login_required(login_url=reverse_lazy('login'))
 def monitoreo_id(request, pk):
     dominio = get_object_or_404(Dominio, pk=pk)
@@ -138,11 +146,11 @@ def monitoreo_id(request, pk):
                 mensaje_form = MensajeForm(request.POST)
                 msg = genera_mensaje(dominio, de, para, cc, cco, asunto, mensaje)
                 manda_correo(para, cc, cco, msg)
-                for x in Url.objects.filter(url=url.url):
-                    x.reportado = True
-                    x.save()
+                for x in urls:
+                    redirecciones_reporta(x)
                 context = {
-                    'url': url,
+                    'dominio': dominio,
+                    'urls': urls,
                     'de': de,
                     'para': ', '.join(para),
                     'cc': ', '.join(cc),
@@ -153,9 +161,8 @@ def monitoreo_id(request, pk):
                 }
                 return render(request, 'monitoreo_exito.html', context)
         elif request.POST.get('boton-ignorar') and request.user.is_superuser:
-            for x in urls_activas:
-                x.reportado = True
-                x.save()
+            for x in urls:
+                redirecciones_reporta(x)
             return redirect('monitoreo')
         elif request.POST.get('boton-saltar'):
             return redirect('monitoreo')
@@ -210,20 +217,14 @@ def valida_urls(request):
         form2 = ArchivoForm()
     return render(request, 'valida_urls.html', {'form1': form1, 'form2': form2})
 
-message2 = ""
-
 def url_detalle(request, pk):
     url = get_object_or_404(Url, pk=pk)
     comentarios = archivo_comentarios(url)
     hashes = archivo_hashes(url)
-    # wi = whois(url.ip)
-    # wi_dom = whois(url.dominio.dominio)
     context = {
         'url': url,
         'comentarios': comentarios,
         'hashes': hashes,
-        # 'whois': wi,
-        # 'whois_dominio': wi_dom,
     }
     return render(request, 'url_detalle.html', context)
 
@@ -498,7 +499,63 @@ class ActualizaClasificacionEntidad(LoginRequiredMixin, UpdateView):
         form.fields['nombre'].label = 'Clasificación'
         return form
 
-#User = get_user_model()
+class HomeView(View):
+    def get(self,request, *args, **kwargs):
+        return render(request, 'dashboard.html', {})
+            
+class ChartData(LoginRequiredMixin, APIView):
+    
+    def get(self, request, format=None):
+        rand_color = randomcolor.RandomColor()
+        
+        top_paises = Url.objects.values('dominio__pais').annotate(
+            cuenta_pais=Count('dominio__pais')).order_by('-cuenta_pais')[:5]
+        top_paises_data = {
+            "labels": [p['dominio__pais'] for p in top_paises],
+            "default": [p['cuenta_pais'] for p in top_paises]
+        }
+
+        top_hosting = Dominio.objects.values('asn').annotate(
+            cuenta_asn=Count('asn')).order_by('-cuenta_asn')[:5]
+        top_hosting_data = {
+            "labels": [p['asn'] for p in top_hosting],
+            "default": [p['cuenta_asn'] for p in top_hosting]
+        }
+        
+        sectores = Url.objects.filter(~Q(entidades_afectadas__clasificacion=None)).values(
+            'entidades_afectadas__clasificacion__nombre').annotate(
+                cuenta_sectores=Count('entidades_afectadas__clasificacion__nombre'))
+        no_sectores = Url.objects.filter(Q(entidades_afectadas__clasificacion=None))
+        labels = [e['entidades_afectadas__clasificacion__nombre'] for e in sectores]
+        default = [e['cuenta_sectores'] for e in sectores]
+        if len(no_sectores) > 0:
+            labels.append('No identificado')
+            default.append(len(no_sectores))
+        sectores_data = {
+            "labels":  labels,
+            "default": default,
+            "colores": rand_color.generate(count=len(labels))
+        }
+        
+        entidades = Url.objects.filter(~Q(entidades_afectadas=None)).values(
+            'entidades_afectadas__nombre').annotate(
+                cuenta_entidades=Count('entidades_afectadas__nombre'))
+        no_entidades = Url.objects.filter(entidades_afectadas=None)
+        labels = [e['entidades_afectadas__nombre'] for e in entidades]
+        default = [e['cuenta_entidades'] for e in entidades]
+        if len(no_entidades) > 0:
+            labels.append('No identificada')
+            default.append(len(no_entidades))
+        entidades_data = {
+            "labels":  labels,
+            "default": default,
+            "colores": rand_color.generate(count=len(labels))
+        }
+        
+        graphs = [top_paises_data, top_hosting_data, [], [], sectores_data, [], entidades_data, []]
+        return Response(graphs)
+
+"""
 days=['Sunday',
       'Monday',
       'Tuesday',
@@ -510,132 +567,16 @@ today = datetime.date.today()
 monitor_hour = datetime.datetime(today.year,today.month,today.day-1,0,0,0) ##quitar -1
 start_hour=monitor_hour
 end_hour = monitor_hour.replace(hour=23,minute=59,second=59)
-
-class HomeView(View):
-    def get(self,request, *args, **kwargs):
-        return render(request, 'dashboard.html', {})
-            
-class ChartData(LoginRequiredMixin, APIView):    
-    authentication_classes = []
-    permission_classes =  []
-    #Url.objects.filter(timestamp__range=(start_hour,end_hour)).annotate(hour=Extract('timestamp','hour')).filter(codigo=200).values('hour','titulo').order_by('-hour')
-    
-    def get(self, request, format=None):
-        dataset_gr1=Url.objects.values('dominio__pais').annotate(country_count=Count('dominio__pais')).order_by('-country_count')
-        # dataset_gr2=Url.objects.values('netname').annotate(hosting_count=Count('netname')).order_by('-hosting_count')
-        dataset_gr3_activos= Url.objects.values('codigo').annotate(active_count=Count('codigo')).filter(codigo=200)
-        dataset_gr3_reportados = Url.objects.values('reportado').annotate(reported_count=Count('reportado')).filter(reportado=True) 
-        dataset_gr3_detectados = Url.objects.all().count()
-        dataset_gr4 = Url.objects.values('entidades_afectadas__nombre').annotate(ent_count=Count('entidades_afectadas__nombre'))
-        #dataset_gr6 = Url.objects.values('titulo').annotate(hours_count=).order_by('-country_count')
-        #dataset_gr5_d1 = Url.objects.values('url','timestamp').filter(timestamp__day=(today - datetime.timedelta(days=7)).day).filter(timestamp__month=(today - datetime.timedelta(days=7)).month).filter(timestamp__year=(today - datetime.timedelta(days=7)).year).count()
-        dataset_gr6 = Url.objects.filter(timestamp__range=(start_hour,end_hour)).annotate(hour=Extract('timestamp','hour')).filter(codigo=200).values('hour','titulo').order_by('-hour')
-#')).filter(codigo=200).values('hour','titulo').order_by('-hour')our)).annotate(hour=Extract('timestamp','hour'
-
-        countries = list()
-        hosting = list()
-        entities = list()
-        getDays = list()
-        getSites = list()
-        counted_countries=list()
-        counted_hosting=list()
-        counted_ent=list()
-        counted_sites_week = list()
-        sites_hours = list()
-        for rec in dataset_gr1[:5]:
-            countries.append(rec['pais'])
-            counted_countries.append(rec['country_count'])
-        labels = countries
-        default_items = counted_countries
-        data1={
-            "labels":labels,
-            "default": default_items,
-        }
-        """
-        for rec in dataset_gr2[:5]:
-            hosting.append(rec['netname'])
-            counted_hosting.append(rec['hosting_count'])
-        labels = hosting
-        items = counted_hosting
-        data2={
-            "labels":labels,
-            "default": items,
-        }
-        """
-        """
-        data3={
-            "labels":["Activos","Reportados","Detectados"],
-            "default":[dataset_gr3_activos.get()['active_count'],dataset_gr3_reportados.get()['reportado_count'],dataset_gr3_detectados]
-        }
-        """
-        for rec in dataset_gr4:
-            entities.append(rec['entidades_afectadas__nombre'])
-            counted_ent.append(rec['ent_count'])
-        labels_ent= entities
-        items_ent = counted_ent
-        rand_color = randomcolor.RandomColor()
-        data4={
-            "labels":labels_ent,
-            "default":items_ent,
-            "colors":rand_color.generate(count=len(labels_ent)),
-        }
-        ###
-        getDays=rotateListDays(days,datetime.datetime.now().strftime("%A"))
-        for num in range(7,0,-1):
-            dataset_gr5_day = Url.objects.values('url','timestamp').filter(timestamp__day=(today - datetime.timedelta(days=num)).day).filter(timestamp__month=(today - datetime.timedelta(days=num)).month).filter(timestamp__year=(today - datetime.timedelta(days=num)).year).count()
-            counted_sites_week.append(dataset_gr5_day)
-
-        data5={
-            "labels":getDays,
-            "default":counted_sites_week,
-        }
-        for rec in dataset_gr6[:5]:
-            getSites.append(rec['titulo'])
-            sites_hours.append(rec['hour'])
-        labels_sit = getSites
-        items_sit = sites_hours
-        data6={
-            "labels":labels_sit,
-            "default":items_sit
-        }
-        graphs = list([data1,data4,data5,data6])
-        return Response(graphs)
-
-message2 = ""
-###
-###
-###
+authentication_classes = []
+permission_classes =  []
+"""
 
 def rotateListDays(l,current_day):
     """
     Obtinene una lista de los últimos 7 días
     """
     return l[l.index(current_day):]+l[:l.index(current_day)]
-"""
-def graphs(request):
-         dataset = Url.objects.values('pais').annotate(survived_count=Count('pais')).order_by('pais')
-         countries=list()
-         counted = list()
-         for rec in dataset:
-                countries.append(rec['pais'])
-                counted.append(rec['survived_count'])
 
-         qs_count = User.objects.all().count()
-         labels = ["Users","Red","Orange","Yellow"]
-         default_items = [qs_count, 241, 123, 321]
-         data={
-                "labels":labels,
-                "default": default_items
-
-         }
-
-         return Response(data)
-         """
-###
-###
-###
-
-# @login_required(login_url=reverse_lazy('login'))
 def dash(request):
         #top5 = top5_countries(request)
         return render(request,'dashboard.html',{})

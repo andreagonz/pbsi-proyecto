@@ -27,6 +27,5 @@ urlpatterns = [
     path('elimina-clasificacion/<int:pk>', elimina_clasificacion, name='elimina-clasificacion'),
     path('doc/', DocumentView.as_view(), name='doc'),
     path('creaDoc/',createDoc, name='creadoc'),
-
     path('entrada/', entrada, name='entrada'),
 ]

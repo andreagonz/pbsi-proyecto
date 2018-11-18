@@ -9,7 +9,11 @@
 
   Correo enviado exitósamente <br/>
   Resumen de correo: <br/>
-  Url: {{ url }} <br/>
+  Dominio: {{ dominio }} <br/>
+  Direcciones URL reportadas: <br/>
+  {% for u in urls %}
+    {{ u }}<br/>
+  {% endfor %}
   De: {{ de }} <br/>
   Para: {{ para }} <br/>
   Asunto: {{ asunto }} <br/>

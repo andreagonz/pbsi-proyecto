@@ -103,7 +103,7 @@ class Dominio(models.Model):
     
     def __str__(self):
         return self.dominio
-
+    
     @property
     def servidor_web(self):
         if self.servidor:
@@ -144,6 +144,7 @@ class Url(models.Model):
     dominio = models.ForeignKey(Dominio, on_delete=models.PROTECT)
     archivo = models.FileField(storage=OverwriteStorage(),
                                upload_to='archivos', blank=True, null=True)
+    redireccion = models.URLField(max_length=512, null=True)
     
     @property
     def captura_url(self):
