@@ -35,7 +35,7 @@ import time
 from django.urls import reverse_lazy
 from django.views.generic.edit import UpdateView, CreateView
 from django.contrib.auth.mixins import LoginRequiredMixin
-
+from django.db.models import Avg
 from django.views.generic import TemplateView,View
 from django.template import RequestContext
 from django.http import HttpResponse
@@ -512,6 +512,9 @@ def obtener_dias():
     hoy = datetime.datetime.today().weekday() + 1
     return dias[hoy:] + dias[:hoy]
 
+def delta_horas(td):
+    return td.total_seconds() / 3600
+
 class ChartData(LoginRequiredMixin, APIView):
     
     def get(self, request, format=None):
@@ -530,6 +533,27 @@ class ChartData(LoginRequiredMixin, APIView):
             "labels": [p['dominio__asn'] for p in top_hosting],
             "default": [p['cuenta_asn'] for p in top_hosting]
         }
+
+        sitios_activos = 0
+        for x in Url.objects.filter(~Q(codigo__lt=200, codigo__gte=400)):
+            sitios_activos += 1 if x.es_activa else 0
+        sitios_reportados = Url.objects.filter(reportado=True).count()
+        sitios_detectados = Url.objects.count()
+        sitios_data = {
+            'labels': ['Activos', 'Reportados', 'Detectados'],
+            'default': [sitios_activos, sitios_reportados, sitios_detectados]
+        }
+        
+        hoy_tiempo = timezone.localtime(timezone.now())
+        top_sitios = Url.objects.filter(codigo__gte=200,
+                                        codigo__lt=300).values('url').annotate(
+                                            tiempo_vida=(hoy_tiempo -
+                                                F('timestamp_creacion'))).order_by(
+                                                    '-tiempo_vida')[:5]
+        top_sitios_data = {
+            'labels': [x['url'] for x in top_sitios],
+            'default': [delta_horas(x['tiempo_vida']) for x in top_sitios]
+        }
         
         sectores = Url.objects.filter(~Q(entidades_afectadas__clasificacion=None)).values(
             'entidades_afectadas__clasificacion__nombre').annotate(
@@ -542,8 +566,8 @@ class ChartData(LoginRequiredMixin, APIView):
         }
         
         dias = obtener_dias()
-        num_detecciones = []        
-        hoy = timezone.now().date()
+        num_detecciones = [] 
+        hoy = hoy_tiempo.date()
         for x in range(6, -1, -1):
             num_detecciones.append(Url.objects.filter(
                 timestamp_creacion__date=hoy - datetime.timedelta(days=x),
@@ -563,28 +587,28 @@ class ChartData(LoginRequiredMixin, APIView):
             "colores": rand_color.generate(count=len(labels))
         }
         
-        graphs = [top_paises_data, top_hosting_data, [], [], sectores_data, detecciones_data, entidades_data, []]
+        tiempo_promedio_reporte = []
+        tiempo_promedio_postreporte = []
+        for x in range(6, -1, -1):
+             tiempo_promedio_reporte.append(Url.objects.filter(
+                 ~Q(timestamp_reportado=None),
+                 timestamp_reportado__date=hoy - datetime.timedelta(days=x)).annotate(
+                     tiempo_reportado=(F('timestamp_reportado') - F('timestamp_creacion'))).aggregate(
+                         Avg('tiempo_reportado')).get('tiempo_reportado__avg', 0))
+             tiempo_promedio_postreporte.append(Url.objects.filter(
+                 ~Q(timestamp_reportado=None), ~Q(timestamp_desactivado=None),
+                 timestamp_reportado__date=hoy - datetime.timedelta(days=x)).annotate(
+                     tiempo_reportado=(F('timestamp_desactivado') -
+                                       F('timestamp_reportado'))).aggregate(
+                                           Avg('tiempo_reportado')).get('tiempo_reportado__avg', 0))
+        tiempo_reporte_data = {
+            'default1': [delta_horas(x) if x else 0 for x in tiempo_promedio_reporte],
+            'default2': [delta_horas(x) if x else 0 for x in tiempo_promedio_postreporte]
+        }
+        
+        graphs = [top_paises_data, top_hosting_data, sitios_data, top_sitios_data,
+                  sectores_data, detecciones_data, entidades_data, tiempo_reporte_data]
         return Response(graphs)
-
-"""
-days=['Sunday',
-      'Monday',
-      'Tuesday',
-      'Wednesday',
-      'Thursday',
-      'Friday',
-      'Saturday']
-today = datetime.date.today()
-monitor_hour = datetime.datetime(today.year,today.month,today.day-1,0,0,0) ##quitar -1
-start_hour=monitor_hour
-end_hour = monitor_hour.replace(hour=23,minute=59,second=59)
-authentication_classes = []
-permission_classes =  []
-"""
-
-def dash(request):
-        #top5 = top5_countries(request)
-        return render(request,'dashboard.html',{})
 
 @login_required(login_url=reverse_lazy('login'))
 def busca(request):

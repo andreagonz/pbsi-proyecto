@@ -187,6 +187,21 @@ class Url(models.Model):
     def activo(self):
         return self.codigo >= 200 and self.codigo < 300
 
+    @property
+    def es_activa(self):
+        if self.codigo < 300 and self.codigo >= 200:
+            return True
+        elif self.codigo >= 300 and self.codigo < 400 and self.redireccion:
+            r = self.redireccion
+            url = None
+            while r:
+                try:
+                    url = Url.objects.get(url=url)
+                except:
+                    return False
+                r = url.redireccion
+            return not url is None and url.activo
+    
     def __str__(self):
         return self.url
          

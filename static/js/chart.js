@@ -48,15 +48,20 @@ $.ajax({
 		},
 		animation : {
 		    onComplete : function(){
-			const imgWrap = document.getElementById('descarga-top5-paises')
-			imgWrap.href = document.getElementById("top5-paises").toDataURL();
+			// const imgWrap = document.getElementById('descarga-top5-paises')
+			// imgWrap.href = document.getElementById("top5-paises").toDataURL();
 		    }
 		},
 		title: {
 		    display: true,
 		    text: 'Top 5 Países',
 		    fontSize: 16
-		}
+		},
+                legend: {
+                    labels: {
+                        boxWidth: 0,
+                    }
+                }
 	    }
 	});
 
@@ -98,6 +103,11 @@ $.ajax({
 			    beginAtZero: true,
                             stepSize: 1
 			}
+		    }],
+                    xAxes: [{
+			ticks: {
+			    display: false
+			}
 		    }]
 		},
 		animation : {
@@ -110,11 +120,132 @@ $.ajax({
 		    display: true,
 		    text: 'Top 5 Hosting',
 		    fontSize: 16
-		}
+		},
+                legend: {
+                    labels: {
+                        boxWidth: 0,
+                    }
+                }
 	    }
 	});
-
-
+        
+        var sitios = graphs[2].labels
+	var cuenta_sitios = graphs[2].default
+	var sitios_canvas = document.getElementById("sitios-phishing");
+	var sitiosGraph = new Chart(sitios_canvas, {
+	    type: 'bar',
+	    data: {
+		labels: sitios,
+		datasets: [{
+		    label: '',
+		    data: cuenta_sitios,
+		    backgroundColor: [
+			'rgba(255, 99, 132, 0.2)',
+			'rgba(54, 162, 235, 0.2)',
+			'rgba(255, 206, 86, 0.2)'
+		    ],
+		    borderColor: [
+			'rgba(255,99,132,1)',
+			'rgba(54, 162, 235, 1)',
+			'rgba(255, 206, 86, 1)'
+		    ],
+		    borderWidth: 1
+		}]
+	    },
+	    options: {
+		responsive: true,
+		maintainAspectRatio: false,
+		scales: {
+		    yAxes: [{
+			ticks: {
+			    beginAtZero: true,
+                            stepSize: 1
+			}
+		    }]
+		},
+		animation : {
+		    onComplete : function(){
+		    }
+		},
+		title: {
+		    display: true,
+		    text: 'Sitios Phishing',
+		    fontSize: 16
+		},
+                legend: {
+                    labels: {
+                        boxWidth: 0,
+                    }
+                }
+	    }
+	});
+        
+        var urls = graphs[3].labels
+	var tiempo_vida = graphs[3].default
+	var sitios_canvas = document.getElementById("top5-sitios");
+	var tiempo_vida = new Chart(sitios_canvas, {
+	    type: 'horizontalBar',
+	    data: {
+		labels: urls,
+		datasets: [{
+		    label: '',
+		    data: tiempo_vida,
+		    backgroundColor: [
+			'rgba(255, 99, 132, 0.2)',
+			'rgba(54, 162, 235, 0.2)',
+			'rgba(255, 206, 86, 0.2)',
+			'rgba(75, 192, 192, 0.2)',
+			'rgba(153, 102, 255, 0.2)',
+			'rgba(255, 159, 64, 0.2)'
+		    ],
+		    borderColor: [
+			'rgba(255,99,132,1)',
+			'rgba(54, 162, 235, 1)',
+			'rgba(255, 206, 86, 1)',
+			'rgba(75, 192, 192, 1)',
+			'rgba(153, 102, 255, 1)',
+			'rgba(255, 159, 64, 1)'
+		    ],
+		    borderWidth: 1
+		}]
+	    },
+	    options: {
+		responsive: true,
+		maintainAspectRatio: false,
+		scales: {
+		    xAxes: [{
+			ticks: {
+			    beginAtZero: true,
+                            stepSize: 1
+			},
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'T (Horas)'
+                        }
+		    }],
+                    yAxes: [{
+                        barThickness: 10,                        
+		    }]
+		},
+		animation : {
+		    onComplete : function(){
+			// const imgWrap = document.getElementById('descarga-top5-paises')
+			// imgWrap.href = document.getElementById("top5-paises").toDataURL();
+		    }
+		},
+		title: {
+		    display: true,
+		    text: 'Top 5 - Sitios vs Tiempo de Vida',
+		    fontSize: 16
+		},
+                legend: {
+                    labels: {
+                        boxWidth: 0,
+                    }
+                }
+	    }
+	});
+        
         var sectores = graphs[4].labels
 	var cuenta_sectores = graphs[4].default
 	var sectores_canvas = document.getElementById("sectores");
@@ -167,8 +298,7 @@ $.ajax({
 			pointHoverRadius: 10,
 			pointHitRadius: 30,
 			pointBorderWidth: 2,
-			pointStyle: 'rectRounded'
-			
+			pointStyle: 'rectRounded'			
 		    }]
 	    },
 	    options: {
@@ -226,7 +356,79 @@ $.ajax({
 		}
 	    }	    
 	});
-
+        
+        var tiempo_reporte = graphs[7].default1
+	var tiempo_postreporte = graphs[7].default2
+        var tiempo_reporte_canvas = document.getElementById("tiempo-reporte");
+        var reporteGraph = new Chart(tiempo_reporte_canvas, {
+	    type: 'line',
+	    data: {
+		labels: dias,
+		datasets: [
+		    {
+			data: tiempo_reporte,
+			label: "Tiempo promedio de reporte",
+			lineTension: 0,
+			fill: false,
+			borderColor: 'limegreen',
+			backgroundColor: 'transparent',
+			borderDash: [5, 5],
+			pointBorderColor: 'limegreen',
+			pointBackgroundColor: 'limegreen',
+			pointRadius: 5,
+			pointHoverRadius: 10,
+			pointHitRadius: 30,
+			pointBorderWidth: 2,
+			pointStyle: 'rectRounded'			
+		    },
+                    {
+			data: tiempo_postreporte,
+			label: "Tiempo promedio de vida postreporte",
+			lineTension: 0,
+			fill: false,
+			borderColor: 'blue',
+			backgroundColor: 'transparent',
+			borderDash: [5, 5],
+			pointBorderColor: 'blue',
+			pointBackgroundColor: 'blue',
+			pointRadius: 5,
+			pointHoverRadius: 10,
+			pointHitRadius: 30,
+			pointBorderWidth: 2,
+			pointStyle: 'rectRounded'			
+		    }
+                ]
+	    },
+	    options: {
+		responsive: true,
+		maintainAspectRatio: false,
+		scales: {
+		    yAxes: [{
+			ticks: {
+			    beginAtZero:true,
+                            stepSize: 1
+			},
+                        scaleLabel: {
+                            display: true,
+                            labelString: 'T (Horas)'
+                        }
+		    }]
+		},
+		animation : {
+		    onComplete : function(){    
+			//var url_base64jp = document.getElementById("top5-count-chart").toDataURL("image/jpg");
+			//const imgWrap = document.getElementById('link1')
+			//imgWrap.href = url_base64jp 
+			//alert(myChart.toBase64Image());
+		    }
+		},
+		title: {
+		    display: true,
+		    text: 'Tiempo de reporte',
+		    fontSize: 16
+		}
+	    }	    
+	});
         
     },
     error: function(error_data) {

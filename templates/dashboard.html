@@ -5,82 +5,66 @@
 {% load staticfiles %}
 {% block contenido %}
 
-	<center>
-	  <div class="container" style="padding-top: 20px">
-	    <b>Dashboard</b>
-	  </div>
-	</center>        
-        
-	<script type="text/javascript" src="{{ STATIC_URL }} /static/jQuery.js">
-	</script> 
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js"></script>
-	
-	<img id="gr1" />
-	<script src="{% static 'js/chart.js' %}"></script>
+  <center>
+    <div class="container" style="padding-top: 20px">
+      <h1>Dashboard</h1>
+    </div>
+  </center>        
+  
+  <script type="text/javascript" src="{{ STATIC_URL }} /static/jQuery.js">
+  </script> 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.7.2/Chart.min.js"></script>
+  
+  <img id="gr1" />
+  <script src="{% static 'js/chart.js' %}"></script>
 
-        <a id="descarga-top5-paises" download="top5-paises.png">Descargar gráfica</a>
-	<div class="container">
-	  <div class="row">
-	    <div class="col">
-	      <canvas id="top5-paises" width="500px" height="500px"></canvas>
-	    </div>
+  <!-- <a id="descarga-top5-paises" download="top5-paises.png">Descargar gráfica</a> -->
+  <div class="container">
+    
+    <div class="row" style="height:400px"> 
+      <div class="col-4">
+	<canvas id="top5-paises"></canvas>
+      </div>
+      
+      <div class="col-4">
+	<canvas id="top5-hosting"></canvas>
+      </div>
 
-	    <div class="col">
-	      <canvas id="top5-hosting" width="500px" height="500px"></canvas>
-	    </div>
-	  </div>
-          
-	  <!--div class="row">
-	    <div class="col">
-	      <br>
-	      <br>
-	    </div>
-	    <div class="col">
-	      <br>
-	      <br>
-	    </div>
-	  </div-->
-          
-	  <div class="row  justify-content-center">
-	    <div class="col-4">
-	      <canvas id="phishing-sites" width="500px" height="500px"></canvas>
-	    </div>
-	    <div class="col-4 ">
-	      <canvas id="report-week" width="500px" height="500px"></canvas>
-      	    </div>
-      	    <div class="col-4">
-	      <canvas id="sites-active" width="500px" height="500px"></canvas>
-      	    </div>
-  	  </div>
-          
-  	  <!--div class="row">
-	    <div class="col">
-	      <br>
-	      <br>
-	    </div>
-	    <div class="col">
-	      <br>
-	      <br>
-	    </div>
-	  </div-->
-  	  <div class="row justify-content-center">
-	    <div class="col-4">
-	      <canvas id="sectores" width="300px" height="300px"></canvas>
-	    </div>
-            <div class="col-4">
-	      <canvas id="detecciones" width="300px" height="300px"></canvas>
-	    </div>
-            <div class="col-4">
-	      <canvas id="entidades" width="300px" height="300px"></canvas>
-	    </div>
-  	  </div>
-  	 </div>
-	
-	{% block content %}
-		<div>
+      <div class="col-4">
+	<canvas id="sitios-phishing"></canvas>
+      </div>
+    </div>
+    
+    <div class="row  justify-content-center" style="height:300px">
+      <div class="col">
+	<canvas id="top5-sitios"></canvas>
+      </div>
+    </div>
+    
+    <div class="row justify-content-center" style="height:300px">
+      <div class="col-6">
+	<canvas id="entidades"></canvas>
+      </div>
+      <div class="col-6">
+	<canvas id="sectores"></canvas>
+      </div>
+    </div>
+    
+    <div class="row justify-content-center" style="height:400px">
+      <div class="col-6">
+	<canvas id="detecciones"></canvas>
+      </div>
+      <div class="col-6">
+	<canvas id="tiempo-reporte"></canvas>
+      </div>
+    </div>
+  </div>
+  
+  {% block content %}
+    <div>
 
 
-		</div>
-	{% endblock content %}
- {% endblock %}
+    </div>
+  {% endblock content %}
+{% endblock %}
 
