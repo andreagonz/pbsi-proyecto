@@ -53,6 +53,12 @@ from phishing.phishing import lineas_md5,md5,archivo_hashes
 from docx import Document
 from docx.shared import Inches
 from .entrada import( lee_csv, lee_txt, lee_json )
+import matplotlib.pyplot as plt
+import tempfile
+import random
+import string
+import numpy as np
+from docx.shared import Inches
 
 @login_required(login_url=reverse_lazy('login'))
 def monitoreo(request):
@@ -78,7 +84,6 @@ def cpimg(img, img2):
 def redirecciones_reporta(url):
     if url.reportado:
         return
-    print('url:' + str(url))
     url.reportado = True
     url.timestamp_reportado = timezone.now()
     url.save()
@@ -246,8 +251,7 @@ def busca(request):
             SearchVector('identificador') + SearchVector('titulo') +
             SearchVector('hash_archivo') + SearchVector('redireccion') +
             SearchVector('dominio__servidor')
-        ).filter(search__icontains=q).distinct('url')
-        print(resultados)
+        ).filter(search=SearchQuery(q)).distinct('url')
     return render(request, 'results.html',
                   {'resultados': resultados,
                    'query': q
@@ -259,7 +263,7 @@ def muestraResultados(request,srch):
     
 @login_required(login_url=reverse_lazy('login'))
 def historico(request):
-    fin = timezone.now()
+    fin = timezone.localtime(timezone.now()).date()
     inicio = fin - timedelta(days=1)
     form = HistoricoForm()
     if request.method == 'POST':
@@ -267,7 +271,7 @@ def historico(request):
         if form.is_valid():
             inicio = form.cleaned_data['inicio']
             fin = form.cleaned_data['fin']
-    sitios = Url.objects.filter(timestamp__lte=fin + timedelta(days=1), timestamp__gte=inicio)
+    sitios = Url.objects.filter(timestamp__date__lte=fin, timestamp__date__gte=inicio)
     context = context_reporte(sitios)
     context['inicio'] = inicio
     context['fin'] = fin
@@ -485,7 +489,6 @@ class ChartData(LoginRequiredMixin, APIView):
 
         sitios_activos = 0
         for x in Url.objects.filter(~Q(codigo__lt=200, codigo__gte=400)):
-            print(x.url)
             sitios_activos += 1 if x.es_activa else 0
         sitios_reportados = Url.objects.filter(reportado=True).count()
         sitios_detectados = Url.objects.count()
@@ -565,118 +568,271 @@ class DocumentView(LoginRequiredMixin, View):
         if request.method == 'POST':
             return render(request,'dashboard.html',{})
         else:
-            formulario = Doc()
-            return render(request,'generar_rep.html',{'form':formulario})
-        #return render(request, 'generar_rep.html', {})
+            return render(request,'generar_rep.html', {'form': GraficasForm()})
 
+def agrega_imagen(fig, documento):
+    try:
+        a = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8))
+        path = '/tmp/%s.png' % a
+        fig.savefig(path)
+        plt.clf()
+        documento.add_picture(path)
+        os.remove(path)
+    except Exception as e:
+        print(str(e))        
+        
 @login_required(login_url=reverse_lazy('login'))
 def createDoc(request):
     if request.method == 'POST':
-        _post = Doc(request.POST)
-        if _post.is_valid():
-            nombre_archivo = _post.cleaned_data['nombre']
-            init = _post.cleaned_data['inicio']
-            fin = _post.cleaned_data['fin']
-            ##
-            sitios = Url.objects.filter(timestamp__lte=fin, timestamp__gte=init)
-            context = context_reporte(sitios)
-            context['inicio'] = init
-            context['fin'] = fin
-            context['form'] = _post                
+        form = GraficasForm(request.POST)
+        if form.is_valid():
+            archivo = form.cleaned_data['archivo']
+            sitios = form.cleaned_data['sitios']
+            top_sitios = form.cleaned_data['top_sitios']
+            sectores = form.cleaned_data['sectores']
+            entidades = form.cleaned_data['entidades']
+            detecciones = form.cleaned_data['detecciones']
+            tiempo_reporte = form.cleaned_data['tiempo_reporte']
+            top_paises = form.cleaned_data['top_paises']
+            top_hosting = form.cleaned_data['top_hosting']
+            urls_info = form.cleaned_data['urls']
+            graficas = []
+            rand_color = randomcolor.RandomColor()
             document = Document()
-            document.add_heading('Reporte',0)
-            p=document.add_paragraph('Reporte elaborado por la herramienta ')
+            document.add_heading('Reporte', 0)
+            p = document.add_paragraph('Reporte elaborado por la herramienta ')
             p.add_run('SAAPM').bold = True
+            inicio = form.cleaned_data['inicio']
+            fin = form.cleaned_data['fin']
+            urls = Url.objects.filter(timestamp_creacion__date__gte=inicio,
+                                      timestamp_creacion__date__lte=fin)
             document.add_heading('Periodo',level=1)
             q = document.add_paragraph('De: ')
-            q.add_run(str(context['inicio'])).bold = True
+            q.add_run(str(inicio)).bold = True
             q.add_run('      ')
             q.add_run('A :  ')
-            q.add_run(str(context['fin'])).bold = True
-            """
-            for key,value in context.items():
-                #document.add_paragraph(key + ':' )
-                # if type(value) is str:
-                document.add_paragraph(key + ':' +str(value))
-                if type(value) is dict:
-                    pass
-                # document.save(nombre_archivo+'.docx')
-                response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-                response['Content-Disposition'] = 'attachment; filename='+nombre_archivo+'.docx'
-                document.save(response)
-            """
-            response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
-            response['Content-Disposition'] = 'attachment; filename='+nombre_archivo+'.docx'
-            activas = urls_activas(sitios)
-            inactivas = urls_inactivas(sitios)
-            redirecciones = urls_redirecciones(sitios)
-            dominios = urls_dominios(sitios)
-            q = document.add_paragraph("URLs analizadas: %d\n" % cuenta_urls(sitios))
-            q.add_run("URLs activas: %d\n" % len(activas))
-            q.add_run("URLs inactivas: %d\n" % len(inactivas))
-            q.add_run("URLs redirecciones: %d\n" % len(redirecciones))
-            q.add_run("Dominios afectados: %d" % len(dominios))
-            q = document.add_paragraph("")
-            q.add_run("Entidades:\n").bold = True            
-            for e in urls_entidades(sitios):
-                q.add_run("%s\n" % e)
-            q = document.add_paragraph("")
-            q.add_run("Dominios:").bold = True
-            for e in dominios:
-                q.add_run("%s\n" % e)
-            q = document.add_paragraph("")
-            q.add_run("Países:\n").bold = True
-            for e in urls_paises(sitios):
-                q.add_run("%s\n" % e)
-            q = document.add_paragraph("")
-            q.add_run("SITIOS ACTIVOS:\n\n").bold = True
-            for u in activas:
-                q.add_run("Identificador: %s\n" % u.identificador)
-                q.add_run("Timestamp: %s\n" % u.timestamp)
-                q.add_run("IP: %s\n" % u.ip)
-                q.add_run("Código: %d\n" % u.codigo)
-                q.add_run("URL: %s\n" % u.url)
-                q.add_run("Reportado: %s\n" % u.reportado)
-                q.add_run("Título: %s\n" % u.titulo)
-                q.add_run("Entidades: %s\n" % u.entidades)
-                q.add_run("Ofuscacion: %s\n" % u.ofuscacion)
-                q.add_run("Correos: %s\n" % u.correos)
-                q.add_run("Netname: %s\n" % u.netname)
-                q.add_run("País: %s\n\n" % u.pais)
+            q.add_run(str(fin)).bold = True
 
-            q = document.add_paragraph("")
-            q.add_run("SITIOS INACTIVOS:\n\n").bold = True
-            for u in inactivas:
-                q.add_run("Identificador: %s\n" % u.identificador)
-                q.add_run("Timestamp: %s\n" % u.timestamp)
-                q.add_run("IP: %s\n" % u.ip)
-                q.add_run("Código: %d\n" % u.codigo)
-                q.add_run("URL: %s\n" % u.url)
-                q.add_run("Reportado: %s\n" % u.reportado)
-                q.add_run("Correos: %s\n" % u.correos)
-                q.add_run("Netname: %s\n" % u.netname)
-                q.add_run("País: %s\n\n" % u.pais)
+            if sitios:
+                sitios_activos = 0
+                for x in urls.filter(Q(timestamp_desactivado=None) |
+                                     Q(timestamp_desactivado__date__lte=fin)):
+                    sitios_activos += 1 if x.es_activa else 0
+                sitios_reportados = urls.filter(
+                    timestamp_reportado__date__gte=inicio,
+                    timestamp_reportado__date__lte=fin).count()
+                sitios_detectados = urls.count()
+                x = ['Activos', 'Reportados', 'Detectados']
+                y = [sitios_activos, sitios_reportados, sitios_detectados]
+                y_pos = np.arange(len(x))
+                fig, ax = plt.subplots()
+                ax.set_ylabel('Número de sitios')
+                ax.bar(y_pos, y, align='center', alpha=0.5)
+                plt.xticks(y_pos, x)
+                ax.set_title('Estados de sitios phishing')
+                agrega_imagen(fig, document)
 
-            q = document.add_paragraph("")
-            q.add_run("REDIRECCIONES:\n\n").bold = True
-            for u in redirecciones:
-                q.add_run("Identificador: %s\n" % u.identificador)
-                q.add_run("Timestamp: %s\n" % u.timestamp)
-                q.add_run("IP: %s\n" % u.ip)
-                q.add_run("Código: %d\n" % u.codigo)
-                q.add_run("URL: %s\n" % u.url)
-                q.add_run("Correos: %s\n" % u.correos)
-                q.add_run("Netname: %s\n" % u.netname)
-                q.add_run("País: %s\n\n" % u.pais)
+            if top_sitios:
+                hoy = timezone.localtime(timezone.now())
+                if fin < hoy.date():
+                    f_fin = fin + timedelta(days=1)
+                else:
+                    f_fin = hoy
+                top_sitios = urls.filter(Q(timestamp_desactivado=None) |
+                                         Q(timestamp_desactivado__date__lte=f_fin)).values(
+                                             'url').annotate(tiempo_vida=(
+                                                 f_fin - F('timestamp_creacion'))).order_by(
+                                                     '-tiempo_vida')[:5]
+                y = [x['url'] for x in top_sitios]
+                x = [delta_horas(x['tiempo_vida']) for x in top_sitios]
+                y_pos = np.arange(len(x))
+                fig, ax = plt.subplots()
+                fig.subplots_adjust(left=0.5)
+                ax.set_xlabel('T (Horas)')
+                ax.barh(y_pos, x, align='center', alpha=0.5)
+                plt.yticks(y_pos, y)
+                ax.set_title('Top 5 – Sitios phishing vs Tiempo de vida')
+                agrega_imagen(fig, document)
                 
+            if sectores:
+                sectores = urls.filter(~Q(entidades_afectadas__clasificacion=None)).values(
+                    'entidades_afectadas__clasificacion__nombre').annotate(
+                        cuenta_sectores=Count('entidades_afectadas__clasificacion__nombre'))
+                x = [e['entidades_afectadas__clasificacion__nombre'] for e in sectores]
+                y = [e['cuenta_sectores'] for e in sectores]
+                colores = rand_color.generate(count=len(x))
+                fig, ax = plt.subplots()
+                ax.pie(y, labels=x, colors=colores, autopct='%1.1f%%', startangle=90)
+                ax.set_title('Sectores afectados')
+                ax.axis('equal')
+                agrega_imagen(fig, document)
+                
+            if entidades:
+                entidades = urls.filter(~Q(entidades_afectadas=None)).values(
+                    'entidades_afectadas__nombre').annotate(
+                        cuenta_entidades=Count('entidades_afectadas__nombre'))
+                x = [e['entidades_afectadas__nombre'] for e in entidades]
+                y = [e['cuenta_entidades'] for e in entidades]
+                colores = rand_color.generate(count=len(x))
+                fig, ax = plt.subplots()
+                ax.pie(y, labels=x, colors=colores, autopct='%1.1f%%', startangle=90)
+                ax.set_title('Entidades afectadas')
+                ax.axis('equal')
+                agrega_imagen(fig, document)
+
+            if detecciones:
+                ndias = (fin - inicio).days
+                fechas = [inicio + datetime.timedelta(days=i) for i in range(ndias + 1)]
+                y = []
+                for d in fechas:
+                    y.append(urls.filter(timestamp_creacion__date=d).count())
+                x = [str(f) for f in fechas]
+                y_pos = np.arange(len(x))
+                fig, ax = plt.subplots()
+                fig.subplots_adjust(bottom=0.2)
+                ax.set_ylabel('Número de detecciones')
+                ax.bar(y_pos, y, align='center', alpha=0.5)
+                plt.xticks(y_pos, x, rotation=45)
+                ax.set_title('Número de detecciones por fecha')
+                agrega_imagen(fig, document)
+
+            if tiempo_reporte:
+                ndias = (fin - inicio).days
+                fechas = [inicio + datetime.timedelta(days=i) for i in range(ndias + 1)]
+                y = []
+                x = [str(f) for f in fechas]
+                tiempo_promedio_reporte = []
+                tiempo_promedio_postreporte = []
+                for d in fechas:
+                    tiempo_promedio_reporte.append(urls.filter(
+                        ~Q(timestamp_reportado=None),
+                        timestamp_reportado__date=d).annotate(tiempo_reportado=(
+                            F('timestamp_reportado') - F('timestamp_creacion'))).aggregate(
+                                Avg('tiempo_reportado')).get('tiempo_reportado__avg', 0))
+                    tiempo_promedio_postreporte.append(urls.filter(
+                        ~Q(timestamp_reportado=None), ~Q(timestamp_desactivado=None),
+                        timestamp_reportado__date=d).annotate(
+                            tiempo_reportado=(F('timestamp_desactivado') -
+                                      F('timestamp_reportado'))).aggregate(
+                                          Avg('tiempo_reportado')).get('tiempo_reportado__avg', 0))
+                y1 = [delta_horas(x) if x else 0 for x in tiempo_promedio_reporte]
+                y2 = [delta_horas(x) if x else 0 for x in tiempo_promedio_postreporte]
+                fig, ax = plt.subplots()
+                fig.subplots_adjust(bottom=0.3)
+                line1, = ax.plot(x, y1, linewidth=2,
+                                 label='Tiempo promedio de reporte')
+                line2, = ax.plot(x, y2, linewidth=2,
+                                 label='Tiempo promedio de vida postreporte')
+                plt.xticks(rotation=45)
+                ax.set_ylabel('T (Horas)')
+                ax.set_title('Tiempo promedio de reporte vs tiempo promedio de vida postreporte')
+                ax.legend(loc='best')
+                agrega_imagen(fig, document)
+
+            if top_paises:
+                top_paises = urls.filter(~Q(dominio__pais=None)).values(
+                    'dominio__pais').annotate(
+                        cuenta_pais=Count('dominio__pais')).order_by('-cuenta_pais')[:10]
+                x = [p['dominio__pais'] for p in top_paises]
+                y = [p['cuenta_pais'] for p in top_paises]
+                fig, ax = plt.subplots()
+                ax.set_ylabel('Número de sitios')
+                y_pos = np.arange(len(x))
+                ax.bar(y_pos, y, align='center', alpha=0.5)
+                plt.xticks(y_pos, x)
+                ax.set_title('Top 10 países que hospedan phishing')
+                agrega_imagen(fig, document)
+                
+            if top_hosting:
+                top_hosting = urls.filter(~Q(dominio__asn=None)).values(
+                    'dominio__asn').annotate(
+                        cuenta_asn=Count('dominio__asn')).order_by('-cuenta_asn')[:10]
+                x =  [p['dominio__asn'] for p in top_hosting]
+                y = [p['cuenta_asn'] for p in top_hosting]
+                fig, ax = plt.subplots()
+                fig.subplots_adjust(bottom=0.5)
+                ax.set_ylabel('Número de sitios')
+                y_pos = np.arange(len(x))
+                ax.bar(y_pos, y, align='center', alpha=0.5)
+                plt.xticks(y_pos, x, rotation=70)
+                ax.set_title('Top 10 servicios de hosting que hospedan phishing')
+                agrega_imagen(fig, document)
+
+            if urls_info:
+                activas = urls_activas(urls)
+                inactivas = urls_inactivas(urls)
+                redirecciones = urls_redirecciones(urls)
+                dominios = urls_dominios(urls)
+                q = document.add_paragraph("URLs analizadas: %d\n" % cuenta_urls(urls))
+                q.add_run("URLs activas: %d\n" % len(activas))
+                q.add_run("URLs inactivas: %d\n" % len(inactivas))
+                q.add_run("URLs redirecciones: %d\n" % len(redirecciones))
+                q.add_run("Dominios afectados: %d" % len(dominios))
+                q = document.add_paragraph("")
+                q.add_run("Entidades:\n").bold = True            
+                for e in urls_entidades(urls):
+                    q.add_run("%s\n" % e)
+                q = document.add_paragraph("")
+                q.add_run("Dominios:\n").bold = True
+                for e in dominios:
+                    q.add_run("%s\n" % e)
+                q = document.add_paragraph("")
+                q.add_run("Países:\n").bold = True
+                for e in urls_paises(urls):
+                    q.add_run("%s\n" % e)
+
+                q = document.add_paragraph("")                
+                q.add_run("SITIOS ACTIVOS:\n").bold = True
+                for u in activas:
+                    if u.captura and hasattr(u.captura, 'file'):
+                        document.add_picture(u.captura.file, width=Inches(4.0))
+                    q = document.add_paragraph("")
+                    q.add_run("Identificador: %s\n" % u.identificador)
+                    q.add_run("Timestamp: %s\n" % u.timestamp)
+                    q.add_run("IP: %s\n" % u.dominio.ip)
+                    q.add_run("Código: %d\n" % u.codigo)
+                    q.add_run("URL: %s\n" % u.url)
+                    q.add_run("Reportado: %s\n" % u.reportado)
+                    q.add_run("Título: %s\n" % u.titulo)
+                    q.add_run("Entidades: %s\n" % u.entidades)
+                    q.add_run("Ofuscacion: %s\n" % u.ofuscaciones)
+                    q.add_run("Correos: %s\n" % u.dominio.correos_abuso)
+                    q.add_run("ASN: %s\n" % u.dominio.asn)
+                    q.add_run("País: %s\n\n" % u.dominio.pais)
+
+                q = document.add_paragraph("")
+                q.add_run("SITIOS INACTIVOS:\n\n").bold = True
+                for u in inactivas:
+                    q.add_run("Identificador: %s\n" % u.identificador)
+                    q.add_run("Timestamp: %s\n" % u.timestamp)
+                    q.add_run("IP: %s\n" % u.dominio.ip)
+                    q.add_run("Código: %d\n" % u.codigo)
+                    q.add_run("URL: %s\n" % u.url)
+                    q.add_run("Reportado: %s\n" % u.reportado)
+                    q.add_run("Correos: %s\n" % u.dominio.correos_abuso)
+                    q.add_run("ASN: %s\n" % u.dominio.asn)
+                    q.add_run("País: %s\n\n" % u.dominio.pais)
+
+                q = document.add_paragraph("")
+                q.add_run("REDIRECCIONES:\n\n").bold = True
+                for u in redirecciones:
+                    q.add_run("Identificador: %s\n" % u.identificador)
+                    q.add_run("Timestamp: %s\n" % u.timestamp)
+                    q.add_run("IP: %s\n" % u.dominio.ip)
+                    q.add_run("Código: %d\n" % u.codigo)
+                    q.add_run("URL: %s\n" % u.url)
+                    q.add_run("Correos: %s\n" % u.dominio.correos_abuso)
+                    q.add_run("ASN: %s\n" % u.dominio.asn)
+                    q.add_run("País: %s\n\n" % u.dominio.pais)
+            response = HttpResponse(
+                content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            )
+            response['Content-Disposition'] = 'attachment; filename=%s.docx' % archivo
             document.save(response)
             return response
-            # return render(request,'generar_rep.html',{'nom':nombre_archivo,'env':True})
-        else:            
-            formulario = Doc()
-            return render(request,'generar_rep.html',{'form':formulario})
+        else:
+            return render(request,'generar_rep.html', {'form': GraficasForm()})
 
-# @login_required(login_url=reverse_lazy('login'))
 def entrada(request):
     if request.method == 'POST':
         if request.POST.get("boton_correo"):

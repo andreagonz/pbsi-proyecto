@@ -27,11 +27,16 @@ class Search(forms.Form):
     search=forms.CharField(max_length=500,required=True)
 
 class HistoricoForm(forms.Form):
-    inicio = forms.DateField(widget=SelectDateWidget
-                                 (years=range(timezone.now().year - 10, timezone.now().year + 1)))
-    fin = forms.DateField(widget=SelectDateWidget
-                              (years=range(timezone.now().year - 10, timezone.now().year + 1)))
-
+    inicio = forms.DateField(label='Fecha inicio', widget=SelectDateWidget(
+        years=range(timezone.localtime(timezone.now()).year - 10,
+                    timezone.localtime(timezone.now()).year + 1)),
+                             initial=timezone.localtime(timezone.now()))
+    fin = forms.DateField(label='Fecha fin',
+                          widget=SelectDateWidget(
+                              years=range(timezone.localtime(timezone.now()).year - 10,
+                                          timezone.localtime(timezone.now()).year + 1)),
+                          initial=timezone.localtime(timezone.now()))
+    
 class CambiaAsuntoForm(forms.Form):
     asunto = forms.CharField(max_length=512, required=True)
 
@@ -51,11 +56,6 @@ class RecursoForm(ModelForm):
             "max_urls": _("Número máximo de URLs a extraer por consulta"),
         }
 
-class Doc(forms.Form):
-    nombre = forms.CharField(max_length=100,required=True)
-    inicio = forms.DateField(widget=SelectDateWidget(years=range(timezone.now().year - 10, timezone.now().year + 1)))
-    fin = forms.DateField(widget=SelectDateWidget(years=range(timezone.now().year - 10, timezone.now().year + 1)))
-
 class CorreoForm(forms.Form):
     correo = forms.CharField(label='Correo', widget=forms.Textarea, required=False)
     
@@ -64,3 +64,25 @@ class ArchivoForm(forms.Form):
 
 class CorreoArchivoForm(forms.Form):
     file = forms.FileField(label='Archivo', required=False)
+
+class GraficasForm(forms.Form):
+
+    archivo = forms.CharField(label='Nombre de archivo', max_length=128)
+    inicio = forms.DateField(label='Fecha inicio', widget=SelectDateWidget(
+        years=range(timezone.localtime(timezone.now()).year - 10,
+                    timezone.localtime(timezone.now()).year + 1)),
+                             initial=timezone.localtime(timezone.now()))
+    fin = forms.DateField(label='Fecha fin',
+                          widget=SelectDateWidget(
+                              years=range(timezone.localtime(timezone.now()).year - 10,
+                                          timezone.localtime(timezone.now()).year + 1)),
+                          initial=timezone.localtime(timezone.now()))
+    sitios = forms.BooleanField(label='Sitios de phishing', required=False)
+    top_sitios = forms.BooleanField(label='Top 5 sitios phishing vs tiempo de vida', required=False)
+    sectores = forms.BooleanField(label='Sectores afectados', required=False)
+    entidades = forms.BooleanField(label='Entidades afectadas', required=False)
+    detecciones = forms.BooleanField(label='Número de detecciones', required=False)
+    tiempo_reporte = forms.BooleanField(label='Tiempo promedio de reporte', required=False)
+    top_paises = forms.BooleanField(label='Top 10 países que hospedan phishing', required=False)
+    top_hosting = forms.BooleanField(label='Top 10 servicios de hosting', required=False)
+    urls = forms.BooleanField(label='Adjuntar información sobre URLs', required=False)
