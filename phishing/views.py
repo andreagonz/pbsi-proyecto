@@ -39,7 +39,6 @@ from django.db.models import Avg
 from django.views.generic import TemplateView,View
 from django.template import RequestContext
 from django.http import HttpResponse
-from django.contrib.postgres.search import SearchQuery, SearchRank, SearchVector
 from phishing.forms import *
 from django.core.exceptions import MultipleObjectsReturned
 from django.http import JsonResponse
@@ -231,78 +230,28 @@ def url_detalle(request, pk):
 
 @login_required(login_url=reverse_lazy('login'))
 def busca(request):
-	resultados_ip=list()
-	resultados_mail=list()
-	resultados_dom=list()
-	resultados_com=list()
-	resultados_hash=list()
-	message = "No se encontraron coincidencias"
-	message2=""
-	if request.method == "POST":
-		campoBusqueda= Search(request.POST)
-		if campoBusqueda.is_valid():
-			match = campoBusqueda.cleaned_data['search']
-			template = loader.get_template('results.html')
-			query = SearchQuery(match)
-			vector = SearchVector('ip')
-			qs = Url.objects.annotate(
-				search=vector).filter(
-				search=query).values('id')
-			vector_mail=SearchVector('correo')
-			qs_mail = Correo.objects.annotate(
-				search=vector_mail).filter(
-				search=query).values('id')
-			vector_com = SearchVector('comentario')	
-			qs_com = Comentario.objects.filter(
-				comentario__contains=match).values('url_id','id')
-			vector_hash= SearchVector('hash')			
-			qs_hash = Hash.objects.annotate(
-				search=vector_hash).filter(
-				search=query).values('url_id','id')
-			#if len(qs)!=0:
-			#return redirect('muestraResultados',reg=qs)
-			###################################
-			try:
-				for i in qs.get():
-					row = Url.objects.filter(id=qs.get()[i])
-					resultados_ip.append(row.values().get())
-			except Exception as e:
-				print(e)
-			#resultados = qs.get()
-			#return render(request,'results.html',{'resultados':resultados,'match':match})
-			#elif len(qs_mail)!=0:					
-			try:
-				for i in qs_mail.get():
-					row = Url.objects.filter(id=qs_mail.get()[i])
-					resultados_mail.append(row.values().get())		
-			except Exception as e:
-				print(e)
-			try:					
-				
-				row = Url.objects.filter(id=qs_com.get()['url_id']).values().get()
-				comm = Comentario.objects.filter(id=qs_com.get()['id']).values('comentario','num_linea').get()
-				row['comentario']=comm['comentario']
-				row['numero_linea']=comm['num_linea']	
-				resultados_com.append(row)	
-				
-			except MultipleObjectsReturned:
-				for i in qs_com:
-					row = Url.objects.filter(id=i['url_id']).values().get()
-					print(type(row))
-					comm = Comentario.objects.filter(id=i['id']).values('comentario','num_linea').get()
-					row['comentario']=comm['comentario']
-					row['numero_linea']=comm['num_linea']
-					resultados_com.append(row)
-			except Exception as e:
-				print(e)	
-			return render(request,'results.html',{'resultados_ip':resultados_ip,'resultados_mail':resultados_mail,'resultados_com':resultados_com,'match':match})
-			#return HttpResponse(template.render({'campoBusqueda':campoBusqueda}, request))
-		else:
-			message2 = "Campo Vacío. \nIngresa una IP, URL, Hash ,etc."
-			return render(request,'busqueda.html',{'message2':message2})	
-	else:	 
-		campoBusqueda= Search()
-		return render(request, 'busqueda.html', {})
+    message = "No se encontraron coincidencias"
+    resultados = []
+    q = ''
+    if request.method == "GET" and request.GET.get('q', None):
+        q = request.GET['q'].strip()
+        resultados = Url.objects.annotate(
+            search=SearchVector('url') + SearchVector('dominio__dominio') +
+            SearchVector('entidades_afectadas__clasificacion__nombre') +
+            SearchVector('entidades_afectadas__nombre') +
+            SearchVector('ofuscacion__nombre') + SearchVector('dominio__correos__correo') +
+            SearchVector('dominio__rir__nombre') + SearchVector('dominio__dns__nombre') +
+            SearchVector('dominio__ip') + SearchVector('dominio__pais') +
+            SearchVector('dominio__asn') + SearchVector('dominio__isp') +
+            SearchVector('identificador') + SearchVector('titulo') +
+            SearchVector('hash_archivo') + SearchVector('redireccion') +
+            SearchVector('dominio__servidor')
+        ).filter(search__icontains=q).distinct('url')
+        print(resultados)
+    return render(request, 'results.html',
+                  {'resultados': resultados,
+                   'query': q
+                  })
 
 @login_required(login_url=reverse_lazy('login'))
 def muestraResultados(request,srch):
@@ -536,6 +485,7 @@ class ChartData(LoginRequiredMixin, APIView):
 
         sitios_activos = 0
         for x in Url.objects.filter(~Q(codigo__lt=200, codigo__gte=400)):
+            print(x.url)
             sitios_activos += 1 if x.es_activa else 0
         sitios_reportados = Url.objects.filter(reportado=True).count()
         sitios_detectados = Url.objects.count()
@@ -609,91 +559,6 @@ class ChartData(LoginRequiredMixin, APIView):
         graphs = [top_paises_data, top_hosting_data, sitios_data, top_sitios_data,
                   sectores_data, detecciones_data, entidades_data, tiempo_reporte_data]
         return Response(graphs)
-
-@login_required(login_url=reverse_lazy('login'))
-def busca(request):
-    context_instance = RequestContext(request)
-    resultados_ip=list()
-    resultados_mail=list()
-    resultados_dom=list()
-    resultados_com=list()
-    resultados_hash_file=list()
-    resultados_hash=list()
-    message = "No se encontraron coincidencias"
-    message2=""
-    if request.method == "POST":
-        campoBusqueda= Search(request.POST)
-        if campoBusqueda.is_valid():
-            match = campoBusqueda.cleaned_data['search']
-            template = loader.get_template('results.html')
-            query = SearchQuery(match)
-            vector = SearchVector('ip')
-            qs = Url.objects.annotate(
-                search=vector).filter(
-                    search=query).values('id')
-            vector_mail=SearchVector('correos__correo')
-            qs_mail = Url.objects.annotate(
-                search=vector_mail).filter(
-                    search=query).values('id')
-            vector_dom = SearchVector('dominio__dominio')
-            qs_domain = Url.objects.annotate(
-                search=vector_dom).filter(
-                    search=query).values('id')
-            vector_hash_file = SearchVector('hash_archivo')
-            qs_hash_file = Url.objects.annotate(
-                search=vector_hash_file).filter(
-                    search=query).values('id')
-            qs_hash_lines = Url.objects.all()
-            try:
-                values_ip = qs.values().all()
-                for rec  in values_ip:
-                    row = rec
-                    entidades = Url.objects.values('entidades_afectadas__nombre').filter(id=row['id']).get()
-                    correo = Url.objects.values('correos__correo').filter(id=row['id']).get()
-                    dominio = Url.objects.values('dominio__dominio').filter(id=row['id']).get()
-                    row['entidades'] = list(entidades.values())
-                    row['correo'] = correo['correos__correo']
-                    row['dominio'] = dominio['dominio__dominio']
-                    resultados_ip.append(row)
-            except Exception as e:
-                print(e)
-            try:
-                values_m = qs_mail.values().all()
-                for rec in values_m:
-                    row = rec
-                    entidades = Url.objects.values('entidades_afectadas__nombre').filter(id=row['id']).get()
-                    dominio = Url.objects.values('dominio__dominio').filter(id=row['id']).get()
-                    row['entidades'] = list(entidades.values())
-                    row['dominio'] = dominio['dominio__dominio']
-                    resultados_mail.append(row)       
-            except Exception as e:
-                print(e)      
-            ## Búsqueda de dominios
-            try:
-                values_d = qs_domain.values().all()
-                for rec in values_d:
-                    row = rec
-                    correo = Url.objects.values('correos__correo').filter(id=row['id']).get()
-                    row['correo'] = correo['correos__correo']
-                    resultados_dom.append(row)
-            except Exception as e:
-                print(e)
-            ### Búsqueda de Hash de archivos
-            try:
-                values_h_f = qs_hash_file.values().all()
-                for rec in values_h_f:
-                    row = rec
-                    resultados_hash_file.append(row)
-            except Exception as e:                
-                print(e)
-            return render(request,'results.html',{'resultados_ip':resultados_ip,'resultados_mail':resultados_mail,'resultados_com':resultados_com,
-                                                  'resultados_dom':resultados_dom,'resultados_hf':resultados_hash_file,'match':match})
-        else:
-            message2 = "Campo Vacío. \nIngresa una IP, URL, Hash ,etc."
-            return render(request,'busqueda.html',{'message2':message2})    
-    else:
-        campoBusqueda= Search()
-        return render(request, 'dashboard.html', {})
 
 class DocumentView(LoginRequiredMixin, View):
     def get(self,request, *args, **kwargs):

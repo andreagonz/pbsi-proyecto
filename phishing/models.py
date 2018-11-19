@@ -196,8 +196,8 @@ class Url(models.Model):
             url = None
             while r:
                 try:
-                    url = Url.objects.get(url=url)
-                except:
+                    url = Url.objects.get(url=r)
+                except Url.DoesNotExist:
                     return False
                 r = url.redireccion
             return not url is None and url.activo

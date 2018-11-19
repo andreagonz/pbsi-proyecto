@@ -41,8 +41,7 @@ $.ajax({
 		scales: {
 		    yAxes: [{
 			ticks: {
-			    beginAtZero:true,
-                            stepSize: 1
+			    beginAtZero:true
 			}
 		    }]
 		},
@@ -100,8 +99,7 @@ $.ajax({
 		scales: {
 		    yAxes: [{
 			ticks: {
-			    beginAtZero: true,
-                            stepSize: 1
+			    beginAtZero: true
 			}
 		    }],
                     xAxes: [{
@@ -158,8 +156,7 @@ $.ajax({
 		scales: {
 		    yAxes: [{
 			ticks: {
-			    beginAtZero: true,
-                            stepSize: 1
+			    beginAtZero: true
 			}
 		    }]
 		},
@@ -215,8 +212,7 @@ $.ajax({
 		scales: {
 		    xAxes: [{
 			ticks: {
-			    beginAtZero: true,
-                            stepSize: 1
+			    beginAtZero: true
 			},
                         scaleLabel: {
                             display: true,
@@ -406,7 +402,6 @@ $.ajax({
 		    yAxes: [{
 			ticks: {
 			    beginAtZero:true,
-                            stepSize: 1
 			},
                         scaleLabel: {
                             display: true,

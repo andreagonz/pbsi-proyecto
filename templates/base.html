@@ -10,6 +10,8 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css" integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB" crossorigin="anonymous">
 
     <title>{% block title %} {% endblock title %}</title>
+    {% block head %}
+    {% endblock %}
   </head>
   <body>
     <!--  Empieza NavBar-->
@@ -56,9 +58,8 @@
         {% endif %}
         </ul>
         {% if user.is_authenticated %}
-        <form class="form-inline my-2 my-lg-0" method="post" action="/buscar/">
-          {% csrf_token %}
-          <input name="search" class="form-control mr-sm-2" type="search" placeholder="Búsqueda" aria-label="Search">
+        <form class="form-inline my-2 my-lg-0" method="get" action="/buscar/">
+          <input name="q" class="form-control mr-sm-2" type="q" placeholder="Búsqueda" aria-label="Search">
           <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Búsqueda</button>
         </form>
         {% endif %}
