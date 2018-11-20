@@ -35,6 +35,7 @@ IP: {{ url.dominio.ip }}
 Código: {{ url.codigo_estado }}
 URL: {{ url.url }}
 Reportado: {{ url.reportado }}
+{% if url.ticket %}Ticket: {{ url.ticket }}{% endif %}
 Título: {{ url.titulo }}
 Entidades: {{ url.entidades }}
 Archivo: <a href='{{ url.archivo_url }}'>Descarga</a>

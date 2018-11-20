@@ -82,13 +82,16 @@ def monitoreo_id(request, pk):
     dominio = get_object_or_404(Dominio, pk=pk)
     if not dominio.activo:
         raise Http404()
-    mensaje_form = MensajeForm()
-    proxy_form = ProxyForm()
     urls = dominio.urls_activas
     context = {
         'dominio': dominio,
-        'urls': urls
+        'urls': urls,
     }
+    mensaje_form = MensajeForm()
+    proxy_form = ProxyForm()
+    hoy = timezone.localtime(timezone.now())
+    md = md5(dominio.dominio.encode('utf-8', 'backslashreplace'))
+    ticket = ('%d%02d%02d%s' % (hoy.year, hoy.month, hoy.day, md[:7])).upper()
     correos = []
     for url in urls:
         for x in url.dominio.correos.all():
@@ -97,8 +100,8 @@ def monitoreo_id(request, pk):
     datos = {
         'de': settings.CORREO_DE,
         'para': ', '.join(correos),
-        'asunto': obten_asunto(dominio),
-        'mensaje': obten_mensaje(dominio)
+        'asunto': obten_asunto(dominio, ticket),
+        'mensaje': obten_mensaje(dominio, ticket)
     }
     mensaje_form = MensajeForm(initial=datos)
     if request.method == 'POST':
@@ -139,8 +142,15 @@ def monitoreo_id(request, pk):
                 mensaje_form = MensajeForm(request.POST)
                 msg = genera_mensaje(dominio, de, para, cc, cco, asunto, mensaje)
                 manda_correo(para, cc, cco, msg)
+                try:
+                    men = Mensaje.objects.get(ticket=ticket)
+                except:
+                    men = Mensaje(ticket=ticket)
+                    men.save()
                 for x in urls:
+                    men.urls.add(x)
                     redirecciones_reporta(x)
+                men.save()
                 context = {
                     'dominio': dominio,
                     'urls': urls,
@@ -238,7 +248,8 @@ def busca(request):
             SearchVector('dominio__asn') + SearchVector('dominio__isp') +
             SearchVector('identificador') + SearchVector('titulo') +
             SearchVector('hash_archivo') + SearchVector('redireccion') +
-            SearchVector('dominio__servidor')
+            SearchVector('dominio__servidor') +
+            SearchVector('mensaje__ticket')
         ).filter(search=SearchQuery(q)).distinct('url')
     return render(request, 'results.html',
                   {'resultados': resultados,
@@ -259,7 +270,8 @@ def historico(request):
         if form.is_valid():
             inicio = form.cleaned_data['inicio']
             fin = form.cleaned_data['fin']
-    sitios = Url.objects.filter(timestamp__date__lte=fin, timestamp__date__gte=inicio)
+    sitios = Url.objects.filter(timestamp_creacion__date__lte=fin,
+                                timestamp_creacion__date__gte=inicio)
     context = context_reporte(sitios)
     context['inicio'] = inicio
     context['fin'] = fin
@@ -450,7 +462,7 @@ def obtener_dias():
     Obtinene una lista de los últimos 7 días
     """
     dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
-    hoy = datetime.datetime.today().weekday() + 1
+    hoy = timezone.localtime(timezone.now()).weekday() + 1
     return dias[hoy:] + dias[:hoy]
 
 def delta_horas(td):

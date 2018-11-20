@@ -3,12 +3,8 @@
 {% block title %}Phish-Mon Monitoreo{% endblock %}
 
 {% block contenido %}
-  <div class="row">
-    <div class="col-lg-12">
-      <h1 class="page-header">Monitoreo</h1>
-    </div>
-  </div>
   <div class="container">
+    <h1 class="display-3">Monitoreo</h1>
     {% for dominio in dominios %}
       <h2>{{ dominio }}</h2>
       IP: {{ dominio.ip }} <br/>

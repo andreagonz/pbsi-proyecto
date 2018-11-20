@@ -211,7 +211,13 @@ class Url(models.Model):
                 return 'Redirección activa'
             return 'Redirección inactiva'
         return 'Inactivo'
-            
+
+    @property
+    def ticket(self):
+        if len(self.mensaje_set.all()) > 0:
+            return ', '.join([x.ticket for x in self.mensaje_set.all()])
+        return ''
+        
     def __str__(self):
         return self.url
          
@@ -240,3 +246,8 @@ class Proxy(models.Model):
         s.append('' if self.http is None else '%s' % self.http)
         s.append('' if self.https is None else '%s' % self.https)
         return ', '.join(s)
+
+class Mensaje(models.Model):
+
+    ticket = models.CharField(max_length=25, unique=True)
+    urls = models.ManyToManyField(Url)

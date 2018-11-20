@@ -60,8 +60,6 @@ class Command(BaseCommand):
         d = os.path.join(settings.DIR_SALIDA, str(hoy.date()))
         if not os.path.exists(d):
             os.makedirs(d)
-        for x in urls_hoy:
-            print('%s %s' % (x.timestamp_creacion, x.url))
         with open(os.path.join(d, 'ips.txt'), 'a') as ips, \
              open(os.path.join(d, 'urls.txt'), 'a') as urls, \
              open(os.path.join(d, 'redirecciones.txt'), 'a') as red, \

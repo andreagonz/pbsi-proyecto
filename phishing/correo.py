@@ -45,8 +45,9 @@ def crea_diccionario(dominio):
     }
     return dicc
 
-def obten_plantilla(mensaje, sitio):
+def obten_plantilla(mensaje, sitio, ticket=''):
     dicc = crea_diccionario(sitio)
+    dicc['ticket'] = ticket
     try:
         plantilla = settings.PLANTILLA_CORREO_ASUNTO
         if mensaje:
@@ -57,11 +58,11 @@ def obten_plantilla(mensaje, sitio):
         print(str(e))
         return 'Error en formato de texto'
 
-def obten_mensaje(sitio):
+def obten_mensaje(sitio, ticket=''):
     return obten_plantilla(True, sitio)
 
-def obten_asunto(sitio):
-    return obten_plantilla(False, sitio)
+def obten_asunto(sitio, ticket=''):
+    return obten_plantilla(False, sitio, ticket=ticket)
 
 def lee_archivo(archivo):
     with open(archivo) as f:
