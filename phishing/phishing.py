@@ -12,7 +12,6 @@ import hashlib
 from bs4 import BeautifulSoup, Comment
 from django.conf import settings
 from .models import Url, Entidades, Correo, Dominio, Ofuscacion, DNS, RIR
-from django.conf import settings
 from django.utils import timezone
 from django.core.files import File
 

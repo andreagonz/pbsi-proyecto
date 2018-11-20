@@ -2,20 +2,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.forms import Textarea
 from django.urls import reverse_lazy
 from django.contrib.auth.decorators import login_required
-from .forms import (
-    UrlsForm, MensajeForm, ProxyForm, Search, HistoricoForm,
-    CambiaAsuntoForm, CambiaMensajeForm, FrecuenciaForm, CorreoForm, ArchivoForm, CorreoArchivoForm
-)
-from .models import Url, Correo, Proxy, Recurso, Ofuscacion, Entidades, Dominio, Clasificacion_entidad
-from .phishing import (
-    verifica_urls, archivo_texto, monitorea_url,
-    whois, archivo_comentarios, archivo_hashes, cambia_frecuencia
-)
-from .correo import (
-    genera_mensaje, manda_correo, obten_asunto, obten_mensaje,
-    lee_plantilla_asunto, lee_plantilla_mensaje, cambia_asunto, cambia_mensaje,
-    parsecorreo
-)
+from .forms import *
+from .models import *
+from .phishing import *
+from .correo import *
 from django.views.generic import TemplateView
 from django.template import loader
 from django.http import HttpResponse, Http404
@@ -24,10 +14,7 @@ from django.core.exceptions import MultipleObjectsReturned
 from django.conf import settings
 from shutil import copyfile
 import os
-from .reporte import (
-    cuenta_urls, urls_activas, urls_inactivas, urls_redirecciones,
-    urls_entidades, urls_titulos, urls_dominios, urls_paises
-)
+from .reporte import *
 from datetime import timedelta, datetime
 from django.utils import timezone
 from time import mktime
@@ -85,7 +72,7 @@ def redirecciones_reporta(url):
     if url.reportado:
         return
     url.reportado = True
-    url.timestamp_reportado = timezone.now()
+    url.timestamp_reportado = timezone.localtime(timezone.now())
     url.save()
     for p in Url.objects.filter(redireccion=url.url):
         redirecciones_reporta(p)

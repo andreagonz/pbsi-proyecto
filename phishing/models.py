@@ -109,7 +109,7 @@ class Dominio(models.Model):
         if self.servidor:
             return self.servidor
         return 'No identificado'
-            
+
     @property
     def correos_abuso(self):
         if len(self.correos.all()) == 0:
@@ -201,7 +201,17 @@ class Url(models.Model):
                     return False
                 r = url.redireccion
             return not url is None and url.activo
-    
+        
+    @property
+    def estado(self):
+        if self.codigo >= 200 and self.codigo < 300:
+            return 'Activo'
+        elif self.codigo >= 300 and self.codigo < 400:
+            if self.es_activa:
+                return 'Redirección activa'
+            return 'Redirección inactiva'
+        return 'Inactivo'
+            
     def __str__(self):
         return self.url
          
