@@ -93,6 +93,7 @@ def monitoreo_id(request, pk):
     for url in urls:
         for x in url.dominio.correos.all():
             correos.append(str(x))
+    correos = list(set(correos))
     datos = {
         'de': settings.CORREO_DE,
         'para': ', '.join(correos),

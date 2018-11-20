@@ -109,7 +109,9 @@ def genera_mensaje(sitio, fromadd, toadd, cc, bcc, asunto, mensaje):
     msg['Bcc'] = ', '.join(bcc)
     mensaje = mensaje.replace('\n', '<br/>').replace(' ', '&nbsp;')
     msg.attach(MIMEText(mensaje, 'html'))
-    adjunta_imagen(msg, sitio)
+    for x in sitio.url_set.all():
+        if x.captura_url:
+            adjunta_imagen(msg, x)
     return msg.as_string()
 
 def manda_correo(para, cc, cco, msg):
