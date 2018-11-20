@@ -12,4 +12,4 @@ Servidores DNS autoritativos: {dns}
 
 Esta actividad afecta a las entidades: {entidades}.
 Por favor revisar indicios de actividad maliciosa en el servidor correspondiente.
-Se adjunta una captura de pantalla de la página en cuestión:
+Se adjuntan las capturas de pantalla de los sitios en cuestión:
