@@ -35,7 +35,7 @@ def crea_diccionario(dominio):
         'urls': '\n'.join([str(x) for x in dominio.urls_activas]).replace('.', '(dot)'),
         'ip': dominio.ip,
         'pais': dominio.pais,
-        'dominio': dominio,
+        'dominio': dominio.dominio.replace('.', '(dot)'),
         'asn': dominio.asn,
         'isp': dominio.isp,
         'rir': dominio.rir,
