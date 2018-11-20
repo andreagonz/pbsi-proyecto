@@ -32,7 +32,7 @@ def crea_diccionario(dominio):
         for e in x.entidades_afectadas.all():
             entidades[e] = str(e)
     dicc = {
-        'urls': '\n'.join([str(x) for x in dominio.urls_activas]),
+        'urls': '\n'.join([str(x) for x in dominio.urls_activas]).replace('.', '(dot)'),
         'ip': dominio.ip,
         'pais': dominio.pais,
         'dominio': dominio,
