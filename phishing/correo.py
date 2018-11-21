@@ -114,7 +114,7 @@ def genera_mensaje(sitio, fromadd, toadd, cc, bcc, asunto, mensaje, capturas):
     msg['Cc'] = ', '.join(cc)
     msg['Bcc'] = ', '.join(bcc)
     mensaje = mensaje.replace('\n', '<br/>').replace(' ', '&nbsp;')
-    msg.attach(MIMEText(mensaje, 'html'))    
+    msg.attach(MIMEText(mensaje, 'html'))
     for x in capturas:
         if x.captura_url:
             adjunta_imagen(msg, x)
@@ -137,11 +137,9 @@ def manda_correo(para, cc, cco, msg):
         if usr and passw:
             server.login(usr, passw)
         recipientes = [para]
-        if cc:
+        if cc[0]:
             recipientes.append(cc)
-        if cco:
-            if not cc:
-                recipientes.append([])
+        if cco[0]:
             recipientes.append(cco)
         server.sendmail(usr, recipientes, msg)
         log('Correo enviado. To:%s, Cc:%s, Bcc:%s' % (', '.join(para if para else []),
