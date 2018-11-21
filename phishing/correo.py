@@ -110,11 +110,13 @@ def genera_mensaje(sitio, fromadd, toadd, cc, bcc, asunto, mensaje):
     msg['Bcc'] = ', '.join(bcc)
     mensaje = mensaje.replace('\n', '<br/>').replace(' ', '&nbsp;')
     msg.attach(MIMEText(mensaje, 'html'))
-    
-    correo_log = open("mensaje_correo.log","w")
-    correo_log.write("Asunto:" + srt(msg['Subject']) + "\nDe: " + str(msg['From']) + "\nPara: " + str(msg['To']) + "\nCon copia para: " + str(msg['Cc']) + "Copia oculta para: "+ str(msg['Bcc']))
-    correo_log.close()
 
+    """
+    correo_log = open("mensaje_correo.log","w")
+    correo_log.write("Asunto:" + str(msg['Subject']) + "\nDe: " + str(msg['From']) + "\nPara: " + str(msg['To']) + "\nCon copia para: " + str(msg['Cc']) + "Copia oculta para: "+ str(msg['Bcc']))
+    correo_log.close()
+    """
+    
     for x in sitio.url_set.all():
         if x.captura_url:
             adjunta_imagen(msg, x)
