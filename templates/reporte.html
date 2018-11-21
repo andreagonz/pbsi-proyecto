@@ -34,8 +34,8 @@ Timestamp: {{ url.timestamp }}
 IP: {{ url.dominio.ip }}
 Código: {{ url.codigo_estado }}
 URL: {{ url.url }}
+Detección: {{ url.es_phishing }}
 Reportado: {{ url.reportado }}
-{% if url.ticket %}Ticket: {{ url.ticket }}{% endif %}
 Título: {{ url.titulo }}
 Entidades: {{ url.entidades }}
 Archivo: <a href='{{ url.archivo_url }}'>Descarga</a>
@@ -47,6 +47,7 @@ ASN: {{ url.dominio.asn }}
 Servidor: {{ url.dominio.servidor }}
 RIR: {{ url.dominio.rir }}
 Servidores DNS: {{ url.dominio.servidores_dns }}
+{% if url.ticket %}Ticket: {{ url.ticket }}{% endif %}
 {% endfor %}
 
 SITIOS INACTIVOS
@@ -73,6 +74,7 @@ Timestamp: {{ url.timestamp }}
 IP: {{ url.dominio.ip }}
 Código: {{ url.codigo_estado }}
 URL: {{ url.url }}
+Detección: {{ url.es_phishing }}
 Redirección: {{ url.redireccion }}
 Reportado: {{ url.reportado }}
 Correos: {{ url.dominio.correos_abuso }}

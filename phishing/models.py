@@ -94,13 +94,13 @@ class Dominio(models.Model):
             return self.captura.url
 
     @property
-    def activo(self):
-        return len(self.url_set.filter(reportado=False, codigo__lt=300, codigo__gte=200)) > 0
+    def urls_activas(self):
+        return self.url_set.filter(reportado=False, ignorado=False, codigo__lt=300, codigo__gte=200)
 
     @property
-    def urls_activas(self):
-        return self.url_set.filter(reportado=False, codigo__lt=300, codigo__gte=200)
-    
+    def activo(self):
+        return len(self.urls_activas) > 0
+
     def __str__(self):
         return self.dominio
     
@@ -134,6 +134,7 @@ class Url(models.Model):
     url = models.URLField(max_length=512, unique=True)
     timestamp = models.DateTimeField(auto_now_add=True)
     timestamp_creacion = models.DateTimeField(auto_now_add=True)
+    timestamp_deteccion = models.DateTimeField(null=True)
     timestamp_reportado = models.DateTimeField(null=True)
     timestamp_desactivado = models.DateTimeField(null=True)
     codigo = models.IntegerField(default=-1)
@@ -144,15 +145,42 @@ class Url(models.Model):
     hash_archivo = models.CharField(max_length=32, null=True)
     entidades_afectadas = models.ManyToManyField(Entidades)
     reportado = models.BooleanField(default=False)
+    ignorado = models.BooleanField(default=False)
     dominio = models.ForeignKey(Dominio, on_delete=models.PROTECT)
     archivo = models.FileField(storage=OverwriteStorage(),
                                upload_to='archivos', blank=True, null=True)
     redireccion = models.URLField(max_length=512, null=True)
+    estado_phishing = models.IntegerField(default=-1)
     
     @property
     def captura_url(self):
         if self.captura and hasattr(self.captura, 'url'):
             return self.captura.url
+
+    @property
+    def es_phishing(self):
+        if self.codigo >= 400 or self.codigo < 200:
+            return ''
+        if self.codigo < 300:
+            if self.estado_phishing <= 0:
+                return 'No detectado'
+            elif self.estado_phishing == 1:
+                return 'Sitio phishing'
+            elif self.estado_phishing == 2:
+                return 'Sitio malicioso'
+            else:
+                return 'Indefinido'
+        elif self.redireccion:
+            r = self.redireccion
+            url = None
+            while r:
+                try:
+                    url = Url.objects.get(url=r)
+                except Url.DoesNotExist:
+                    return ''
+                r = url.redireccion
+            return '' if url is None else url.es_phishing
+        return ''
 
     @property
     def archivo_url(self):

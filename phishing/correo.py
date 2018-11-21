@@ -149,9 +149,8 @@ def manda_correo(para, cc, cco, msg):
 """
 ===========================================
 """
-def virustotal(HASH_sha256):
-    API_KEY = 'ea825868bdd93b5a0cea2159c1786ebbedd35a088ab7db4e96b4e2bcd9fafb66'
-    vt = VirusTotalPublicApi(API_KEY)
+def virustotal(HASH_sha256):    
+    vt = VirusTotalPublicApi(settings.VIRUSTOTAL_API_KEY)
     response = vt.get_file_report(HASH_sha256)
     #print(json.dumps(response, sort_keys=False, indent=4))
     resultado = json.loads(json.dumps(response, sort_keys=False, indent=4))

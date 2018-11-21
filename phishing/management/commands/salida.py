@@ -56,21 +56,26 @@ class Command(BaseCommand):
         
     def handle(self, *args, **options):
         hoy = timezone.localtime(timezone.now())
-        urls_hoy = Url.objects.filter(timestamp_creacion__gt=hoy - timedelta(days=1))
+        ayer = hoy - timedelta(days=1)
+        urls_hoy = Url.objects.filter(timestamp_creacion__gt=ayer,estado_phishing__gt=0)
         d = os.path.join(settings.DIR_SALIDA, str(hoy.date()))
         if not os.path.exists(d):
             os.makedirs(d)
         with open(os.path.join(d, 'ips.txt'), 'a') as ips, \
-             open(os.path.join(d, 'urls.txt'), 'a') as urls, \
+             open(os.path.join(d, 'phishing.txt'), 'a') as phishing, \
              open(os.path.join(d, 'redirecciones.txt'), 'a') as red, \
+             open(os.path.join(d, 'maliciosos.txt'), 'a') as mal, \
              open(os.path.join(d, 'firewall.txt'), 'a') as fire, \
              open(os.path.join(d, 'snort.txt'), 'a') as snort, \
              open(os.path.join(d, 'formato.txt'), 'a') as form, \
-             open(os.path.join(d, 'sitios.json'), 'w') as sitios: 
+             open(os.path.join(d, 'sitios.json'), 'w') as sitios:
             for u in urls_hoy:
-                urls.write('%s\n' % u.url)
                 if u.codigo < 400 and u.codigo >= 300:
                     red.write('%s\n' % u.url)
+                elif u.estado_phishing == 1:
+                    phishing.write('%s\n' % u.url)
+                else:
+                    mal.write('%s\n' % u.url)                
                 asn = '-'
                 nom = '-'
                 if u.dominio and u.dominio.asn:
@@ -83,11 +88,12 @@ class Command(BaseCommand):
                 if u.dominio and u.dominio.ip:
                     ip = u.dominio.ip
                 t = time.strftime('%Y-%m-%d %H:%M:%S')
-                form.write('%s | %s | %s | | %s\n' % (asn, ip, t, nom))
+                form.write('%s | %s | %s | %d saapm %d %s | %s\n' %
+                           (asn, ip, t, u.pk, u.pk, u.url, nom))
             urls_dom = urls_hoy.filter(~Q(dominio=None)).distinct('dominio')
             for u in urls_dom:
                 snort.write('Alert tcp $HOME_NET any -> $EXTERNAL_NET $HTTP_PORTS '
-                            '(msg:"Regla sitio phishing"; flow:to_server,established; content:'
+                            '(msg:"Regla sitio malicioso"; flow:to_server,established; content:'
                             '"%s"; nocase; sid:%d; rev:1;)\n' % (u.dominio.dominio,
                                                                  randint(10000000,20000000)))
                 if u.dominio.ip:

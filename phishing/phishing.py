@@ -5,7 +5,7 @@ import re
 import smtplib
 import requests
 from subprocess import Popen, PIPE
-from urllib.parse import urlparse
+from urllib.parse import urlparse, urljoin
 from requests.exceptions import ConnectionError
 from lxml import html
 import hashlib
@@ -109,11 +109,7 @@ def hacer_peticion(sitios, sesion, sitio, entidades, ofuscaciones, dominios_inac
         if sitio.activo and codigo >= 400:
             sitio.timestamp_desactivado = sitio.timestamp
         if codigo < 400 and codigo >= 300:
-            redireccion = req.headers['location']
-            if redireccion.startswith('/'):
-                u = urlparse(sitio.url).netloc
-                d = '{uri.scheme}://{uri.netloc}/'.format(uri=u)
-                redireccion = urlparse.urljoin(d, redireccion)
+            redireccion = urljoin(sitio.url, req.headers['location'])
             if redireccion != sitio.url and max_redir > 0:
                 sitio.redireccion = redireccion[:-1] if redireccion.endswith('#') else redireccion
                 verifica_url(sitios, sitio.redireccion, entidades, ofuscaciones, dominios_inactivos,
@@ -190,6 +186,35 @@ def get_proxy(sesion):
         proxy = sesion.proxies.get('https', None) if proxy is None else proxy
     return proxy
 
+def estado_phishing(url):
+    params = {'apikey': settings.VIRUSTOTAL_API_KEY, 'resource': url, 'scan': 0}
+    headers = {"Accept-Encoding": "gzip, deflate"}
+    try:
+        r = requests.post('https://www.virustotal.com/vtapi/v2/url/report',
+                          params=params, headers=headers)
+        if r.status_code != 200:
+            return -1
+        j = r.json()
+        if j.get('response_code', 0) != 1:
+            return -1
+        if j.get('positives', 0) > 0:
+            for v in j['scans'].values():
+                if 'phishing' in v.get('result', ''):
+                    return 1
+            return 2
+        return 0
+    except:
+        return -1
+
+def estado_redirecciones(url, estado, ts):
+    if url.estado_phishing == estado:
+        return
+    url.estado_phishing = estado
+    url.timestamp_reportado = ts
+    url.save()
+    for p in Url.objects.filter(redireccion=url.url):
+        estado_redirecciones(p, estado, ts)
+
 def verifica_url_aux(sitios, sitio, existe, entidades, ofuscaciones,
                      dominios_inactivos, sesion, max_redir, entidades_afectadas, monitoreo=False):
     texto = ''
@@ -198,7 +223,24 @@ def verifica_url_aux(sitios, sitio, existe, entidades, ofuscaciones,
         sitio.codigo, texto, titulo = hacer_peticion(sitios, sesion, sitio, entidades, ofuscaciones,
                                              dominios_inactivos, max_redir, entidades_afectadas)
         sitio.titulo = titulo
-        if len(sitio.entidades_afectadas.all()) == 0:
+        if not existe and sitio.activo:
+            for x in encuentra_ofuscacion(ofuscaciones, texto):
+                sitio.ofuscacion.add(x)            
+        elif sitio.codigo < 0:
+            dominios_inactivos[dominio] = 1
+        if monitoreo or not existe:
+            proxy = get_proxy(sesion)
+            nombre = 'capturas/%s.png' % sitio.identificador
+            captura = genera_captura(sitio.url, nombre, proxy)
+            if os.path.exists(captura):
+                with open(captura, 'rb') as f:
+                    sitio.captura.save(os.path.basename(captura), File(f), True)
+            nombre = 'archivos/%s.txt' % sitio.identificador
+            archivo = guarda_archivo(texto, nombre)
+            if os.path.exists(archivo):
+                with open(archivo, 'rb') as f:
+                    sitio.archivo.save(os.path.basename(archivo), File(f), True)
+            sitio.hash_archivo = md5(texto.encode('utf-8'))
             if entidades_afectadas is None:
                 for x in obten_entidades_afectadas(entidades, texto):
                     sitio.entidades_afectadas.add(x)
@@ -208,25 +250,11 @@ def verifica_url_aux(sitios, sitio, existe, entidades, ofuscaciones,
                     if e is None:
                         e = Entidades(nombre=x)
                         e.save()
-                    sitio.entidades_afectadas.add(e)                
-        if not existe and sitio.activo:
-            for x in encuentra_ofuscacion(ofuscaciones, texto):
-                sitio.ofuscacion.add(x)
-            if monitoreo or not existe:
-                proxy = get_proxy(sesion)
-                nombre = 'capturas/%s.png' % sitio.identificador
-                captura = genera_captura(sitio.url, nombre, proxy)
-                if os.path.exists(captura):
-                    with open(captura, 'rb') as f:
-                        sitio.captura.save(os.path.basename(captura), File(f), True)
-                nombre = 'archivos/%s.txt' % sitio.identificador
-                archivo = guarda_archivo(texto, nombre)
-                if os.path.exists(archivo):
-                    with open(archivo, 'rb') as f:
-                        sitio.archivo.save(os.path.basename(archivo), File(f), True)
-                    sitio.hash_archivo = md5(texto.encode('utf-8'))
-        elif sitio.codigo < 0:
-            dominios_inactivos[dominio] = 1
+                    sitio.entidades_afectadas.add(e)
+            if sitio.estado_phishing < 1:
+                sitio.estado_phishing = estado_phishing(sitio.url)
+                sitio.timestamp_deteccion = timezone.localtime(timezone.now())
+                estado_redirecciones(sitio, sitio.estado_phishing, sitio.timestamp_deteccion)
     else:
         sitio.codigo = -1
     sitio.save()

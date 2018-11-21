@@ -31,17 +31,6 @@
       Código: {{ url.codigo_estado }}<br/>
       Timestamp: {{ url.timestamp }}<br/>
       <a href='{{ url.captura_url }}'><img src='{{ url.captura_url }}' style="max-width:500px;max-height:500px;" /></a><br/>
-      {% if nuevo %}
-        <br>
-        Segunda Búsqueda: <br>
-        <img src='{{ nuevo.captura_url }}' width='500px' /> <br>
-        {{ nuevo.ip }}<br/>
-        {{ nuevo.netname }}<br/>
-        {{ nuevo.codigo_estado }}<br/>
-        {{ nuevo.pais }}<br/>
-        {{ nuevo.timestamp }}<br/>
-        <br>
-      {% endif %}
     {% endfor %}
 
     <form action="" method="post">

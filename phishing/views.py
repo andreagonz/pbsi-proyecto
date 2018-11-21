@@ -73,10 +73,22 @@ def redirecciones_reporta(url):
         return
     url.reportado = True
     url.timestamp_reportado = timezone.localtime(timezone.now())
+    if url.estado_phishing < 1:
+        url.timestamp_deteccion = url.timestamp_reportado
+        url.estado_phishing = 1
     url.save()
     for p in Url.objects.filter(redireccion=url.url):
         redirecciones_reporta(p)
-        
+
+def redirecciones_ignora(url):
+    if url.ignorado:
+        return
+    url.ignorado = True
+    url.timestamp_reportado = timezone.localtime(timezone.now())
+    url.save()
+    for p in Url.objects.filter(redireccion=url.url):
+        redirecciones_ignora(p)
+
 @login_required(login_url=reverse_lazy('login'))
 def monitoreo_id(request, pk):
     dominio = get_object_or_404(Dominio, pk=pk)
@@ -129,7 +141,16 @@ def monitoreo_id(request, pk):
                     if not proxies.https is None:
                         proxy['https'] = proxies.https
                 for url in dominio.urls_activas:
-                    sitio = monitorea_url(url, proxy)                    
+                    sitio = monitorea_url(url, proxy)
+            if not dominio.activo:
+                urls = Url.objects.filter(reportado=False,
+                                          ignorado=False,
+                                          codigo__lt=300,
+                                          codigo__gte=200).order_by('-timestamp_creacion')
+                if len(urls) > 0:
+                    return redirect('monitoreo-id', pk=urls[0].dominio.pk)
+                return redirect('monitoreo')
+            return redirect('monitoreo-id', pk=dominio.pk)
         elif request.POST.get('boton-mensaje'):
             mensaje_form = MensajeForm(request.POST)
             if mensaje_form.is_valid():
@@ -165,9 +186,18 @@ def monitoreo_id(request, pk):
                 return render(request, 'monitoreo_exito.html', context)
         elif request.POST.get('boton-ignorar') and request.user.is_superuser:
             for x in urls:
-                redirecciones_reporta(x)
+                redirecciones_ignora(x)
             return redirect('monitoreo')
         elif request.POST.get('boton-saltar'):
+            us = dominio.url_set.all()
+            i = us[0].id if len(us) > 0 else 0
+            urls = Url.objects.filter(reportado=False,
+                                      ignorado=False,
+                                      codigo__lt=300,
+                                      codigo__gte=200).exclude(
+                                          dominio=dominio).order_by('-timestamp_creacion')
+            if len(urls) > 0:
+                return redirect('monitoreo-id', pk=urls[0].dominio.pk)
             return redirect('monitoreo')
     context['mensaje_form'] = mensaje_form
     context['proxy_form'] = proxy_form
@@ -472,15 +502,15 @@ class ChartData(LoginRequiredMixin, APIView):
     
     def get(self, request, format=None):
         rand_color = randomcolor.RandomColor()
-        
-        top_paises = Url.objects.filter(~Q(dominio__pais=None)).values('dominio__pais').annotate(
+        urls = Url.objects.filter(estado_phishing__gte=1)
+        top_paises = urls.filter(~Q(dominio__pais=None)).values('dominio__pais').annotate(
             cuenta_pais=Count('dominio__pais')).order_by('-cuenta_pais')[:5]
         top_paises_data = {
             "labels": [p['dominio__pais'] for p in top_paises],
             "default": [p['cuenta_pais'] for p in top_paises]
         }
 
-        top_hosting = Url.objects.filter(~Q(dominio__asn=None)).values('dominio__asn').annotate(
+        top_hosting = urls.filter(~Q(dominio__asn=None)).values('dominio__asn').annotate(
             cuenta_asn=Count('dominio__asn')).order_by('-cuenta_asn')[:5]
         top_hosting_data = {
             "labels": [p['dominio__asn'] for p in top_hosting],
@@ -488,18 +518,17 @@ class ChartData(LoginRequiredMixin, APIView):
         }
 
         sitios_activos = 0
-        for x in Url.objects.filter(~Q(codigo__lt=200, codigo__gte=400)):
+        for x in urls:
             sitios_activos += 1 if x.es_activa else 0
-        sitios_reportados = Url.objects.filter(reportado=True).count()
-        sitios_detectados = Url.objects.count()
+        sitios_reportados = urls.filter(reportado=True, ignorado=False).count()
+        sitios_detectados = urls.count()
         sitios_data = {
             'labels': ['Activos', 'Reportados', 'Detectados'],
             'default': [sitios_activos, sitios_reportados, sitios_detectados]
         }
         
         hoy_tiempo = timezone.localtime(timezone.now())
-        top_sitios = Url.objects.filter(codigo__gte=200,
-                                        codigo__lt=300).values('url').annotate(
+        top_sitios = urls.filter(timestamp_desactivado=None).values('url').annotate(
                                             tiempo_vida=(hoy_tiempo -
                                                 F('timestamp_creacion'))).order_by(
                                                     '-tiempo_vida')[:5]
@@ -508,7 +537,7 @@ class ChartData(LoginRequiredMixin, APIView):
             'default': [delta_horas(x['tiempo_vida']) for x in top_sitios]
         }
         
-        sectores = Url.objects.filter(~Q(entidades_afectadas__clasificacion=None)).values(
+        sectores = urls.filter(~Q(entidades_afectadas__clasificacion=None)).values(
             'entidades_afectadas__clasificacion__nombre').annotate(
                 cuenta_sectores=Count('entidades_afectadas__clasificacion__nombre'))
         labels = [e['entidades_afectadas__clasificacion__nombre'] for e in sectores]
@@ -522,15 +551,15 @@ class ChartData(LoginRequiredMixin, APIView):
         num_detecciones = [] 
         hoy = hoy_tiempo.date()
         for x in range(6, -1, -1):
-            num_detecciones.append(Url.objects.filter(
-                timestamp_creacion__date=hoy - datetime.timedelta(days=x),
+            num_detecciones.append(urls.filter(
+                timestamp_deteccion__date=hoy - datetime.timedelta(days=x),
             ).count())
         detecciones_data = {
             'labels': dias,
             'default': num_detecciones
         }
         
-        entidades = Url.objects.filter(~Q(entidades_afectadas=None)).values(
+        entidades = urls.filter(~Q(entidades_afectadas=None)).values(
             'entidades_afectadas__nombre').annotate(
                 cuenta_entidades=Count('entidades_afectadas__nombre'))
         labels = [e['entidades_afectadas__nombre'] for e in entidades]
@@ -543,13 +572,13 @@ class ChartData(LoginRequiredMixin, APIView):
         tiempo_promedio_reporte = []
         tiempo_promedio_postreporte = []
         for x in range(6, -1, -1):
-             tiempo_promedio_reporte.append(Url.objects.filter(
-                 ~Q(timestamp_reportado=None),
+             tiempo_promedio_reporte.append(urls.filter(
+                 ~Q(reportado=False),
                  timestamp_reportado__date=hoy - datetime.timedelta(days=x)).annotate(
                      tiempo_reportado=(F('timestamp_reportado') - F('timestamp_creacion'))).aggregate(
                          Avg('tiempo_reportado')).get('tiempo_reportado__avg', 0))
-             tiempo_promedio_postreporte.append(Url.objects.filter(
-                 ~Q(timestamp_reportado=None), ~Q(timestamp_desactivado=None),
+             tiempo_promedio_postreporte.append(urls.filter(
+                 ~Q(reportado=False), ~Q(timestamp_desactivado=None),
                  timestamp_reportado__date=hoy - datetime.timedelta(days=x)).annotate(
                      tiempo_reportado=(F('timestamp_desactivado') -
                                        F('timestamp_reportado'))).aggregate(
@@ -604,8 +633,8 @@ def createDoc(request):
             p.add_run('SAAPM').bold = True
             inicio = form.cleaned_data['inicio']
             fin = form.cleaned_data['fin']
-            urls = Url.objects.filter(timestamp_creacion__date__gte=inicio,
-                                      timestamp_creacion__date__lte=fin)
+            urls = Url.objects.filter(timestamp_deteccion__date__gte=inicio,
+                                      timestamp_deteccion__date__lte=fin)
             document.add_heading('Periodo',level=1)
             q = document.add_paragraph('De: ')
             q.add_run(str(inicio)).bold = True
@@ -620,7 +649,8 @@ def createDoc(request):
                     sitios_activos += 1 if x.es_activa else 0
                 sitios_reportados = urls.filter(
                     timestamp_reportado__date__gte=inicio,
-                    timestamp_reportado__date__lte=fin).count()
+                    timestamp_reportado__date__lte=fin,
+                    ignorado=False).count()
                 sitios_detectados = urls.count()
                 x = ['Activos', 'Reportados', 'Detectados']
                 y = [sitios_activos, sitios_reportados, sitios_detectados]
@@ -685,7 +715,7 @@ def createDoc(request):
                 fechas = [inicio + datetime.timedelta(days=i) for i in range(ndias + 1)]
                 y = []
                 for d in fechas:
-                    y.append(urls.filter(timestamp_creacion__date=d).count())
+                    y.append(urls.filter(timestamp_deteccion__date=d).count())
                 x = [str(f) for f in fechas]
                 y_pos = np.arange(len(x))
                 fig, ax = plt.subplots()
