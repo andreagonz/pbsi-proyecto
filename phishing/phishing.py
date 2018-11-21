@@ -15,6 +15,12 @@ from .models import Url, Entidades, Correo, Dominio, Ofuscacion, DNS, RIR
 from django.utils import timezone
 from django.core.files import File
 
+def log_phishing(mensaje):
+    t = timezone.localtime(timezone.now())
+    l = os.path.join(settings.DIR_LOG, 'phishing.log')
+    with open(l, 'a') as w:
+        w.write('[%s] %s\n' % (t, mensaje))
+
 def error(msg, exit=False):
     """
     Manda un error y de especificarse, se sale del programa
@@ -56,8 +62,8 @@ def archivo_texto(sitio):
             return ''
         with sitio.archivo.open() as f:
             return f.read().decode()
-    except:
-        return ''
+    except Exception as e:
+        log_phishing('Error: %s' % str(e))
 
 def archivo_hashes(sitio):
     return lineas_md5(archivo_texto(sitio))
@@ -121,7 +127,7 @@ def hacer_peticion(sitios, sesion, sitio, entidades, ofuscaciones, dominios_inac
             titulo = t[0].text if len(t) > 0 else ''
         titulo = '' if titulo is None else titulo.strip().replace('\n', ' ')
     except Exception as e:
-        error(str(e))
+        log_phishing('Error: %s' % str(e))
     finally:
         return codigo, texto, titulo
 
@@ -203,7 +209,8 @@ def estado_phishing(url):
                     return 1
             return 2
         return 0
-    except:
+    except Exception as e:
+        log_phishing('Error: %s' % str(e))
         return -1
 
 def estado_redirecciones(url, estado, ts):

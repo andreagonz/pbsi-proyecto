@@ -14,11 +14,16 @@ import hashlib
 import json
 from virus_total_apis import PublicApi as VirusTotalPublicApi
 import zipfile
+from django.utils import timezone
 
-
+def log(mensaje):
+    t = timezone.localtime(timezone.now())
+    l = os.path.join(settings.DIR_LOG, 'correo.log')
+    with open(l, 'a') as w:
+        w.write('[%s] %s\n' % (t, mensaje))
+        
 def obten_texto(mensaje, archivo):
     if not os.path.exists(archivo):
-        print(archivo)
         return ''
     with open(archivo) as f:
         if mensaje:
@@ -55,7 +60,7 @@ def obten_plantilla(mensaje, sitio, ticket=''):
         s = obten_texto(mensaje, plantilla).format_map(dicc)
         return s
     except Exception as e:
-        print(str(e))
+        log('Error: %s' % str(e))
         return 'Error en formato de texto'
 
 def obten_mensaje(sitio, ticket=''):
@@ -94,10 +99,10 @@ def adjunta_imagen(msg, sitio):
             part = MIMEApplication(a_file.read(), Name=basename)
             part['Content-Disposition'] = 'attachment; filename="%s"' % basename
             msg.attach(part)
-    except:
-        return
+    except Exception as e:
+        log('Error: %s' % str(e))
         
-def genera_mensaje(sitio, fromadd, toadd, cc, bcc, asunto, mensaje):
+def genera_mensaje(sitio, fromadd, toadd, cc, bcc, asunto, mensaje, capturas):
     """
     Se genera el mensaje destinado para la cuenta de abuso
     """
@@ -109,15 +114,8 @@ def genera_mensaje(sitio, fromadd, toadd, cc, bcc, asunto, mensaje):
     msg['Cc'] = ', '.join(cc)
     msg['Bcc'] = ', '.join(bcc)
     mensaje = mensaje.replace('\n', '<br/>').replace(' ', '&nbsp;')
-    msg.attach(MIMEText(mensaje, 'html'))
-
-    """
-    correo_log = open("mensaje_correo.log","w")
-    correo_log.write("Asunto:" + str(msg['Subject']) + "\nDe: " + str(msg['From']) + "\nPara: " + str(msg['To']) + "\nCon copia para: " + str(msg['Cc']) + "Copia oculta para: "+ str(msg['Bcc']))
-    correo_log.close()
-    """
-    
-    for x in sitio.url_set.all():
+    msg.attach(MIMEText(mensaje, 'html'))    
+    for x in capturas:
         if x.captura_url:
             adjunta_imagen(msg, x)
     return msg.as_string()
@@ -145,10 +143,12 @@ def manda_correo(para, cc, cco, msg):
             if not cc:
                 recipientes.append([])
             recipientes.append(cco)
-        print(recipientes)
         server.sendmail(usr, recipientes, msg)
+        log('Correo enviado. To:%s, Cc:%s, Bcc:%s' % (', '.join(para if para else []),
+                                                      ', '.join(cc if cc else []),
+                                                      ', '.join(cco if cco else [])))
     except Exception as e:
-        print(str(e))
+        log('Error: %s' % str(e))
         b = False
     finally:
         if server:
@@ -172,7 +172,8 @@ def virustotal(HASH_sha256):
             #print(resultado['results']['positives'])
 	    ###### Condicion si es mayor a 0 que se guarde en el directorio, si no que no se guarde
         return "No"
-    except:
+    except Exception as e:
+        log('Error: %s' % str(e))
         return "No encontro coincidencias"
 
 def erroremail(palabra,mensaje):
@@ -182,11 +183,11 @@ def erroremail(palabra,mensaje):
     try:
         return (palabra+": "+mensaje[palabra])
     except Exception as e:
+        log('Error: %s' % str(e))
         return (palabra+": No hay informacion de "+palabra)
 
 def sha256(fname):
     hash_sha256 = hashlib.sha256()
-    print(fname)
     hash_sha256.update(fname)
     return hash_sha256.hexdigest()
 
@@ -208,8 +209,8 @@ def analisisarchivos(attachment):
                 open('%s/archivos/maliciosos/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
             else:
                 open('%s/archivos/noclasificado/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
-    except:
-
+    except Exception as e:
+        log('Error: %s' % str(e))
         return "1", "1", "1"
     return nombre, noentidades,tipo
 #resultados.append("Nombre de archivo: " + nombre+"\n")

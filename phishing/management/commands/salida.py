@@ -11,6 +11,12 @@ import time
 
 class Command(BaseCommand):
 
+    def log(self, mensaje):
+        t = timezone.localtime(timezone.now())
+        l = os.path.join(settings.DIR_LOG, 'salida.log')
+        with open(l, 'a') as w:
+            w.write('[%s] %s\n' % (t, mensaje))
+
     def json_urls(self, urls):
         data = {}
         data['sitios'] = []
@@ -100,4 +106,4 @@ class Command(BaseCommand):
                     ips.write('%s\n' % u.dominio.ip)
                     fire.write('iptables -A INPUT -s %s -j DROP\n' % u.dominio.ip)
             json.dump(self.json_urls(urls_hoy), sitios, indent=4)
-            
+        self.log('Generados reportes de salida')

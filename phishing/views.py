@@ -47,6 +47,12 @@ import string
 import numpy as np
 from docx.shared import Inches
 
+def log_x(mensaje, bitacora):
+    t = timezone.localtime(timezone.now())
+    l = os.path.join(settings.DIR_LOG, bitacora)
+    with open(l, 'a') as w:
+        w.write('[%s] %s\n' % (t, mensaje))
+
 @login_required(login_url=reverse_lazy('login'))
 def monitoreo(request):
     dominios = Dominio.objects.all()
@@ -99,7 +105,6 @@ def monitoreo_id(request, pk):
         'dominio': dominio,
         'urls': urls,
     }
-    mensaje_form = MensajeForm()
     proxy_form = ProxyForm()
     hoy = timezone.localtime(timezone.now())
     md = md5(dominio.dominio.encode('utf-8', 'backslashreplace'))
@@ -115,7 +120,7 @@ def monitoreo_id(request, pk):
         'asunto': obten_asunto(dominio, ticket),
         'mensaje': obten_mensaje(dominio, ticket)
     }
-    mensaje_form = MensajeForm(initial=datos)
+    mensaje_form = MensajeForm(initial=datos, urls=urls)
     if request.method == 'POST':
         if request.POST.get('boton-curl'):
             proxy_form = ProxyForm(request.POST)
@@ -152,7 +157,7 @@ def monitoreo_id(request, pk):
                 return redirect('monitoreo')
             return redirect('monitoreo-id', pk=dominio.pk)
         elif request.POST.get('boton-mensaje'):
-            mensaje_form = MensajeForm(request.POST)
+            mensaje_form = MensajeForm(request.POST, urls=urls)
             if mensaje_form.is_valid():
                 de = mensaje_form.cleaned_data['de']
                 para = [x.strip() for x in mensaje_form.cleaned_data['para'].split(',')]
@@ -160,8 +165,8 @@ def monitoreo_id(request, pk):
                 cco = [x.strip() for x in mensaje_form.cleaned_data['cco'].split(',')]
                 asunto = mensaje_form.cleaned_data['asunto']
                 mensaje = mensaje_form.cleaned_data['mensaje']
-                mensaje_form = MensajeForm(request.POST)
-                msg = genera_mensaje(dominio, de, para, cc, cco, asunto, mensaje)
+                capturas = mensaje_form.cleaned_data['capturas']
+                msg = genera_mensaje(dominio, de, para, cc, cco, asunto, mensaje, capturas)
                 manda_correo(para, cc, cco, msg)
                 try:
                     men = Mensaje.objects.get(ticket=ticket)
@@ -181,7 +186,7 @@ def monitoreo_id(request, pk):
                     'cco': ', '.join(cco),
                     'asunto': asunto,
                     'mensaje': mensaje,
-                    'captura': dominio.captura_url
+                    'capturas': capturas
                 }
                 return render(request, 'monitoreo_exito.html', context)
         elif request.POST.get('boton-ignorar') and request.user.is_superuser:
@@ -608,7 +613,7 @@ def agrega_imagen(fig, documento):
         documento.add_picture(path)
         os.remove(path)
     except Exception as e:
-        print(str(e))        
+        log_x('Error: %s' % str(e), 'reportes.log')
         
 @login_required(login_url=reverse_lazy('login'))
 def createDoc(request):
