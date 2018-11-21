@@ -57,6 +57,11 @@ def obten_plantilla(mensaje, sitio, ticket=''):
         plantilla = settings.PLANTILLA_CORREO_ASUNTO
         if mensaje:
             plantilla = settings.PLANTILLA_CORREO_MENSAJE
+        if (sitio.ip and (sitio.ip.startswith('132.248') or sitio.ip.startswith('132.247'))) \
+           or sitio.dominio.endswith('unam.mx'):
+            plantilla = settings.PLANTILLA_UNAM_ASUNTO
+            if mensaje:
+                plantilla = settings.PLANTILLA_UNAM_MENSAJE
         s = obten_texto(mensaje, plantilla).format_map(dicc)
         return s
     except Exception as e:

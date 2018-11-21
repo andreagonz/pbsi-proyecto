@@ -1,0 +1,16 @@
+UNAM
+Se encontro actividad sospechosa de ser phishing relacionada al dominio {dominio}, en las siguientes direcciones URL:
+
+{urls}
+
+DATOS DE DOMINIO:
+Direccion IP: {ip}
+Pais: {pais}
+RIR: {rir}
+ASN: {asn}
+Servidor web: {servidor}
+Servidores DNS autoritativos: {dns}
+
+Esta actividad afecta a las entidades: {entidades}.
+Por favor revisar indicios de actividad maliciosa en el servidor correspondiente.
+Se adjuntan las capturas de pantalla de los sitios en cuestion:
