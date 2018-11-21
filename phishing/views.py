@@ -234,7 +234,6 @@ def valida_urls(request):
             if form.is_valid():
                 urls = form.cleaned_data['urls']
                 sitios = verifica_urls([x.strip() for x in urls.split('\n') if x.strip()], None, False)
-                context = context_reporte(sitios)
                 no_reportados = False
                 for x in sitios:
                     if not x.reportado:
@@ -915,10 +914,15 @@ def entrada(request):
             if form.is_valid():
                 c = form.cleaned_data['correo']
                 resultados, urls, headers, archivos, error = parsecorreo(c)
+                context = {}
                 if len(urls) > 0:
-                    verifica_urls(urls, None, False)
-                context = {'resultados': resultados, 'urls': urls,
-                       'headers': headers, 'archivos': archivos, 'error': error}
+                    sitios = verifica_urls(urls, None, False)
+                    context = context_reporte(sitios)
+                context['resultados'] = resultados
+                context['urls'] = urls
+                context['headers'] = headers
+                context['archivos'] = archivos
+                context['error'] = error
                 return render(request, 'entrada_resultados.html', context)
         elif request.POST.get("boton_archivo") and request.FILES['file']:
             form = CorreoArchivoForm(request.POST)
@@ -926,10 +930,15 @@ def entrada(request):
             name = request.FILES['file'].name
             urls = []
             resultados, urls, headers, archivos, error = parsecorreo(f)
+            context = {}
             if len(urls) > 0:
-                verifica_urls(urls, None, False)
-            context = {'resultados': resultados, 'urls': urls,
-                       'headers': headers, 'archivos': archivos, 'error': error}
+                sitios = verifica_urls(urls, None, False)
+                context = context_reporte(sitios)
+            context['resultados'] = resultados
+            context['urls'] = urls
+            context['headers'] = headers
+            context['archivos'] = archivos
+            context['error'] = error
             return render(request, 'entrada_resultados.html', context)
     else:
         form1 = CorreoForm()

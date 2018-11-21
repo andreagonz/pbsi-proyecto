@@ -213,9 +213,9 @@ def analisisarchivos(attachment):
     """
     Esta funcion analiza los archivos contenidos en los correos
     """
-    tipo = attachment.get_content_type()
-    payload = attachment.get_payload(decode=True)
     try:
+        tipo = attachment.get_content_type()
+        payload = attachment.get_payload(decode=True)
         if not payload:
             return "Ninguno", "Ninguno", "Ninguno"
         nombre = sha256(payload)
@@ -278,8 +278,8 @@ def parsecorreo(texto):
                 if(x!=0):
                     attachment = mensaje.get_payload()[x]
                     nombre, noentidades, tipo = analisisarchivos(attachment)
-                    if(noentidades == "1"):
-                       return None, None, None, None, True
+                    if noentidades == "1":
+                       return {}, url, headers, {}, True
                     else:
                         archivos['tipo'] = tipo
                         archivos['nombre'] = nombre
