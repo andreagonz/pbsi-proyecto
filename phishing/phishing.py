@@ -64,6 +64,7 @@ def archivo_texto(sitio):
             return f.read().decode()
     except Exception as e:
         log_phishing('Error: %s' % str(e))
+        return ''
 
 def archivo_hashes(sitio):
     return lineas_md5(archivo_texto(sitio))

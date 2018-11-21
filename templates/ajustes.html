@@ -56,6 +56,18 @@
         <input type="submit" name="cambia-mensaje" class="uk-button uk-button-default" value="Modificar" />
       </form>
 
+      <form action="" method="post">
+        {% csrf_token %}
+        {% include 'form.html' with form=asunto_unam_form %}
+        <input type="submit" name="cambia-unam-asunto" class="uk-button uk-button-default" value="Modificar" />
+      </form>
+
+      <form action="" method="post">
+        {% csrf_token %}
+        {% include 'form.html' with form=mensaje_unam_form %}
+        <input type="submit" name="cambia-unam-mensaje" class="uk-button uk-button-default" value="Modificar" />
+      </form>
+
       Cambia frecuencia de actualización de base de datos (horas)
       <form action="" method="post">
         {% csrf_token %}

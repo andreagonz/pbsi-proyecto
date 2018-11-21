@@ -16,7 +16,8 @@ class ProxyForm(forms.Form):
                                    empty_label="Ninguno", required=False)
     
 class Search(forms.Form):
-    search=forms.CharField(max_length=500,required=True)
+    search = forms.CharField(max_length=500,required=True)
+    archivos = forms.BooleanField(label='Búsqueda en archivos', required=False)
 
 class HistoricoForm(forms.Form):
     inicio = forms.DateField(label='Fecha inicio', widget=SelectDateWidget(
@@ -30,10 +31,16 @@ class HistoricoForm(forms.Form):
                           initial=timezone.localtime(timezone.now()))
     
 class CambiaAsuntoForm(forms.Form):
-    asunto = forms.CharField(max_length=512, required=True)
+    asunto = forms.CharField(label='Plantilla de asunto', max_length=512, required=True)
 
 class CambiaMensajeForm(forms.Form):
-    mensaje = forms.CharField(required=True, widget=forms.Textarea)
+    mensaje = forms.CharField(label='Plantilla de mensaje', required=True, widget=forms.Textarea)
+
+class CambiaUnamAsuntoForm(forms.Form):
+    asunto = forms.CharField(label='Plantilla de asunto UNAM', max_length=512, required=True)
+
+class CambiaUnamMensajeForm(forms.Form):
+    mensaje = forms.CharField(label='Plantilla de mensaje UNAM', required=True, widget=forms.Textarea)
 
 class FrecuenciaForm(forms.Form):
     frecuencia = forms.IntegerField(required=True)

@@ -88,12 +88,24 @@ def lee_plantilla_asunto():
 def lee_plantilla_mensaje():
     return lee_archivo(settings.PLANTILLA_CORREO_MENSAJE)
 
+def lee_plantilla_unam_asunto():
+    return lee_archivo(settings.PLANTILLA_UNAM_ASUNTO)
+
+def lee_plantilla_unam_mensaje():
+    return lee_archivo(settings.PLANTILLA_UNAM_MENSAJE)
+
 def cambia_asunto(s):
     modifica_archivo(settings.PLANTILLA_CORREO_ASUNTO, s)
 
 def cambia_mensaje(s):
     modifica_archivo(settings.PLANTILLA_CORREO_MENSAJE, s)
-    
+
+def cambia_unam_asunto(s):
+    modifica_archivo(settings.PLANTILLA_UNAM_ASUNTO, s)
+
+def cambia_unam_mensaje(s):
+    modifica_archivo(settings.PLANTILLA_UNAM_MENSAJE, s)
+
 def adjunta_imagen(msg, sitio):
     """
     Se ajunta un archivo al mensaje msg
@@ -179,39 +191,50 @@ def virustotal(HASH_sha256):
         log('Error: %s' % str(e))
         return "No encontro coincidencias"
 
-def erroremail(palabra,mensaje):
+def erroremail(dicc, palabra, mensaje):
     """
     Imprime los campos de los headers de cada correo
     """
-    try:
-        return (palabra+": "+mensaje[palabra])
-    except Exception as e:
-        log('Error: %s' % str(e))
-        return (palabra+": No hay informacion de "+palabra)
+    if mensaje.get(palabra, None):        
+        dicc[palabra] = mensaje[palabra]
+        return True
+    return False
 
 def sha256(fname):
     hash_sha256 = hashlib.sha256()
     hash_sha256.update(fname)
     return hash_sha256.hexdigest()
 
+def mkdir(d):
+    if not os.path.exists(d):
+        os.makedirs(d)
+
 def analisisarchivos(attachment):
     """
     Esta funcion analiza los archivos contenidos en los correos
     """
-    tipo= attachment.get_content_type()
+    tipo = attachment.get_content_type()
     payload = attachment.get_payload(decode=True)
     try:
         if not payload:
             return "Ninguno", "Ninguno", "Ninguno"
         nombre = sha256(payload)
         noentidades=virustotal(nombre)
+        fecha = str(timezone.localtime(timezone.now()).date())
+        path = os.path.join(settings.MEDIA_ROOT, 'archivos', fecha)
+        mkdir(path)
         if noentidades=='No':
-            open('%s/archivos/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
+            open(os.path.join(path, nombre), 'wb').write(
+                attachment.get_payload(decode=True))
         else:
             if noentidades=='Si':
-                open('%s/archivos/maliciosos/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
+                mkdir(os.path.join(path, 'maliciosos'))
+                open(os.path.join(path, 'maliciosos', nombre), 'wb').write(
+                    attachment.get_payload(decode=True))
             else:
-                open('%s/archivos/noclasificado/%s'% (settings.MEDIA_ROOT, nombre), 'wb').write(attachment.get_payload(decode=True))
+                mkdir(os.path.join(path, 'no_clasificado'))
+                open(os.path.join(path, 'no_clasificado', nombre), 'wb').write(
+                    attachment.get_payload(decode=True))
     except Exception as e:
         log('Error: %s' % str(e))
         return "1", "1", "1"
@@ -224,47 +247,42 @@ def parsecorreo(texto):
     """
     Realiza el parseo del archivo email
     """
-    resultados = []
-    url=[]
-    error=["El texto ingresado no corresponde a un correo o el archivo esta corrupto"]
+    resultados = {}
+    url = []
+    archivos = {}
     mensaje = email.message_from_string(texto)
-    if(erroremail("To",mensaje)=="To: No hay informacion de To"):
-        resultados.append("EL TEXTO INGRESADO NO CORRESPONDE A UN CORREO O EL ARCHIVO ESTA CORRUPTO.\nINTENTE CON OTRO\n") 
-        return resultados, url
+    h = str(mensaje).split('\n\n')
+    headers = h[0] if len(h) > 0 else ''
+    if not erroremail(resultados, "To", mensaje):
+        return {}, url, headers, {}, True
     else:        
-        lista = ['From','To','Cc','Bcc','Subject','X-Virus-Scanned','X-Spam-Flag','X-Spam-Score','X-Spam-Status','X-Spam-Level','Received']
-
+        lista = ['From','To','Cc','Bcc','Subject','X-Virus-Scanned','X-Spam-Flag',
+                 'X-Spam-Score','X-Spam-Status','X-Spam-Level','Received']
         for head in lista:
-            resultados.append(erroremail(head,mensaje))
-        b = email.message_from_string(texto)
-        if b.is_multipart():
-            for part in b.walk():
+            erroremail(resultados, head, mensaje)
+        if mensaje.is_multipart():
+            for part in mensaje.walk():
                 ctype = part.get_content_type()
                 cdispo = str(part.get('Content-Disposition'))
                 if ctype == 'text/plain' and 'attachment' not in cdispo:
-                    body = part.get_payload(decode=True)  # decode
-                    url=re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',body.decode('utf-8', errors='ignore'));
+                    body = part.get_payload(decode=True)
+                    url = re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',body.decode('utf-8', errors='ignore'))
                     break
         else:
-            body=b.get_payload(decode=True)
-            url=re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',body.decode('utf-8', errors='ignore'));
-            for urls in url:
-                resultados.append("URL: "+urls+"\n")
-    #Obtener archivo adjunto
-        msg = email.message_from_string(texto)
-        tamanio=len(msg.get_payload())
-        #attachment = msg.get_payload()[1]
+            body = mensaje.get_payload(decode=True)
+            url = re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',body.decode('utf-8', errors='ignore'))
+        mensaje = email.message_from_string(texto)
+        tamanio = len(mensaje.get_payload())
         if tamanio < 20:
             for x in range(0,tamanio):
-            #print (x)
                 if(x!=0):
-                    attachment = msg.get_payload()[x]
-                    nombre,noentidades,tipo=analisisarchivos(attachment)
-                    if(noentidades=="1"):
-                       return error,error 
+                    attachment = mensaje.get_payload()[x]
+                    nombre, noentidades, tipo = analisisarchivos(attachment)
+                    if(noentidades == "1"):
+                       return None, None, None, None, True
                     else:
-                        resultados.append("Tipo de archivo: " +tipo+"\n") #+ attachment.get_content_type()+"\n")
-                        resultados.append("Nombre de archivo: " + nombre+"\n")
-                        resultados.append("\tArchivo malicioso: " +noentidades+"\n")
-                        resultados.append("Mas informacion: https://www.virustotal.com/#/file/"+nombre)
-    return resultados, url
+                        archivos['tipo'] = tipo
+                        archivos['nombre'] = nombre
+                        archivos['malicioso'] = noentidades
+                        archivos['info'] = "https://www.virustotal.com/#/file/" + nombre
+    return resultados, url, headers, archivos, False

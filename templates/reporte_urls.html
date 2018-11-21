@@ -1,11 +1,14 @@
 {% extends "base.html" %}
 
-{% block title %}Phish-Mon Valida URLs Reporte{% endblock %}
+{% block title %}Valida URLs Reporte{% endblock %}
 
 {% block contenido %}
   <div class="uk-container uk-container-medium">
     <h1 class="uk-heading-divider">Valida URLs Reporte</h1>
   </div>
+  {% if no_reportados and user.is_authenticated %}
+    <a class='btn btn-primary' href='{% url 'monitoreo' %}'>Ir a monitoreo</a></br>
+  {% endif %}
   {% include 'reporte.html' %}
   
 {% endblock %}

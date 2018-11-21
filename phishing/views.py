@@ -36,7 +36,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 import randomcolor
 import datetime
-from phishing.phishing import lineas_md5,md5,archivo_hashes
+from phishing.phishing import lineas_md5, md5, archivo_hashes, leeComentariosHTML, archivo_texto
 from docx import Document
 from docx.shared import Inches
 from .entrada import( lee_csv, lee_txt, lee_json )
@@ -235,6 +235,12 @@ def valida_urls(request):
                 urls = form.cleaned_data['urls']
                 sitios = verifica_urls([x.strip() for x in urls.split('\n') if x.strip()], None, False)
                 context = context_reporte(sitios)
+                no_reportados = False
+                for x in sitios:
+                    if not x.reportado:
+                        no_reportados = True
+                context = context_reporte(sitios)
+                context['no_reportados'] = no_reportados
                 return render(request, 'reporte_urls.html', context)
         elif request.POST.get("boton_archivo") and request.FILES['file']:
             form = ArchivoForm(request.POST)
@@ -248,7 +254,12 @@ def valida_urls(request):
             elif name.endswith('.csv'):
                 urls = lee_csv(f)
             sitios = verifica_urls(urls, None, False)
+            no_reportados = False
+            for x in sitios:
+                if not x.reportado:
+                    no_reportados = True
             context = context_reporte(sitios)
+            context['no_reportados'] = no_reportados
             return render(request, 'reporte_urls.html', context)
     else:
         form1 = UrlsForm()
@@ -273,6 +284,21 @@ def busca(request):
     q = ''
     if request.method == "GET" and request.GET.get('q', None):
         q = request.GET['q'].strip()
+        """
+        if request.GET.get('a', None) and request.GET['a'].strip() == '1':
+            urls = Url.objects.exclude(archivo=None)
+            for u in urls:
+                f = archivo_texto(u)
+                for h in lineas_md5(f):
+                    if h == q:
+                        resultados.append(u)
+                for x in leeComentariosHTML(f):
+                    if q in x:
+                        resultados.append(u)
+                if u.hash_archivo == q:
+                    resultados.append(u)
+            resultados = list(set(resultados))
+        """
         resultados = Url.objects.annotate(
             search=SearchVector('url') + SearchVector('dominio__dominio') +
             SearchVector('entidades_afectadas__clasificacion__nombre') +
@@ -285,7 +311,7 @@ def busca(request):
             SearchVector('hash_archivo') + SearchVector('redireccion') +
             SearchVector('dominio__servidor') +
             SearchVector('mensaje__ticket')
-        ).filter(search=SearchQuery(q)).distinct('url')
+        ).filter(search=SearchQuery(q)).distinct('url')            
     return render(request, 'results.html',
                   {'resultados': resultados,
                    'query': q
@@ -319,6 +345,8 @@ def ajustes(request):
     recursos = Recurso.objects.all()
     asunto_form = CambiaAsuntoForm(initial={'asunto': lee_plantilla_asunto()})
     mensaje_form = CambiaMensajeForm(initial={'mensaje': lee_plantilla_mensaje()})
+    unam_asunto_form = CambiaUnamAsuntoForm(initial={'asunto': lee_plantilla_unam_asunto()})
+    unam_mensaje_form = CambiaUnamMensajeForm(initial={'mensaje': lee_plantilla_unam_mensaje()})
     actualizacion_form = FrecuenciaForm()
     verificacion_form = FrecuenciaForm()
     if request.method == 'POST':
@@ -332,6 +360,16 @@ def ajustes(request):
             if mensaje_form.is_valid():
                 mensaje = mensaje_form.cleaned_data['mensaje']
                 cambia_mensaje(mensaje)
+        elif request.POST.get('cambia-unam-asunto'):
+            unam_asunto_form = CambiaUnamAsuntoForm(request.POST)
+            if unam_asunto_form.is_valid():
+                asunto = unam_asunto_form.cleaned_data['asunto']
+                cambia_unam_asunto(asunto)
+        elif request.POST.get('cambia-unam-mensaje'):
+            unam_mensaje_form = CambiaUnamMensajeForm(request.POST)
+            if unam_mensaje_form.is_valid():
+                mensaje = unam_mensaje_form.cleaned_data['mensaje']
+                cambia_unam_mensaje(mensaje)
         elif request.POST.get('cambia-actualizacion'):
             actualizacion_form = FrecuenciaForm(request.POST)
             if actualizacion_form.is_valid():
@@ -351,6 +389,8 @@ def ajustes(request):
         'proxies': proxies,
         'asunto_form': asunto_form,
         'mensaje_form': mensaje_form,
+        'asunto_unam_form': unam_asunto_form,
+        'mensaje_unam_form': unam_mensaje_form,
         'actualizacion_form': actualizacion_form,
         'verificacion_form': verificacion_form,
     }
@@ -874,19 +914,23 @@ def entrada(request):
             form = CorreoForm(request.POST)
             if form.is_valid():
                 c = form.cleaned_data['correo']
-                resultados, urls = parsecorreo(c)
-                verifica_urls(urls, None, False)
-                return render(request, 'entrada_resultados.html',
-                              {'resultados': resultados, 'urls': urls})
+                resultados, urls, headers, archivos, error = parsecorreo(c)
+                if len(urls) > 0:
+                    verifica_urls(urls, None, False)
+                context = {'resultados': resultados, 'urls': urls,
+                       'headers': headers, 'archivos': archivos, 'error': error}
+                return render(request, 'entrada_resultados.html', context)
         elif request.POST.get("boton_archivo") and request.FILES['file']:
             form = CorreoArchivoForm(request.POST)
             f = request.FILES['file'].read().decode('utf-8')
             name = request.FILES['file'].name
             urls = []
-            resultados, urls = parsecorreo(f)
-            verifica_urls(urls, None, False)
-            return render(request, 'entrada_resultados.html',
-                          {'resultados': resultados, 'urls': urls})
+            resultados, urls, headers, archivos, error = parsecorreo(f)
+            if len(urls) > 0:
+                verifica_urls(urls, None, False)
+            context = {'resultados': resultados, 'urls': urls,
+                       'headers': headers, 'archivos': archivos, 'error': error}
+            return render(request, 'entrada_resultados.html', context)
     else:
         form1 = CorreoForm()
         form2 = CorreoArchivoForm()
