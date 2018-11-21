@@ -156,8 +156,8 @@ def monitoreo_id(request, pk):
             if mensaje_form.is_valid():
                 de = mensaje_form.cleaned_data['de']
                 para = [x.strip() for x in mensaje_form.cleaned_data['para'].split(',')]
-                cc = [x.strip() for x in mensaje_form.cleaned_data['cc']]
-                cco = [x.strip() for x in mensaje_form.cleaned_data['cco']]
+                cc = [x.strip() for x in mensaje_form.cleaned_data['cc'].split(',')]
+                cco = [x.strip() for x in mensaje_form.cleaned_data['cco'].split(',')]
                 asunto = mensaje_form.cleaned_data['asunto']
                 mensaje = mensaje_form.cleaned_data['mensaje']
                 mensaje_form = MensajeForm(request.POST)
