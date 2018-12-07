@@ -95,7 +95,8 @@ class Dominio(models.Model):
 
     @property
     def urls_activas(self):
-        return self.url_set.filter(reportado=False, ignorado=False, codigo__lt=300, codigo__gte=200)
+        urls = self.url_set.filter(reportado=False, ignorado=False, codigo__lt=400, codigo__gte=200)
+        return urls.filter(pk__in=[x.pk for x in urls if x.es_activa])
 
     @property
     def activo(self):

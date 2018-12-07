@@ -1,38 +1,82 @@
 {% extends "base.html" %}
 
-{% block title %}Phish-Mon Monitoreo{% endblock %}
+{% block title %}Monitoreo{% endblock %}
 
 {% block contenido %}
 
   <div class="container">
     
-    <h1 class="display-3">Monitoreo</h1>
-
-    <form action="" method="post"> 
-      <h1 class="uk-heading-divider">Valida URLs</h1>  
+    <h1 class="uk-heading-divider">Monitoreo</h1>  
+    <form action="uk-form-horizontal uk-margin-medium" method="post"> 
       {% csrf_token %}
       {% include 'form.html' with form=proxy_form %}
-      <input type="submit" name="boton-curl" class="uk-button uk-button-default" value="Aceptar" />
+      <input type="submit" name="boton-curl" class="uk-button uk-button-primary" value="Aceptar" />
     </form>
 
-    <h2>Datos de dominio {{ dominio }}</h2>
-    País: {{ dominio.pais }}<br/>
-    IP: {{ dominio.ip }}<br/>
-    ASN: {{ dominio.asn }}<br/>
-    Sevidores DNS: {{ dominio.servidores_dns }}<br/>
-    Servidor: {{ dominio.servidor }}<br/>
-    RIR: {{ dominio.rir }}<br/>
-    <a href='{{ dominio.captura_url }}'><img src='{{ dominio.captura_url }}' style="max-width:500px;max-height:500px;" /></a><br/>
+    <li>
+      <article class="uk-comment uk-comment-primary uk-visible-toggle">            
+        <header class="uk-comment-header uk-position-relative">
+          <div class="uk-grid-medium uk-flex-middle" uk-grid>
+            <div class="uk-width-auto">
+              <a href='{{ dominio.captura_url }}'><img src='{{ dominio.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;"/></a>
+            </div>
+            <div class="uk-width-expand">
+              <h4 class="uk-comment-title uk-margin-remove">
+                Dominio: {{ dominio }}
+              </h4>
+              <p class="uk-comment-meta uk-margin-remove-top">
+                <a class="uk-link-reset" href="#">IP: {{ dominio.ip }}</a>
+              </p>
+            </div>
+          </div>
+        </header>            
+        <div class="uk-comment-body">
+          <p>
+            País: {{ dominio.pais }}<br/>
+            IP: {{ dominio.ip }}<br/>
+            ASN: {{ dominio.asn }}<br/>
+            Sevidores DNS: {{ dominio.servidores_dns }}<br/>
+            Servidor: {{ dominio.servidor }}<br/>
+            RIR: {{ dominio.rir }}<br/>
+          </p>
+        </div>
+      </article>
+    </li>
 
-    <h3>Direcciones URL:</h3>
-    {% for url in urls %}
-      <a href='{% url 'url-detalle' pk=url.pk %}'><h4>{{ url }}</h4></a>
-      URL: {{ url.url }}<br/>
-      Código: {{ url.codigo_estado }}<br/>
-      Timestamp: {{ url.timestamp }}<br/>
-      <a href='{{ url.captura_url }}'><img src='{{ url.captura_url }}' style="max-width:500px;max-height:500px;" /></a><br/>
-    {% endfor %}
 
+    <ul class="uk-comment-list">        
+      {% for url in urls %}
+        <li>
+          <article class="uk-comment uk-visible-toggle">            
+            <header class="uk-comment-header uk-position-relative">
+                <div class="uk-grid-medium uk-flex-middle" uk-grid>
+                    <div class="uk-width-auto">
+                      <a href='{{ url.captura_url }}'><img src='{{ url.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;" /></a>
+                    </div>
+                    <div class="uk-width-expand">
+                      <h4 class="uk-comment-title uk-margin-remove">
+                        <a href='{% url 'url-detalle' pk=url.pk %}'>{{ url }}</a>
+                      </h4>
+                      <p class="uk-comment-meta uk-margin-remove-top">
+                        <a class="uk-link-reset" href="#">IP: {{ dominio.ip }}</a>
+                      </p>
+                    </div>
+                </div>
+            </header>            
+            <div class="uk-comment-body">
+              <p>
+                URL: {{ url.url }}<br/>
+                Código: {{ url.codigo_estado }}<br/>
+                Timestamp: {{ url.timestamp }}<br/>
+              </p>
+            </div>
+          </article>
+        </li>
+    {% empty %}
+      <h4>No hay ninguna URL por mostrar</h4>        
+    {% endfor %}    
+    </ul>  
+    
     <form action="" method="post">
       {% csrf_token %}
       {% include 'form.html' with form=mensaje_form %}

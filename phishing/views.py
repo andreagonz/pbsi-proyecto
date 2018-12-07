@@ -231,9 +231,17 @@ def valida_urls(request):
     if request.method == 'POST':
         if request.POST.get("boton_urls"):
             form = UrlsForm(request.POST) 
-            if form.is_valid():
+            if form.is_valid():                
                 urls = form.cleaned_data['urls']
-                sitios = verifica_urls([x.strip() for x in urls.split('\n') if x.strip()], None, False)
+                urls_limpias = []
+                for x in urls.split('\n'):
+                    x = x.strip()
+                    if x:
+                        for y in x.split(','):
+                            y = y.strip()
+                            if y:
+                                urls_limpias.append(y)
+                sitios = verifica_urls(urls_limpias, None, False)
                 no_reportados = False
                 for x in sitios:
                     if not x.reportado:
