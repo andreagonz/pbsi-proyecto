@@ -1,29 +1,40 @@
-
 {% load filtros %}
+
 {{ form.non_field_errors }}
+
 {% for field in form %}
 
-  {% if field|fieldtype == 'CheckboxInput'  %}
-
-    <div class="form-check">
-      {{ field|addclass:'form-check-input' }}
-      <label class="control-label" for="{{ field.name }}">{{ field.label }}</label>
-    </div>
+  {% if field|fieldtype == 'Textarea' or field|fieldtype == 'TextInput' or field|fieldtype == 'ClearableFileInput'%}
+    <div class="uk-margin">
   {% else %}
-    <div class="form-group {% if field.errors %}has-error{%endif%}">
-      <label class="control-label" for="{{ field.name }}">{{ field.label }}</label>
-      {% if field|fieldtype == 'ImageField' or field|fieldtype == 'FileField' %}      
-        {{ field }}
-      {% elif field|fieldtype == 'DateTimeField' %}
-        {{ field|addclass:'form-control date-picker' }}
-      {% else %}
-        {{ field|addclass:'form-control' }}
-      {% endif %}
-      {% if field.errors %}
-	{% for error in field.errors %}
-          <span class="text-danger small">{{ error|escape }}</span>
-	{% endfor %}
-      {% endif %}
-    </div>
+    <div class="uk-margin uk-grid-small uk-child-width-auto uk-grid">
   {% endif %}
+    <label class="uk-form-label" for="{{ field.name }}">{{ field.label }}</label>
+    <div class="uk-form-controls">
+      {% if field.errors %}
+        {{ field|addclass:'uk-input uk-form-danger' }}
+      {% else %}
+        {% if field|fieldtype == 'Textarea' %}
+          {{ field|addclass:'uk-textarea' }}
+        {% elif field|fieldtype == 'ClearableFileInput' or field|fieldtype == 'TextInput' %}
+          {{ field|addclass:'uk-input' }}
+        {% elif field|fieldtype == 'CheckboxInput' %}
+          {{ field|addclass:'uk-checkbox' }}
+        {% elif field|fieldtype == 'NumberInput' %}
+          {{ field|addclass:'uk-range' }}
+        {% else %}
+          {{ field }}
+        {% endif %}
+      {% endif %}      
+    </div>
+  </div>
+  {% if field.errors %}
+    {% for error in field.errors %}
+      <div class="uk-alert-danger" uk-alert>
+        <a class="uk-alert-close" uk-close></a>
+        <p>{{ error|escape }}</p>
+      </div>
+    {% endfor %}
+  {% endif %}
+
 {% endfor %}

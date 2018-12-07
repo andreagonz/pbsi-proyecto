@@ -2,28 +2,13 @@
 {% block title %}Reporte Doc{% endblock %}
 
 {% block contenido %}
-  <div class="container">
-    <center>
-      <b></b>
-    </center>
-    <div class="row">
-      <div class="col">
-	<br>
-	<form id='formulario' method='POST' action="{% url 'creadoc' %}">
-	  {% csrf_token %}
-	  {{ form.as_p }}
-	  <input type="submit" name="enviar" value="Enviar">
-	</form>
-	<br>
-      </div>
-      <div class="col">
-	<br>
-	{% if env %}		
-	  <p>Se creó el archivo {{ nom }} </p>
-	{% endif %}
-	<br>
-      </div>
-    </div>
-
-  </div>
+  <h1 class="uk-heading-primary uk-text-center"><span>Generación de Reporte</span></h1>
+  <form id='formulario' method='POST' action="{% url 'creadoc' %}" class="uk-form-horizontal">
+    {% csrf_token %}
+    {% include 'form.html' with form=form %}<br/>
+    <input type="submit" name="enviar" value="Enviar">
+  </form>
+  {% if env %}		
+    <p>Se creó el archivo {{ nom }} </p>
+  {% endif %}
 {% endblock %}

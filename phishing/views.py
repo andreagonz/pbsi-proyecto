@@ -542,7 +542,7 @@ def obtener_dias():
 def delta_horas(td):
     return td.total_seconds() / 3600
 
-class ChartData(LoginRequiredMixin, APIView):
+class ChartData(APIView):
     
     def get(self, request, format=None):
         rand_color = randomcolor.RandomColor()

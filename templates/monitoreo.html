@@ -3,39 +3,77 @@
 {% block title %}Phish-Mon Monitoreo{% endblock %}
 
 {% block contenido %}
-  <div class="container">
-    <h1 class="display-3">Monitoreo</h1>
-    {% for dominio in dominios %}
-      <h2>{{ dominio }}</h2>
-      IP: {{ dominio.ip }} <br/>
-      País: {{ dominio.pais }} <br/>
-      RIR: {{ dominio.rir }} <br/>
-      Servidores DNS: {{ dominio.servidores_dns }} <br/>
-      ISP: {{ dominio.isp }} <br/>
-      ASN: {{ dominio.asn }} <br/>
-      Servidor: {{ dominio.servidor }} <br/>
-      {% for url in dominio.urls_activas %}
-        <div class="card flex-row flex-wrap">
-          <div class="card-header border-0">
-            <img src='{{ url.captura_url }}' class="img-thumbnail" style="object-fit: cover;width: 100px;height: 100px;"/>
-          </div>
-          <div class="card-block px-2">
-            <h4 class="card-title">{{ url }}</h4>
-            <p class="card-text">
-              Timestamp: {{ url.timestamp }} <br/>
-              Código: {{ url.codigo }} <br/>
-              Título: {{ url.titulo }} <br/>
-              Detectado: {{ url.es_phishing }} <br/>
-              Estado: {{ url.estado }} <br/>
-            </p>
-          </div>
-          <div class="w-100"></div>
-        </div>
-      {% endfor %}
-      <a href='{% url 'monitoreo-id' dominio.pk %}' class="btn btn-primary">Reportar dominio</a>
+  
+  <h1 class="uk-heading-primary uk-text-center"><span>Monitoreo</span></h1>
+
+    <ul class="uk-comment-list">
+        
+      {% for dominio in dominios %}
+        <li>
+          <article class="uk-comment uk-comment-primary uk-visible-toggle">            
+            <header class="uk-comment-header uk-position-relative">
+                <div class="uk-grid-medium uk-flex-middle" uk-grid>
+                    <div class="uk-width-auto">
+                      <img src='{{ dominio.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;"/>
+                    </div>
+                    <div class="uk-width-expand">
+                      <h4 class="uk-comment-title uk-margin-remove">
+                        Dominio: {{ dominio }}
+                      </h4>
+                      <p class="uk-comment-meta uk-margin-remove-top">
+                        <a class="uk-link-reset" href="#">IP: {{ dominio.ip }}</a>
+                      </p>
+                    </div>
+                </div>
+                <div class="uk-position-top-right uk-position-small">
+                  <a href='{% url 'monitoreo-id' dominio.pk %}' class="uk-button uk-button-primary">
+                    Reportar dominio
+                  </a>
+                </div>      
+            </header>            
+            <div class="uk-comment-body">
+              <p>
+                País: {{ dominio.pais }} <br/>
+                RIR: {{ dominio.rir }} <br/>
+                Servidores DNS: {{ dominio.servidores_dns }} <br/>
+                ISP: {{ dominio.isp }} <br/>
+                ASN: {{ dominio.asn }} <br/>
+                Servidor: {{ dominio.servidor }} <br/>                
+              </p>
+            </div>
+          </article>
+
+          <ul>
+            {% for url in dominio.urls_activas %}
+              <li>
+                <article class="uk-comment uk-visible-toggle">
+                  <header class="uk-comment-header uk-position-relative">
+                    <div class="uk-grid-medium uk-flex-middle" uk-grid>
+                      <div class="uk-width-auto">
+                        <img src='{{ url.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;"/>
+                      </div>
+                      <div class="uk-width-expand">
+                        <h4 class="uk-comment-title uk-margin-remove"><a class="uk-link-reset" href="#">{{ url }}</a></h4>
+                        <p class="uk-comment-meta uk-margin-remove-top"><a class="uk-link-reset" href="#">Timestamp: {{ url.timestamp }}</a></p>
+                      </div>
+                    </div>
+                  </header>
+                  <div class="uk-comment-body">
+                    <p>
+                      Código: {{ url.codigo }} <br/>
+                      Título: {{ url.titulo }} <br/>
+                      Detectado: {{ url.es_phishing }} <br/>
+                      Estado: {{ url.estado }} <br/>
+                    </p>
+                  </div>
+                </article>
+              </li>
+            {% endfor %}
+          </ul>
+        </li>
     {% empty %}
       <h4>No hay ninguna URL por mostrar</h4>        
     {% endfor %}
-  </div>
-  
+    
+    </ul>  
 {% endblock %}

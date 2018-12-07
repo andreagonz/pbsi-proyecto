@@ -3,18 +3,20 @@
 {% block title %}Phish-Mon Valida URLs{% endblock %}
 
 {% block contenido %}
-  <div class="container">
-    <h1 class="display-3">Valida URLs</h1>
-    {% include 'descripcion_valida_urls.html' %}
-    <form class="uk-form-horizontal uk-margin-large" action="" method="post">
-      {% csrf_token %}
-      {% include 'form.html' with form=form1 %}
-      <input type="submit" class="btn btn-info" value="Aceptar" name="boton_urls" />
-    </form>
-    <form method="post" enctype="multipart/form-data">
-      {% csrf_token %}
-      {% include 'form.html' with form=form2 %}
-      <input type="submit" class="btn btn-info" value="Aceptar" name="boton_archivo" />
-    </form>
-  </div>
+  <h1 class="uk-heading-primary uk-text-center"><span>Valida URLs</span></h1>
+  
+  {% include 'descripcion_valida_urls.html' %}
+  
+  <form action="" method="post">
+    {% csrf_token %}
+    {% include 'form.html' with form=form1 %}
+    <input type="submit" class="btn btn-info" value="Aceptar" name="boton_urls" />
+  </form>
+  
+  <form class="uk-form-horizontal uk-margin-medium" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% include 'form.html' with form=form2 %}
+    <input type="submit" class="btn btn-info" value="Aceptar" name="boton_archivo" />
+  </form>
+
 {% endblock %}

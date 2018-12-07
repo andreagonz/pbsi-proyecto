@@ -1,20 +1,19 @@
 {% extends "base.html" %}
 
-{% block title %}Phish-Mon Correo{% endblock %}
+{% block title %}Procesamiento de Correo{% endblock %}
 
 {% block contenido %}
-  <div class="container">
-    <h1 class="display-3">Procesamiento de Correo</h1>
-    {% include 'descripcion_correo.html' %}
-    <form class="uk-form-horizontal uk-margin-large" action="" method="post">
-      {% csrf_token %}
-      {% include 'form.html' with form=form1 %}
-      <input type="submit" class="btn btn-info" value="Aceptar" name="boton_correo" />
-    </form>
-    <form method="post" enctype="multipart/form-data">
-      {% csrf_token %}
-      {% include 'form.html' with form=form2 %}
-      <input type="submit" class="btn btn-info" value="Aceptar" name="boton_archivo" />
-    </form>
-  </div>
+  <h1 class="uk-heading-primary uk-text-center"><span>Procesamiento de Correo</span></h1>
+  {% include 'descripcion_correo.html' %}
+  <form action="" method="post">
+    {% csrf_token %}
+    {% include 'form.html' with form=form1 %}
+    <input type="submit" class="btn btn-info" value="Aceptar" name="boton_correo" />
+  </form>
+  <form class="uk-form-horizontal uk-margin-medium" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {% include 'form.html' with form=form2 %}
+    <input type="submit" class="btn btn-info" value="Aceptar" name="boton_archivo" />
+  </form>
+
 {% endblock %}

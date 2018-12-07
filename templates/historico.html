@@ -3,15 +3,14 @@
 {% block title %}Phish-Mon Histórico{% endblock %}
 
 {% block contenido %}
-  <div class="container">
-    <h1 class="display-3">Histórico</h1>
-Periodo: <pre>{{ inicio }} - {{ fin }}</pre>
-    <form action="" method="post">
-      {% csrf_token %}
-      {% include 'form_nofancy.html' with form=form %}<br/>
-      <input class="btn btn-info" type="submit" value="Aceptar" />
-    </form>
-    {% include 'reporte.html' %}
+  <h1 class="uk-heading-primary uk-text-center"><span>Histórico</span></h1>
+  <h4>{{ inicio }} - {{ fin }}</h4>
+  <form action="" method="post">
+    {% csrf_token %}
+    {% include 'form.html' with form=form %}
+    <input class="btn btn-info" type="submit" value="Aceptar" />
+  </form>
+
+  {% include 'reporte.html' %}
   
-    </div>
-  {% endblock %}
+{% endblock %}
