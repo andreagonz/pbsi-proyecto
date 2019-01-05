@@ -83,8 +83,6 @@ def redirecciones_reporta(url):
         url.timestamp_deteccion = url.timestamp_reportado
         url.estado_phishing = 1
     url.save()
-    for p in Url.objects.filter(redireccion=url.url):
-        redirecciones_reporta(p)
 
 def redirecciones_ignora(url):
     if url.ignorado:
@@ -92,8 +90,6 @@ def redirecciones_ignora(url):
     url.ignorado = True
     url.timestamp_reportado = timezone.localtime(timezone.now())
     url.save()
-    for p in Url.objects.filter(redireccion=url.url):
-        redirecciones_ignora(p)
 
 @login_required(login_url=reverse_lazy('login'))
 def monitoreo_id(request, pk):
@@ -103,7 +99,8 @@ def monitoreo_id(request, pk):
     urls = dominio.urls_activas
     context = {
         'dominio': dominio,
-        'urls': urls,
+        'monitoreo': False,
+        'activo': True,
     }
     proxy_form = ProxyForm()
     hoy = timezone.localtime(timezone.now())
@@ -147,16 +144,15 @@ def monitoreo_id(request, pk):
                         proxy['https'] = proxies.https
                 for url in dominio.urls_activas:
                     sitio = monitorea_url(url, proxy)
-            if not dominio.activo:
-                urls = Url.objects.filter(reportado=False,
-                                          ignorado=False,
-                                          codigo__lt=300,
-                                          codigo__gte=200).order_by('-timestamp_creacion')
-                if len(urls) > 0:
-                    return redirect('monitoreo-id', pk=urls[0].dominio.pk)
-                return redirect('monitoreo')
-            return redirect('monitoreo-id', pk=dominio.pk)
+            context['monitoreo'] = True
+            mensaje_form.actualiza()
+            context['mensaje_form'] = mensaje_form
+            context['activo'] = dominio.activo
+            context['proxy_form'] = proxy_form
+            return render(request, 'monitoreo_id.html', context)
         elif request.POST.get('boton-mensaje'):
+            # if not dominio.activo:
+            # return render(request, 'monitoreo_error.html', {'dominio': dominio})
             mensaje_form = MensajeForm(request.POST, urls=urls)
             if mensaje_form.is_valid():
                 de = mensaje_form.cleaned_data['de']
@@ -166,6 +162,7 @@ def monitoreo_id(request, pk):
                 asunto = mensaje_form.cleaned_data['asunto']
                 mensaje = mensaje_form.cleaned_data['mensaje']
                 capturas = mensaje_form.cleaned_data['capturas']
+                urls_reportadas = mensaje_form.cleaned_data['urls']
                 msg = genera_mensaje(dominio, de, para, cc, cco, asunto, mensaje, capturas)
                 manda_correo(para, cc, cco, msg)
                 try:
@@ -173,13 +170,13 @@ def monitoreo_id(request, pk):
                 except:
                     men = Mensaje(ticket=ticket)
                     men.save()
-                for x in urls:
+                for x in urls_reportadas:
                     men.urls.add(x)
                     redirecciones_reporta(x)
                 men.save()
                 context = {
                     'dominio': dominio,
-                    'urls': urls,
+                    'urls': urls_reportadas,
                     'de': de,
                     'para': ', '.join(para),
                     'cc': ', '.join(cc),
@@ -192,17 +189,6 @@ def monitoreo_id(request, pk):
         elif request.POST.get('boton-ignorar') and request.user.is_superuser:
             for x in urls:
                 redirecciones_ignora(x)
-            return redirect('monitoreo')
-        elif request.POST.get('boton-saltar'):
-            us = dominio.url_set.all()
-            i = us[0].id if len(us) > 0 else 0
-            urls = Url.objects.filter(reportado=False,
-                                      ignorado=False,
-                                      codigo__lt=300,
-                                      codigo__gte=200).exclude(
-                                          dominio=dominio).order_by('-timestamp_creacion')
-            if len(urls) > 0:
-                return redirect('monitoreo-id', pk=urls[0].dominio.pk)
             return redirect('monitoreo')
     context['mensaje_form'] = mensaje_form
     context['proxy_form'] = proxy_form

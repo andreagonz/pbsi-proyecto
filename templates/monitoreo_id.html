@@ -6,93 +6,65 @@
 
   <div class="container">
     
-    <h1 class="uk-heading-divider">Monitoreo</h1>  
-    <form action="uk-form-horizontal uk-margin-medium" method="post"> 
-      {% csrf_token %}
-      {% include 'form.html' with form=proxy_form %}
-      <input type="submit" name="boton-curl" class="uk-button uk-button-primary" value="Aceptar" />
-    </form>
-
-    <li>
-      <article class="uk-comment uk-comment-primary uk-visible-toggle">            
-        <header class="uk-comment-header uk-position-relative">
-          <div class="uk-grid-medium uk-flex-middle" uk-grid>
-            <div class="uk-width-auto">
-              <a href='{{ dominio.captura_url }}'><img src='{{ dominio.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;"/></a>
-            </div>
-            <div class="uk-width-expand">
-              <h4 class="uk-comment-title uk-margin-remove">
-                Dominio: {{ dominio }}
-              </h4>
-              <p class="uk-comment-meta uk-margin-remove-top">
-                <a class="uk-link-reset" href="#">IP: {{ dominio.ip }}</a>
-              </p>
-            </div>
-          </div>
-        </header>            
-        <div class="uk-comment-body">
-          <p>
-            País: {{ dominio.pais }}<br/>
-            IP: {{ dominio.ip }}<br/>
-            ASN: {{ dominio.asn }}<br/>
-            Sevidores DNS: {{ dominio.servidores_dns }}<br/>
-            Servidor: {{ dominio.servidor }}<br/>
-            RIR: {{ dominio.rir }}<br/>
-          </p>
-        </div>
-      </article>
-    </li>
-
-
-    <ul class="uk-comment-list">        
-      {% for url in urls %}
-        <li>
-          <article class="uk-comment uk-visible-toggle">            
-            <header class="uk-comment-header uk-position-relative">
-                <div class="uk-grid-medium uk-flex-middle" uk-grid>
-                    <div class="uk-width-auto">
-                      <a href='{{ url.captura_url }}'><img src='{{ url.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;" /></a>
-                    </div>
-                    <div class="uk-width-expand">
-                      <h4 class="uk-comment-title uk-margin-remove">
-                        <a href='{% url 'url-detalle' pk=url.pk %}'>{{ url }}</a>
-                      </h4>
-                      <p class="uk-comment-meta uk-margin-remove-top">
-                        <a class="uk-link-reset" href="#">IP: {{ dominio.ip }}</a>
-                      </p>
-                    </div>
+    <h1 class="uk-heading-divider">Monitoreo</h1>
+    {% if activo %}
+      <form class="uk-form-horizontal uk-margin-large" method="post" action=""> 
+        {% csrf_token %}
+        {% include 'form.html' with form=proxy_form %}
+        <input type="submit" name="boton-curl" class="uk-button uk-button-primary" value="Monitorear" />
+      </form>
+    {% endif %}
+    
+    <ul class="uk-comment-list">            
+      <li>
+        <article class="uk-comment uk-comment-primary uk-visible-toggle">            
+          <header class="uk-comment-header uk-position-relative">
+            <div class="uk-grid-medium uk-flex-middle" uk-grid>
+              <div class="uk-width-auto">
+                <div uk-lightbox>
+                  <a href='{{ dominio.captura_url }}'><img src='{{ dominio.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;"/></a>
                 </div>
-            </header>            
-            <div class="uk-comment-body">
-              <p>
-                URL: {{ url.url }}<br/>
-                Código: {{ url.codigo_estado }}<br/>
-                Timestamp: {{ url.timestamp }}<br/>
-              </p>
+              </div>
+              <div class="uk-width-expand">
+                <h4 class="uk-comment-title uk-margin-remove">
+                  Dominio: {{ dominio }}
+                </h4>
+                <p class="uk-comment-meta uk-margin-remove-top">
+                  <a class="uk-link-reset" href="#">IP: {{ dominio.ip }}</a>
+                </p>
+              </div>
             </div>
-          </article>
-        </li>
-    {% empty %}
-      <h4>No hay ninguna URL por mostrar</h4>        
-    {% endfor %}    
-    </ul>  
-    
+          </header>            
+          <div class="uk-comment-body">
+            <p>
+              País: {{ dominio.pais }}<br/>
+              IP: {{ dominio.ip }}<br/>
+              ASN: {{ dominio.asn }}<br/>
+              Sevidores DNS: {{ dominio.servidores_dns }}<br/>
+              Servidor: {{ dominio.servidor }}<br/>
+              RIR: {{ dominio.rir }}<br/>
+            </p>
+          </div>
+        </article>
+      </li>
+    </ul>
+
     <form action="" method="post">
       {% csrf_token %}
-      {% include 'form.html' with form=mensaje_form %}
-      <input type="submit" class="btn btn-info" name="boton-mensaje" class="uk-button uk-button-default" value="Enviar" />
+      {% include 'form_monitoreo_mensaje.html' with form=mensaje_form %}
+      {% if activo %}
+        <input type="submit" name="boton-mensaje" class="uk-button uk-button-primary" value="Reportar" />
+        {% if user.is_superuser %}
+          <input type="submit" name="boton-ignorar" class="uk-button uk-button-danger" value="Ignorar" />
+        {% endif %}
+      {% else %}
+        <a href="{% url 'monitoreo' %}" class="uk-button uk-button-primary">Regresar a monitoreo</a>
+      {% endif %}
     </form>
-    
-    <form action="" method="post">
+    <!--form action="" method="post">
       {% csrf_token %}
       <input type="submit" name="boton-saltar" class="btn btn-secondary" value="Saltar" />
-    </form>
+    </form-->
 
-    {% if user.is_superuser %}
-    <form action="" method="post">
-      {% csrf_token %}
-      <input type="submit" name="boton-ignorar" class="btn btn-danger" value="Ignorar" />
-    </form>
-    {% endif %}
   </div>
 {% endblock %}

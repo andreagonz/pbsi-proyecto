@@ -1,0 +1,95 @@
+{% load filtros %}
+
+{{ form.non_field_errors }}
+
+{% if activo %}
+  <label for="urls"><h3>Selecciona las direcciones URL a reportar</h3></label>
+{% else %}
+  <label for="urls"><h3>URLs desactivadas</h3></label>
+{% endif %}
+<ul class="uk-comment-list" id="id_urls">
+  {% for url in form.fields.urls.queryset %}
+    <li>
+    <article class="uk-comment uk-visible-toggle">            
+      <header class="uk-comment-header uk-position-relative">
+        <div class="uk-grid-medium uk-flex-middle" uk-grid>
+          <div class="uk-width-auto">
+            <div uk-lightbox>
+              {% if activo %}
+                <input type="checkbox" name="urls" value="{{ url.id }}"/>&nbsp;&nbsp;
+              {% endif %}
+              <a href='{{ url.captura_url }}'><img src='{{ url.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;" /></a>
+            </div>
+          </div>
+          <div class="uk-width-expand">
+            <h4 class="uk-comment-title uk-margin-remove">
+              <a href='{% url 'url-detalle' pk=url.pk %}'>{{ url }}</a>
+            </h4>
+            <p class="uk-comment-meta uk-margin-remove-top">
+              Código: {{ url.codigo_estado }}<br/>
+              Estado: {{ url.estado }}<br/>
+              Timestamp: {{ url.timestamp }}<br/>
+            </p>
+          </div>
+          {% if monitoreo %}
+          <div class="uk-width-auto">
+            <div uk-lightbox>
+              <a href='{{ url.captura_anterior_url }}'><img src='{{ url.captura_anterior_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;" /></a>
+            </div>
+          </div>
+          <div class="uk-width-expand">
+            <h4 class="uk-comment-title uk-margin-remove">
+              Estado anterior
+            </h4>
+            <p class="uk-comment-meta uk-margin-remove-top">
+              Código: {{ url.codigo_anterior_estado }}<br/>
+            </p>
+          </div>
+          {% endif %}
+        </div>
+      </header>
+    </article>
+  </li>
+{% endfor %}
+</ul>
+
+{% if activo %}
+{% for field in form %}
+  {% if not field.name == 'urls' %}
+  {% if field|fieldtype == 'Textarea' or field|fieldtype == 'TextInput' or field|fieldtype == 'ClearableFileInput' %}
+    <div class="uk-margin">
+  {% else %}
+    <div class="uk-margin uk-grid-small uk-child-width-auto uk-grid">
+  {% endif %}
+    <label class="uk-form-label" for="{{ field.name }}">{{ field.label }}</label>
+    <div class="uk-form-controls">
+      {% if field.errors %}
+        {{ field|addclass:'uk-input uk-form-danger' }}
+      {% else %}
+        {% if field|fieldtype == 'Textarea' %}
+          {{ field|addclass:'uk-textarea' }}
+        {% elif field|fieldtype == 'ClearableFileInput' or field|fieldtype == 'TextInput' or field|fieldtype == 'URLInput' %}
+          {{ field|addclass:'uk-input' }}
+        {% elif field|fieldtype == 'CheckboxInput' %}
+          {{ field|addclass:'uk-checkbox' }}
+        {% elif field|fieldtype == 'NumberInput' %}
+          {{ field|addclass:'uk-range' }}
+        {% elif field|fieldtype == 'Select' %}
+          {{ field|addclass:'uk-select uk-form-width-medium' }}
+        {% else %}
+          {{ field }}
+        {% endif %}
+      {% endif %}      
+    </div>
+  </div>
+  {% if field.errors %}
+    {% for error in field.errors %}
+      <div class="uk-alert-danger" uk-alert>
+        <a class="uk-alert-close" uk-close></a>
+        <p>{{ error|escape }}</p>
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endif %}
+{% endfor %}
+{% endif %}

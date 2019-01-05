@@ -3,8 +3,8 @@
 {{ form.non_field_errors }}
 
 {% for field in form %}
-
-  {% if field|fieldtype == 'Textarea' or field|fieldtype == 'TextInput' or field|fieldtype == 'ClearableFileInput'%}
+<!-- {{ field|fieldtype }} -->
+  {% if field|fieldtype == 'Textarea' or field|fieldtype == 'TextInput' or field|fieldtype == 'ClearableFileInput' %}
     <div class="uk-margin">
   {% else %}
     <div class="uk-margin uk-grid-small uk-child-width-auto uk-grid">
@@ -16,12 +16,14 @@
       {% else %}
         {% if field|fieldtype == 'Textarea' %}
           {{ field|addclass:'uk-textarea' }}
-        {% elif field|fieldtype == 'ClearableFileInput' or field|fieldtype == 'TextInput' %}
+        {% elif field|fieldtype == 'ClearableFileInput' or field|fieldtype == 'TextInput' or field|fieldtype == 'URLInput' %}
           {{ field|addclass:'uk-input' }}
         {% elif field|fieldtype == 'CheckboxInput' %}
           {{ field|addclass:'uk-checkbox' }}
         {% elif field|fieldtype == 'NumberInput' %}
           {{ field|addclass:'uk-range' }}
+        {% elif field|fieldtype == 'Select' %}
+          {{ field|addclass:'uk-select uk-form-width-medium' }}
         {% else %}
           {{ field }}
         {% endif %}

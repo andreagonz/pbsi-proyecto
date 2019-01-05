@@ -139,9 +139,12 @@ class Url(models.Model):
     timestamp_reportado = models.DateTimeField(null=True)
     timestamp_desactivado = models.DateTimeField(null=True)
     codigo = models.IntegerField(default=-1)
+    codigo_anterior = models.IntegerField(default=-1)
     titulo = models.CharField(max_length=512, null=True)
     captura = models.ImageField(storage=OverwriteStorage(),
                                 upload_to='capturas', blank=True, null=True)
+    captura_anterior = models.ImageField(storage=OverwriteStorage(),
+                                upload_to='capturas_anteriores', blank=True, null=True)
     ofuscacion = models.ManyToManyField(Ofuscacion)
     hash_archivo = models.CharField(max_length=32, null=True)
     entidades_afectadas = models.ManyToManyField(Entidades)
@@ -157,6 +160,11 @@ class Url(models.Model):
     def captura_url(self):
         if self.captura and hasattr(self.captura, 'url'):
             return self.captura.url
+
+    @property
+    def captura_anterior_url(self):
+        if self.captura_anterior and hasattr(self.captura_anterior, 'url'):
+            return self.captura_anterior.url
 
     @property
     def es_phishing(self):
@@ -210,6 +218,12 @@ class Url(models.Model):
     def codigo_estado(self):
         if self.codigo >= 0:
             return str(self.codigo)
+        return 'Sin respuesta'
+
+    @property
+    def codigo_anterior_estado(self):
+        if self.codigo >= 0:
+            return str(self.codigo_anterior)
         return 'Sin respuesta'
 
     @property

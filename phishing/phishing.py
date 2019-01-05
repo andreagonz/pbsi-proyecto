@@ -228,6 +228,7 @@ def verifica_url_aux(sitios, sitio, existe, entidades, ofuscaciones,
     texto = ''
     dominio = urlparse(sitio.url).netloc
     if dominios_inactivos.get(dominio, None) is None:
+        sitio.codigo_anterior = sitio.codigo
         sitio.codigo, texto, titulo = hacer_peticion(sitios, sesion, sitio, entidades, ofuscaciones,
                                              dominios_inactivos, max_redir, entidades_afectadas)
         sitio.titulo = titulo
@@ -239,12 +240,16 @@ def verifica_url_aux(sitios, sitio, existe, entidades, ofuscaciones,
         if monitoreo or not existe:
             proxy = get_proxy(sesion)
             nombre = 'capturas/%s.png' % sitio.identificador
+            if sitio.captura and os.path.exists(sitio.captura.path):
+                with open(sitio.captura.path, 'rb') as f:
+                    sitio.captura_anterior.save(os.path.basename(sitio.captura.path), File(f), True)
             captura = genera_captura(sitio.url, nombre, proxy)
             if os.path.exists(captura):
                 with open(captura, 'rb') as f:
                     sitio.captura.save(os.path.basename(captura), File(f), True)
             nombre = 'archivos/%s.txt' % sitio.identificador
             archivo = guarda_archivo(texto, nombre)
+            
             if os.path.exists(archivo):
                 with open(archivo, 'rb') as f:
                     sitio.archivo.save(os.path.basename(archivo), File(f), True)
