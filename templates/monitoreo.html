@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Phish-Mon Monitoreo{% endblock %}
+{% block title %}Monitoreo{% endblock %}
 
 {% block contenido %}
   
@@ -13,12 +13,16 @@
           <article class="uk-comment uk-comment-primary uk-visible-toggle">            
             <header class="uk-comment-header uk-position-relative">
                 <div class="uk-grid-medium uk-flex-middle" uk-grid>
-                    <div class="uk-width-auto">
-                      <img src='{{ dominio.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;"/>
+                  <div class="uk-width-auto">
+                    <div uk-lightbox>
+                      <a href='{{ dominio.captura_url }}'>
+                        <img src='{{ dominio.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;"/>
+                      </a>
                     </div>
+                  </div>
                     <div class="uk-width-expand">
                       <h4 class="uk-comment-title uk-margin-remove">
-                        Dominio: {{ dominio }}
+                        {{ dominio }}
                       </h4>
                       <p class="uk-comment-meta uk-margin-remove-top">
                         <a class="uk-link-reset" href="#">IP: {{ dominio.ip }}</a>
@@ -50,7 +54,11 @@
                   <header class="uk-comment-header uk-position-relative">
                     <div class="uk-grid-medium uk-flex-middle" uk-grid>
                       <div class="uk-width-auto">
-                        <img src='{{ url.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;"/>
+                        <div uk-lightbox>
+                          <a href='{{ url.captura_url }}'>
+                            <img src='{{ url.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;"/>
+                          </a>
+                        </div>
                       </div>
                       <div class="uk-width-expand">
                         <h4 class="uk-comment-title uk-margin-remove"><a class="uk-link-reset" href="#">{{ url }}</a></h4>

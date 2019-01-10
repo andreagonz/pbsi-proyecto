@@ -63,7 +63,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         hoy = timezone.localtime(timezone.now())
         ayer = hoy - timedelta(days=1)
-        urls_hoy = Url.objects.filter(timestamp_creacion__gt=ayer,estado_phishing__gt=0)
+        urls_hoy = Url.objects.filter(timestamp_creacion__gt=ayer, deteccion__ne='I')
         d = os.path.join(settings.DIR_SALIDA, str(hoy.date()))
         if not os.path.exists(d):
             os.makedirs(d)
@@ -76,11 +76,11 @@ class Command(BaseCommand):
              open(os.path.join(d, 'formato.txt'), 'a') as form, \
              open(os.path.join(d, 'sitios.json'), 'w') as sitios:
             for u in urls_hoy:
-                if u.codigo < 400 and u.codigo >= 300:
+                if u.codigo < 400 and u.codigo >= 300 and u.deteccion == 'P' or u.deteccion == 'M':
                     red.write('%s\n' % u.url)
-                elif u.estado_phishing == 1:
+                if u.deteccion == 'P':
                     phishing.write('%s\n' % u.url)
-                else:
+                elif u.deteccion == 'M':
                     mal.write('%s\n' % u.url)                
                 asn = '-'
                 nom = '-'

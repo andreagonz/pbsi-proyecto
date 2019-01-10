@@ -16,7 +16,7 @@
           <div class="uk-width-auto">
             <div uk-lightbox>
               {% if activo %}
-                <input type="checkbox" name="urls" value="{{ url.id }}"/>&nbsp;&nbsp;
+                <input type="checkbox" class="uk-checkbox" name="urls" value="{{ url.id }}"/>&nbsp;&nbsp;
               {% endif %}
               <a href='{{ url.captura_url }}'><img src='{{ url.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;" /></a>
             </div>

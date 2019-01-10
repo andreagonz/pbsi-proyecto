@@ -8,12 +8,12 @@
   <form action="" method="post">
     {% csrf_token %}
     {% include 'form.html' with form=form1 %}
-    <input type="submit" class="btn btn-info" value="Aceptar" name="boton_correo" />
+    <input type="submit" class="uk-button uk-button-primary" value="Aceptar" name="boton_correo" />
   </form>
   <form class="uk-form-horizontal uk-margin-medium" method="post" enctype="multipart/form-data">
     {% csrf_token %}
     {% include 'form.html' with form=form2 %}
-    <input type="submit" class="btn btn-info" value="Aceptar" name="boton_archivo" />
+    <input type="submit" class="uk-button uk-button-primary" value="Aceptar" name="boton_archivo" />
   </form>
 
 {% endblock %}

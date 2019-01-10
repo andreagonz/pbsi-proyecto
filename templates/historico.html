@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% block title %}Phish-Mon Histórico{% endblock %}
+{% block title %}Histórico{% endblock %}
 
 {% block contenido %}
   <h1 class="uk-heading-primary uk-text-center"><span>Histórico</span></h1>
@@ -8,7 +8,7 @@
   <form action="" method="post">
     {% csrf_token %}
     {% include 'form.html' with form=form %}
-    <input class="btn btn-info" type="submit" value="Aceptar" />
+    <input class="uk-button uk-button-primary" type="submit" value="Aceptar" />
   </form>
 
   {% include 'reporte.html' %}

@@ -92,10 +92,11 @@ class Dominio(models.Model):
     def captura_url(self):
         if self.captura and hasattr(self.captura, 'url'):
             return self.captura.url
-
+        return '/media/na.png'
+    
     @property
     def urls_activas(self):
-        urls = self.url_set.filter(reportado=False, ignorado=False, codigo__lt=400, codigo__gte=200)
+        urls = self.url_set.filter(timestamp_reportado=None, ignorado=False, codigo__lt=400, codigo__gte=200)
         return urls.filter(pk__in=[x.pk for x in urls if x.es_activa])
 
     @property
@@ -131,6 +132,11 @@ class Dominio(models.Model):
 
 class Url(models.Model):
 
+    OPCIONES_DETECCION = (
+        ('M', 'Malicioso'),
+        ('P', 'Phishing'),
+        ('I', 'Indefinido'),
+    )
     identificador = models.CharField(max_length=32, unique=True)
     url = models.URLField(max_length=512, unique=True)
     timestamp = models.DateTimeField(auto_now_add=True)
@@ -148,48 +154,53 @@ class Url(models.Model):
     ofuscacion = models.ManyToManyField(Ofuscacion)
     hash_archivo = models.CharField(max_length=32, null=True)
     entidades_afectadas = models.ManyToManyField(Entidades)
-    reportado = models.BooleanField(default=False)
     ignorado = models.BooleanField(default=False)
     dominio = models.ForeignKey(Dominio, on_delete=models.PROTECT)
     archivo = models.FileField(storage=OverwriteStorage(),
                                upload_to='archivos', blank=True, null=True)
     redireccion = models.URLField(max_length=512, null=True)
-    estado_phishing = models.IntegerField(default=-1)
-    
+    deteccion = models.CharField(max_length=1,
+                                 choices=OPCIONES_DETECCION,
+                                 default='I')
+
+    @property
+    def get_redireccion(self):
+        if self.codigo < 300 or self.codigo >= 400:
+            return None        
+        r = self.redireccion
+        url = None
+        while r:
+            try:
+                url = Url.objects.get(url=r)
+            except Url.DoesNotExist:
+                return None
+            r = url.redireccion
+        return url
+        
     @property
     def captura_url(self):
-        if self.captura and hasattr(self.captura, 'url'):
-            return self.captura.url
+        url = self
+        if self.codigo < 400 and self.codigo >= 300:
+            url = self.get_redireccion
+        if url.captura and hasattr(url.captura, 'url'):
+            return url.captura.url
+        return '/media/na.png'
 
     @property
     def captura_anterior_url(self):
-        if self.captura_anterior and hasattr(self.captura_anterior, 'url'):
-            return self.captura_anterior.url
-
+        url = self
+        if self.codigo < 400 and self.codigo >= 300:
+            url = self.get_redireccion
+        if url.captura_anterior and hasattr(url.captura_anterior, 'url'):
+            return url.captura_anterior.url
+        return '/media/na.png'
+    
     @property
-    def es_phishing(self):
-        if self.codigo >= 400 or self.codigo < 200:
-            return ''
-        if self.codigo < 300:
-            if self.estado_phishing <= 0:
-                return 'No detectado'
-            elif self.estado_phishing == 1:
-                return 'Sitio phishing'
-            elif self.estado_phishing == 2:
-                return 'Sitio malicioso'
-            else:
-                return 'Indefinido'
-        elif self.redireccion:
-            r = self.redireccion
-            url = None
-            while r:
-                try:
-                    url = Url.objects.get(url=r)
-                except Url.DoesNotExist:
-                    return ''
-                r = url.redireccion
-            return '' if url is None else url.es_phishing
-        return ''
+    def estado_deteccion(self):
+        url = self
+        if self.codigo >= 300 and self.codigo < 400:
+            url = self.get_redireccion
+        return 'Indefinido' if url is None else url.deteccion
 
     @property
     def archivo_url(self):
@@ -231,36 +242,36 @@ class Url(models.Model):
         return self.codigo >= 200 and self.codigo < 300
 
     @property
+    def reportado(self):
+        return not self.timestamp_reportado is None
+    
+    @property
     def es_activa(self):
         if self.codigo < 300 and self.codigo >= 200:
             return True
-        elif self.codigo >= 300 and self.codigo < 400 and self.redireccion:
-            r = self.redireccion
-            url = None
-            while r:
-                try:
-                    url = Url.objects.get(url=r)
-                except Url.DoesNotExist:
-                    return False
-                r = url.redireccion
-            return not url is None and url.activo
+        url = self.get_redireccion
+        return not url is None and url.activo
         
     @property
     def estado(self):
         if self.codigo >= 200 and self.codigo < 300:
-            return 'Activo'
+            return 'Sitio activo'
         elif self.codigo >= 300 and self.codigo < 400:
             if self.es_activa:
                 return 'Redirección activa'
             return 'Redirección inactiva'
-        return 'Inactivo'
+        return 'Sitio inactivo'
 
     @property
     def ticket(self):
         if len(self.mensaje_set.all()) > 0:
             return ', '.join([x.ticket for x in self.mensaje_set.all()])
         return ''
-        
+
+    @property
+    def reportado(self):
+        return not self.timestamp_reportado is None
+    
     def __str__(self):
         return self.url
          

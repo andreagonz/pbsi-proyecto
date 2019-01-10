@@ -1,59 +1,69 @@
 {% extends "base.html" %}
 
-{% block title %}Phish-Mon Correo{% endblock %}
+{% block title %}Resultados de Análisis de Correo{% endblock %}
 
 {% block contenido %}
-  <div class="container">
-    <h1 class="display-3">Procesamiento de Correo</h1>
 
-    {% if error %}
-      El texto ingresado no corresponde a un correo o el archivo esta corrupto</br>
+  <h1 class="uk-heading-primary uk-text-center"><span>Procesamiento de Correo</span></h1>
+  
+  {% if error %}
+    <div class="uk-alert-danger" uk-alert>
+      <!-- <a class="uk-alert-close" uk-close></a> -->
+      <p>El texto ingresado no corresponde a un correo o el archivo esta corrupto.</p>
+    </div>
     {% else %}
-      <ul class="nav nav-tabs" id="myTab" role="tablist">
-        <li class="nav-item">
-          <a class="nav-link active" id="cabeceras-tab" data-toggle="tab" href="#cabeceras" role="tab" aria-controls="home" aria-selected="true">Cabeceras</a>
+      <ul uk-tab>
+        <li class="uk-active">
+          <a href="#">Cabeceras</a>
         </li>
-        <li class="nav-item">
-          <a class="nav-link" id="raw-tab" data-toggle="tab" href="#raw" role="tab" aria-controls="profile" aria-selected="false">Raw</a>
+        <li>
+          <a href="#">Raw</a>
         </li>
-        <li class="nav-item">
-          <a class="nav-link" id="reporte-tab" data-toggle="tab" href="#reporte" role="tab" aria-controls="profile" aria-selected="false">Reporte de URLs</a>
+        <li>
+          <a href="#">Reporte de URLs</a>
         </li>
       </ul>
-      <div class="tab-content" id="myTabContent">
-        <div class="tab-pane fade show active" id="cabeceras" role="tabpanel" aria-labelledby="cabeceras-tab">        
-          <table class="table">
+
+      
+      <ul class="uk-switcher uk-margin">
+        <li>
+          <table class="uk-table uk-table-divider">
             <thead>
               <tr>
-                <th scope="col">Campo</th>
-                <th scope="col">Valor</th>
+                <th class="uk-width-medium">Campo</th>
+                <th>Valor</th>
               </tr>
             </thead>
             <tbody>
               {% for k,v in resultados.items %}
                 <tr>
-                  <th scope="row">{{ k }}</th>
+                  <td class="uk-text-bold">{{ k }}</td>
                   <td>{{ v }}</td>
                 </tr>
               {% endfor %}
             </tbody>
           </table>
-        </div>
-        <div class="tab-pane fade" id="raw" role="tabpanel" aria-labelledby="raw-tab">
+        </li>
+        
+        <li>
           <pre>{{ headers }}</pre>
-        </div>
-        <div class="tab-pane fade" id="reporte" role="tabpanel" aria-labelledby="reporte-tab">
-          {% include 'reporte.html' %}
-        </div>
-      </div>
+        </li>
+
+        <li>{% include 'reporte.html' %}</li>
+      </ul>
+      
       <h3>URLs analizadas</h3>
-      {% for r in urls %}
-        {{ r }}</br>
-      {% empty %}
-        No se encontró ninguna dirección URL</br>
-      {% endfor %}      
-      <a href="{% url 'monitoreo' %}" class="btn btn-primary">Ir a monitoreo</a>
+      <ul class="uk-list">
+        {% for r in urls %}
+          <li>{{ r }}</li>
+        {% empty %}
+          <div class="uk-alert-warning" uk-alert>
+            <p>No se encontró ninguna dirección URL.</p>
+          </div>
+        {% endfor %}
+      </ul>
+      <a href="{% url 'monitoreo' %}" class="uk-button uk-button-primary">Ir a monitoreo</a>
     {% endif %}
-    <a href="{% url 'entrada' %}" class="btn btn-primary">Analizar otro correo</a>
+    <a href="{% url 'entrada' %}" class="uk-button uk-button-primary">Analizar otro correo</a>
   </div>
 {% endblock %}

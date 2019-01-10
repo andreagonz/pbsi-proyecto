@@ -77,11 +77,10 @@ def cpimg(img, img2):
 def redirecciones_reporta(url):
     if url.reportado:
         return
-    url.reportado = True
     url.timestamp_reportado = timezone.localtime(timezone.now())
-    if url.estado_phishing < 1:
+    if url.deteccion == 'I':
         url.timestamp_deteccion = url.timestamp_reportado
-        url.estado_phishing = 1
+        url.deteccion = 'P'
     url.save()
 
 def redirecciones_ignora(url):
@@ -142,8 +141,7 @@ def monitoreo_id(request, pk):
                         proxy['http'] = proxies.http
                     if not proxies.https is None:
                         proxy['https'] = proxies.https
-                for url in dominio.urls_activas:
-                    sitio = monitorea_url(url, proxy)
+                monitorea_dominio(dominio.dominio, dominio.urls_activas, proxy)
             context['monitoreo'] = True
             mensaje_form.actualiza()
             context['mensaje_form'] = mensaje_form
@@ -235,7 +233,7 @@ def valida_urls(request):
                 context = context_reporte(sitios)
                 context['no_reportados'] = no_reportados
                 return render(request, 'reporte_urls.html', context)
-        elif request.POST.get("boton_archivo") and request.FILES['file']:
+        elif request.POST.get("boton_archivo") and request.FILES.get('file', None):
             form = ArchivoForm(request.POST)
             f = request.FILES['file'].read().decode('utf-8')
             name = request.FILES['file'].name
@@ -254,9 +252,8 @@ def valida_urls(request):
             context = context_reporte(sitios)
             context['no_reportados'] = no_reportados
             return render(request, 'reporte_urls.html', context)
-    else:
-        form1 = UrlsForm()
-        form2 = ArchivoForm()
+    form1 = UrlsForm()
+    form2 = ArchivoForm()
     return render(request, 'valida_urls.html', {'form1': form1, 'form2': form2})
 
 def url_detalle(request, pk):
@@ -540,7 +537,7 @@ class ChartData(APIView):
     
     def get(self, request, format=None):
         rand_color = randomcolor.RandomColor()
-        urls = Url.objects.filter(estado_phishing__gte=1)
+        urls = Url.objects.filter(deteccion__ne='I')
         top_paises = urls.filter(~Q(dominio__pais=None)).values('dominio__pais').annotate(
             cuenta_pais=Count('dominio__pais')).order_by('-cuenta_pais')[:5]
         top_paises_data = {
@@ -558,7 +555,7 @@ class ChartData(APIView):
         sitios_activos = 0
         for x in urls:
             sitios_activos += 1 if x.es_activa else 0
-        sitios_reportados = urls.filter(reportado=True, ignorado=False).count()
+        sitios_reportados = urls.filter(~Q(timestamp_reportado=None), ignorado=False).count()
         sitios_detectados = urls.count()
         sitios_data = {
             'labels': ['Activos', 'Reportados', 'Detectados'],
@@ -611,12 +608,12 @@ class ChartData(APIView):
         tiempo_promedio_postreporte = []
         for x in range(6, -1, -1):
              tiempo_promedio_reporte.append(urls.filter(
-                 ~Q(reportado=False),
+                 ~Q(timestamp_reportado=None),
                  timestamp_reportado__date=hoy - datetime.timedelta(days=x)).annotate(
                      tiempo_reportado=(F('timestamp_reportado') - F('timestamp_creacion'))).aggregate(
                          Avg('tiempo_reportado')).get('tiempo_reportado__avg', 0))
              tiempo_promedio_postreporte.append(urls.filter(
-                 ~Q(reportado=False), ~Q(timestamp_desactivado=None),
+                 ~Q(timestamp_reportado=None), ~Q(timestamp_desactivado=None),
                  timestamp_reportado__date=hoy - datetime.timedelta(days=x)).annotate(
                      tiempo_reportado=(F('timestamp_desactivado') -
                                        F('timestamp_reportado'))).aggregate(
@@ -918,9 +915,9 @@ def entrada(request):
                 context['archivos'] = archivos
                 context['error'] = error
                 return render(request, 'entrada_resultados.html', context)
-        elif request.POST.get("boton_archivo") and request.FILES['file']:
+        elif request.POST.get("boton_archivo") and request.FILES.get('file', None):
             form = CorreoArchivoForm(request.POST)
-            f = request.FILES['file'].read().decode('utf-8')
+            f = request.FILES['file'].read().decode('utf-8', 'ignore')
             name = request.FILES['file'].name
             urls = []
             resultados, urls, headers, archivos, error = parsecorreo(f)
@@ -934,7 +931,6 @@ def entrada(request):
             context['archivos'] = archivos
             context['error'] = error
             return render(request, 'entrada_resultados.html', context)
-    else:
-        form1 = CorreoForm()
-        form2 = CorreoArchivoForm()
+    form1 = CorreoForm()
+    form2 = CorreoArchivoForm()
     return render(request, 'entrada.html', {'form1': form1, 'form2': form2})
