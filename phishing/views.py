@@ -537,7 +537,7 @@ class ChartData(APIView):
     
     def get(self, request, format=None):
         rand_color = randomcolor.RandomColor()
-        urls = Url.objects.filter(deteccion__ne='I')
+        urls = Url.objects.exclude(deteccion='I')
         top_paises = urls.filter(~Q(dominio__pais=None)).values('dominio__pais').annotate(
             cuenta_pais=Count('dominio__pais')).order_by('-cuenta_pais')[:5]
         top_paises_data = {
