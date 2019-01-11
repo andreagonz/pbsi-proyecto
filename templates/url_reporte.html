@@ -49,6 +49,13 @@
       {% if url.hash_archivo %}
         <br/><span class='uk-text-bold'>Hash MD5 de archivo:</span> {{ url.hash_archivo }}
       {% endif %}
+      {% if url.redireccion %}<br/><span class='uk-text-bold'>Redirección:</span> {{ url.redireccion }}{% endif %}
+      {% if url.get_redireccion %}
+        <br/><span class='uk-text-bold'>Redirección final:</span>
+        <a href={% url 'url-detalle' pk=url.get_redireccion.pk %}>
+          {{ url.get_redireccion.url }}
+        </a>
+      {% endif %}
     </p>
   </div>
 </article>
