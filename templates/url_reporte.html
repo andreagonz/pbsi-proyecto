@@ -23,7 +23,7 @@
       <span class='uk-text-bold'>Código:</span> {{ url.codigo_estado }}<br/>
       <span class='uk-text-bold'>Fecha de creación:</span> {{ url.timestamp_creacion }}<br/>
       <span class='uk-text-bold'>Detección:</span> {{ url.get_deteccion_display }}<br/>
-      <span class='uk-text-bold'>Reportado:</span> {{ url.reportado }}<br/>
+      <span class='uk-text-bold'>Reportado:</span> {% if url.reportado %}Sí{% else %}No{% endif %}<br/>
       {% if url.titulo %}<span class='uk-text-bold'>Título:</span> {{ url.titulo }}<br/>{% endif %}
       <span class='uk-text-bold'>Estado:</span> {{ url.estado }} <br/>
       <span class='uk-text-bold'>Entidades afectadas:</span> {{ url.entidades }}<br/>
