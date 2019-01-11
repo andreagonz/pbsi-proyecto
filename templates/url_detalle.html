@@ -3,33 +3,36 @@
 {% block title %}Phish-Mon Monitoreo{% endblock %}
 
 {% block contenido %}
-  <div class="uk-container uk-container-medium">
-    <h1 class="uk-heading-divider">Detalle de URL</h1>
-  </div>
+  <h1 class="uk-heading-primary">Detalle de URL</h1>
+
+
+  <ul uk-tab>
+    <li class="uk-active"><a href="#">Datos</a></li>
+    <li><a href="#">Comentarios</a></li>
+    <li><a href="#">Hashes</a></li>
+  </ul>
+
   
-  {{ url.identificador }}<br/>
-  {{ url.timestamp }}<br/>
-  {{ url.ip }}<br/>
-  {{ url.codigo }}<br/>
-  {{ url.url }}<br/>
-  {{ url.correos_abuso }}<br/>
-  {{ url.netname }}<br/>
-  {{ url.pais }}<br/>
-  {% if url.codigo >= 200 and url.codigo < 300 %}
-    {{ url.titulo }}<br/>
-    {{ url.entidades }}<br/>
-    {% if url.archivo %}
-      <a href='{{ url.archivo_url }}'>Archivo</a><br/>
-    {% endif %}
-    {{ url.ofuscaciones }}<br/>
-    <img src='{{ url.captura_url }}'/><br/>
-    <img src='{{ url.dominio.captura_url }}'/><br/>
-    {% for x in comentarios %}
-      {{ x }}
-    {% endfor %}
-    {% for x in hashes %}
-      {{ x }}
-    {% endfor %}
-  {% endif %}
-  
+
+  <ul class="uk-switcher uk-margin">
+    <li>
+      {% include 'url_reporte.html' %}
+      <h4>Captura de dominio</h4>
+      <div uk-lightbox>
+        <a href='{{ url.dominio.captura_url }}'>
+          <img src='{{ url.dominio.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;"/>
+        </a>
+      </div>
+    </li>
+    <li>
+      {% for x in comentarios %}
+        {{ x }}
+      {% endfor %}
+    </li>
+    <li>
+      {% for x in hashes %}
+        {{ x }}
+      {% endfor %}
+    </li>
+  </ul>  
 {% endblock %}

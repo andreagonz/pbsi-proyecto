@@ -133,9 +133,10 @@ class Dominio(models.Model):
 class Url(models.Model):
 
     OPCIONES_DETECCION = (
-        ('M', 'Malicioso'),
-        ('P', 'Phishing'),
+        ('M', 'Sitio malicioso'),
+        ('P', 'Sitio phishing'),
         ('I', 'Indefinido'),
+        ('N', 'Sitio no malicioso'),
     )
     identificador = models.CharField(max_length=32, unique=True)
     url = models.URLField(max_length=512, unique=True)

@@ -1,38 +1,42 @@
 {% extends "base.html" %}
 
-{% block title %}Phish-Mon Entidades{% endblock %}
+{% block title %}Entidades{% endblock %}
 
 {% block contenido %}
-  <div class="uk-container uk-container-medium">
-    <h1 class="uk-heading-divider">Entidades</h1>
-  </div>
-  <a class='btn btn-primary' href='{% url 'crea-entidad' %}'>Nueva Entidad</a>
-  <br/>
-  {% for o in entidades %}
-    <br/>
-    <h4>Nombre: {{ o.nombre }}</h4>
-    Clasificación: {{ o.clasificacion }}<br/>
-    Formularios de abuso: <br/>
-    {% for f in o.formularios_lst %}
-      <a href='{{ f }}'>{{ f }}</a><br/>
-    {% empty %}
-      No asignados<br/>
-    {% endfor %}
-    <a class='btn btn-sm btn-warning' href='{% url "actualiza-entidad" pk=o.pk %}'>Actualiza</a>
-    <a class='btn btn-sm btn-danger' href='{% url "elimina-entidad" pk=o.pk %}'>Elimina</a>
-    <br/>
-  {% endfor %}
-  
-  <br/>
-  <h1>Clasificaciones</h1>
-  <a class='btn btn-primary' href='{% url 'crea-clasificacion' %}'>Nueva Clasificación</a>
-  <br/>
-  {% for o in clasificaciones %}
-    </br>
-    <h4>Nombre: {{ o.nombre }}</h4>
-    <a class='btn btn-sm btn-warning' href='{% url "actualiza-clasificacion" pk=o.pk %}'>Actualiza</a>
-    <a class='btn btn-sm btn-danger' href='{% url "elimina-clasificacion" pk=o.pk %}'>Elimina</a>
-    <br/>
-  {% endfor %}
 
+  <h1 class="uk-heading-primary"><span>Entidades</span></h1>
+  
+  <a class="uk-button uk-button-primary" href='{% url 'crea-entidad' %}'>Nueva Entidad</a>
+  
+  <dl class="uk-description-list uk-description-list-divider">
+  {% for o in entidades %}
+      <dt><span class="uk-text-bold">Nombre: {{ o.nombre }}</span></dt>
+      <dd><span class="uk-text-bold">Clasificación:</span> {{ o.clasificacion }}</dd>
+      <dd><span class="uk-text-bold">Formularios de abuso:</span>
+        {% if o.formularios_lst %}
+          <ul style="margin:5px;">
+            {% for f in o.formularios_lst %}
+              <li><a href='{{ f }}'>{{ f }}</a></li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          No asignados
+        {% endif %}
+      </dd>
+      <dd>
+        <a class="uk-button uk-button-default uk-button-small" href='{% url "actualiza-entidad" pk=o.pk %}'><span uk-icon="pencil"></span></a>
+        <a class="uk-button uk-button-danger uk-button-small" href='{% url "elimina-entidad" pk=o.pk %}'><span uk-icon="close"></span></a>
+      </dd>
+    {% endfor %}
+  </dl>
+
+  <h1 class="uk-heading-primary"><span>Clasificaciones</span></h1>
+  <a class="uk-button uk-button-primary" href='{% url 'crea-clasificacion' %}'>Nueva Clasificación</a>
+  <dl class="uk-description-list">
+    {% for o in clasificaciones %}
+      <dt><span class="uk-text-bold">Nombre: {{ o.nombre }}&nbsp;&nbsp;&nbsp;&nbsp;</span>
+      <a class="uk-button uk-button-default uk-button-small" href='{% url "actualiza-clasificacion" pk=o.pk %}'><span uk-icon="pencil"></span></a>
+      <a class="uk-button uk-button-danger uk-button-small" href='{% url "elimina-clasificacion" pk=o.pk %}'><span uk-icon="close"></span></a></dt>
+    {% endfor %}
+  </dl>
 {% endblock %}

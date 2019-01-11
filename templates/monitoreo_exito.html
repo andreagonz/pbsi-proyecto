@@ -3,30 +3,80 @@
 {% block title %}Monitoreo{% endblock %}
 
 {% block contenido %}
-  <div class="uk-container uk-container-medium">
-    <h1 class="uk-heading-divider">Monitoreo</h1>
-  </div>
 
-  Correo enviado exitósamente <br/>
-  Resumen de correo: <br/>
-  Dominio: {{ dominio }} <br/>
-  Direcciones URL reportadas: <br/>
-  {% for u in urls %}
-    {{ u }}<br/>
-  {% endfor %}
-  De: {{ de }} <br/>
-  Para: {{ para }} <br/>
-  Asunto: {{ asunto }} <br/>
-  Mensaje: {{ mensaje }} <br/>
-  Archivos adjuntos:<br/>
-  {% for x in capturas %}
-    <img src='{{ x.captura_url }}' /> <br/>
-  {% empty %}
-    No hay archivos adjuntos
-  {% endfor %}
+  <article class="uk-article">
+
+    <h1 class="uk-article-title">Correo enviado exitósamente</h1>
+
+    <div class="uk-h2">Resumen de correo</div>
+    <p>
+      <table class="uk-table uk-table-divider">
+        <thead style='display:none;'>
+          <tr>
+            <th class="uk-width-small">Campo</th>
+            <th class="uk-width-large">Valor</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class='uk-text-bold'>Dominio</td>
+            <td>{{ dominio }}</td>
+          </tr>
+          <tr>
+            <td class='uk-text-bold'>Direcciones URL reportadas</td>
+            <td>
+              {{ urls }}
+            </td>
+          </tr>
+          <tr>
+            <td class='uk-text-bold'>De</td>
+            <td>{{ de }}</td>
+          </tr>
+          <tr>
+            <td class='uk-text-bold'>Para</td>
+            <td>{{ para }}</td>
+          </tr>
+          <tr>
+            <td class='uk-text-bold'>CC</td>
+            <td>{{ cc }}</td>
+          </tr>
+          <tr>
+            <td class='uk-text-bold'>CCO</td>
+            <td>{{ cco }}</td>
+          </tr>
+          <tr>
+            <td class='uk-text-bold'>Asunto</td>
+            <td>{{ asunto }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </p>
+
+    <p>
+      <div class="uk-h3">Mensaje</div>
+      <pre>{{ mensaje }}</pre>
+    </p>
+
+    <p>
+      <div class="uk-h3">Imágenes adjuntas</div>
+      {% if capturas %}
+        <div class="uk-child-width-1-6@m" uk-grid uk-lightbox="animation: slide">
+          {% for x in capturas %}          
+            <div>
+              <a class="uk-inline" href="{{ x.captura_url }}">
+                <img src="{{ x.captura_url }}" style="object-fit: cover;width: 100px;height: 100px;">
+              </a>
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="uk-alert-warning" uk-alert>
+          <p>No hay archivos adjuntos</p>
+        </div>
+      {% endif %}
+    </p>
+  </article>
+
   
-  <form class="uk-form-horizontal uk-margin-large" action="" method="post">
-    {% csrf_token %}
-    <input type="submit" name="boton-siguiente" class="uk-button uk-button-default" value="Siguiente" />
-  </form>  
+  <a href="{% url 'monitoreo' %}" class="uk-button uk-button-primary">Regresar a monitoreo<a/>
 {% endblock %}

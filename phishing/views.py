@@ -74,20 +74,16 @@ def cpimg(img, img2):
     if os.path.exists(f):
         copyfile(f, f2)
     
-def redirecciones_reporta(url):
-    if url.reportado:
-        return
+def url_reporta(url):
     url.timestamp_reportado = timezone.localtime(timezone.now())
     if url.deteccion == 'I':
         url.timestamp_deteccion = url.timestamp_reportado
         url.deteccion = 'P'
     url.save()
 
-def redirecciones_ignora(url):
-    if url.ignorado:
-        return
+def url_ignora(url):
     url.ignorado = True
-    url.timestamp_reportado = timezone.localtime(timezone.now())
+    url.deteccion = 'N'
     url.save()
 
 @login_required(login_url=reverse_lazy('login'))
@@ -153,6 +149,14 @@ def monitoreo_id(request, pk):
             # return render(request, 'monitoreo_error.html', {'dominio': dominio})
             mensaje_form = MensajeForm(request.POST, urls=urls)
             if mensaje_form.is_valid():
+                if not mensaje_form.cleaned_data.get('para', None):
+                    if not mensaje_form._errors.get('para', None):
+                        from django.forms.utils import ErrorList
+                        mensaje_form._errors['para'] = ErrorList()
+                    mensaje_form._errors['para'].append('Campo necesario')
+                    context['mensaje_form'] = mensaje_form
+                    context['proxy_form'] = proxy_form
+                    return render(request, 'monitoreo_id.html', context)
                 de = mensaje_form.cleaned_data['de']
                 para = [x.strip() for x in mensaje_form.cleaned_data['para'].split(',')]
                 cc = [x.strip() for x in mensaje_form.cleaned_data['cc'].split(',')]
@@ -170,11 +174,11 @@ def monitoreo_id(request, pk):
                     men.save()
                 for x in urls_reportadas:
                     men.urls.add(x)
-                    redirecciones_reporta(x)
+                    url_reporta(x)
                 men.save()
                 context = {
                     'dominio': dominio,
-                    'urls': urls_reportadas,
+                    'urls': ', '.join([url.url for x in urls_reportadas]),
                     'de': de,
                     'para': ', '.join(para),
                     'cc': ', '.join(cc),
@@ -186,7 +190,7 @@ def monitoreo_id(request, pk):
                 return render(request, 'monitoreo_exito.html', context)
         elif request.POST.get('boton-ignorar') and request.user.is_superuser:
             for x in urls:
-                redirecciones_ignora(x)
+                url_ignora(x)
             return redirect('monitoreo')
     context['mensaje_form'] = mensaje_form
     context['proxy_form'] = proxy_form

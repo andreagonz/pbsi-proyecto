@@ -1,0 +1,48 @@
+<article class="uk-comment uk-visible-toggle">            
+  <header class="uk-comment-header uk-position-relative">
+    <div class="uk-grid-medium uk-flex-middle" uk-grid>
+      <div class="uk-width-auto">
+        <div uk-lightbox>
+          {% if activo %}
+            <input type="checkbox" class="uk-checkbox" name="urls" value="{{ url.id }}" checked />&nbsp;&nbsp;
+          {% endif %}
+          <a href='{{ url.captura_url }}'><img src='{{ url.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;" /></a>
+        </div>
+      </div>
+      <div class="uk-width-expand">
+        <h4 class="uk-comment-title uk-margin-remove">
+          <a href='{% url 'url-detalle' pk=url.pk %}'>{{ url }}</a>
+        </h4>
+        <p class="uk-comment-meta uk-margin-remove-top">
+          Código: {{ url.codigo_estado }}<br/>
+          Estado: {{ url.estado }} <br/>
+          Detección: {{ url.get_deteccion_display }}<br/>
+          {% if url.activo %}Entidades afectadas: {{ url.entidades }}<br/>{% endif %}
+          {% if url.redireccion %}Redirección: {{ url.redireccion }}<br/>{% endif %}
+          {% if url.get_redireccion %}
+            Redirección final:
+            <a href={% url 'url-detalle' pk=url.get_redireccion.pk %}>
+              {{ url.get_redireccion.url }}<br/>
+            </a>
+          {% endif %}
+          Timestamp: {{ url.timestamp }}
+        </p>
+      </div>
+      {% if monitoreo %}
+        <div class="uk-width-auto">
+          <div uk-lightbox>
+            <a href='{{ url.captura_anterior_url }}'><img src='{{ url.captura_anterior_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;" /></a>
+          </div>
+        </div>
+        <div class="uk-width-expand">
+          <h4 class="uk-comment-title uk-margin-remove">
+            Estado anterior
+          </h4>
+          <p class="uk-comment-meta uk-margin-remove-top">
+            Código: {{ url.codigo_anterior_estado }}<br/>
+          </p>
+        </div>
+      {% endif %}
+    </div>
+  </header>
+</article>

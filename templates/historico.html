@@ -4,7 +4,7 @@
 
 {% block contenido %}
   <h1 class="uk-heading-primary uk-text-center"><span>Histórico</span></h1>
-  <h4>{{ inicio }} - {{ fin }}</h4>
+  <h4 class="uk-heading-bullet">{{ inicio }} - {{ fin }}</h4>
   <form action="" method="post">
     {% csrf_token %}
     {% include 'form.html' with form=form %}

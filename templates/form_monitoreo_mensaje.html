@@ -1,61 +1,48 @@
 {% load filtros %}
 
-{{ form.non_field_errors }}
+{% if form.non_field_errors %}
+<div class="uk-alert-danger" uk-alert>
+  <a class="uk-alert-close" uk-close></a>
+  <p>{{ form.non_field_errors }}</p>
+</div>
+{% endif %}
 
 {% if activo %}
-  <label for="urls"><h3>Selecciona las direcciones URL a reportar</h3></label>
+  <label for="urls"><h3>Selecciona las direcciones URL a reportar/ignorar</h3></label>
 {% else %}
   <label for="urls"><h3>URLs desactivadas</h3></label>
 {% endif %}
+
+{% for field in form %}
+  {% if field.name == 'urls' and field.errors %}
+    {% for error in field.errors %}
+      <div class="uk-alert-danger" uk-alert>
+        <a class="uk-alert-close" uk-close></a>
+        <p>{{ error|escape }}</p>
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endfor %}
+  
 <ul class="uk-comment-list" id="id_urls">
   {% for url in form.fields.urls.queryset %}
     <li>
-    <article class="uk-comment uk-visible-toggle">            
-      <header class="uk-comment-header uk-position-relative">
-        <div class="uk-grid-medium uk-flex-middle" uk-grid>
-          <div class="uk-width-auto">
-            <div uk-lightbox>
-              {% if activo %}
-                <input type="checkbox" class="uk-checkbox" name="urls" value="{{ url.id }}"/>&nbsp;&nbsp;
-              {% endif %}
-              <a href='{{ url.captura_url }}'><img src='{{ url.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;" /></a>
-            </div>
-          </div>
-          <div class="uk-width-expand">
-            <h4 class="uk-comment-title uk-margin-remove">
-              <a href='{% url 'url-detalle' pk=url.pk %}'>{{ url }}</a>
-            </h4>
-            <p class="uk-comment-meta uk-margin-remove-top">
-              Código: {{ url.codigo_estado }}<br/>
-              Detección: {{ url.get_deteccion_display }}<br/>
-              Timestamp: {{ url.timestamp }}<br/>
-            </p>
-          </div>
-          {% if monitoreo %}
-          <div class="uk-width-auto">
-            <div uk-lightbox>
-              <a href='{{ url.captura_anterior_url }}'><img src='{{ url.captura_anterior_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;" /></a>
-            </div>
-          </div>
-          <div class="uk-width-expand">
-            <h4 class="uk-comment-title uk-margin-remove">
-              Estado anterior
-            </h4>
-            <p class="uk-comment-meta uk-margin-remove-top">
-              Código: {{ url.codigo_anterior_estado }}<br/>
-            </p>
-          </div>
-          {% endif %}
-        </div>
-      </header>
-    </article>
-  </li>
-{% endfor %}
+      {% include 'url_info.html' %}
+    </li>
+  {% endfor %}
 </ul>
 
 {% if activo %}
-{% for field in form %}
-  {% if not field.name == 'urls' %}
+  {% for field in form %}
+    {% if not field.name == 'urls' %}
+      {% if field.errors %}
+        {% for error in field.errors %}
+          <div class="uk-alert-danger" uk-alert>
+            <a class="uk-alert-close" uk-close></a>
+            <p>{{ error|escape }}</p>
+          </div>
+        {% endfor %}
+      {% endif %}
   {% if field|fieldtype == 'Textarea' or field|fieldtype == 'TextInput' or field|fieldtype == 'ClearableFileInput' %}
     <div class="uk-margin">
   {% else %}
@@ -81,15 +68,7 @@
         {% endif %}
       {% endif %}      
     </div>
-  </div>
-  {% if field.errors %}
-    {% for error in field.errors %}
-      <div class="uk-alert-danger" uk-alert>
-        <a class="uk-alert-close" uk-close></a>
-        <p>{{ error|escape }}</p>
-      </div>
-    {% endfor %}
-  {% endif %}
+    </div>
 {% endif %}
 {% endfor %}
 {% endif %}

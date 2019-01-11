@@ -89,10 +89,10 @@ class GraficasForm(forms.Form):
 class MensajeForm(forms.Form):
     
     urls = forms.ModelMultipleChoiceField(label='Direcciones URL a reportar',
-                                          queryset=None, required=False,
+                                          queryset=None, required=True,
                                           widget=forms.CheckboxSelectMultiple)
     de = forms.CharField(label='De')
-    para = forms.CharField(label='Para')
+    para = forms.CharField(label='Para', required=False)
     cc = forms.CharField(label='CC', required=False)
     cco = forms.CharField(label='CCO', required=False)
     asunto = forms.CharField(label='Asunto')
@@ -106,6 +106,7 @@ class MensajeForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.fields['capturas'].queryset = urls.exclude(captura=None)
         self.fields['urls'].queryset = urls
+        self.fields['urls'].error_messages['required'] = 'Seleccionar al menos una dirección URL'
 
     def actualiza(self):
         urls = [x.pk for x in self.fields['urls'].queryset]

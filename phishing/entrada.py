@@ -34,6 +34,7 @@ def lee_json(f):
     e = []
     itera_json(j, e)
     for y in e:
+        y = str(y)
         if y.startswith('http://') or y.startswith('https://'):
             urls.append(y)
     return urls        

@@ -1,88 +1,86 @@
-<pre>
+<div uk-grid style="margin-top:20px;">
+  <div class="uk-width-1-3">
+    <table class="uk-table uk-table-divider" >
+      <thead style='display:none;'>
+        <tr>
+          <th class="uk-width-medium">Table Heading</th>
+          <th class="uk-width-expand">Table Heading</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr style="line-height:5px;">
+          <td class='uk-text-bold'># URLs analizadas</td>
+          <td>{{ urls_total }}</td>
+        </tr>
+        <tr style="line-height:5px;">
+          <td class='uk-text-bold'># URLs activas</td>
+          <td>{{ num_urls_activas }}</td>
+        </tr>
+        <tr style="line-height:5px;">
+          <td class='uk-text-bold'># URLs inactivas</td>
+          <td>{{ num_urls_inactivas }}</td>
+        </tr>
+        <tr style="line-height:5px;">
+          <td class='uk-text-bold'># Redirecciones</td>
+          <td>{{ num_urls_redirecciones }}</td>
+        </tr>
+        <tr style="line-height:5px;">
+          <td class='uk-text-bold'># Dominios afectados</td>
+          <td>{{ dominios|length }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
 
+<dl class="uk-description-list">
+  <dt>Entidades</dt>
+  {% for k,v in entidades.items %}
+    <dd>&nbsp;&nbsp;&nbsp;&nbsp;{{ k }}: {{ v }}</dd>
+  {% endfor %}
+  <dt>Títulos</dt>
+  {% for k,v in titulos.items %}
+    <dd>&nbsp;&nbsp;&nbsp;&nbsp;{{ k }}: {{ v }}</dd>
+  {% endfor %}
+  <dt>Dominios</dt>
+  {% for k,v in dominios.items %}
+    <dd>&nbsp;&nbsp;&nbsp;&nbsp;{{ k }}: {{ v }}</dd>
+  {% endfor %}
+  <dt>Países</dt>
+  {% for k,v in paises.items %}
+    <dd>&nbsp;&nbsp;&nbsp;&nbsp;{{ k.name }} ({{ k }}): {{ v }}</dd>
+  {% endfor %}
+</dl>
 
-RESUMEN
+{% if activas %}
+  <h4>SITIOS ACTIVOS</h4>
+  <ul class="uk-comment-list">
+    {% for url in activas %}
+      <li>
+        {% include 'url_reporte.html' %}
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
 
-URLs analizadas:  {{ urls_total }}
-URLs activas:  {{ num_urls_activas }} 
-URLs inactivas:  {{ num_urls_inactivas }} 
-URLs redirecciones:  {{ num_urls_redirecciones }} 
-Dominios afectados:  {{ dominios|length }} 
+{% if inactivas %}
+  <h4>SITIOS INACTIVOS</h4>
+  <ul class="uk-comment-list">
+    {% for url in inactivas %}
+      <li>
+        {% include 'url_reporte.html' %}
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}
 
-Entidades:
-{% for k,v in entidades.items %}
-    {{ k }}: {{ v }}
-{% endfor %}
-Títulos:
-{% for k,v in titulos.items %}
-    {{ k }}: {{ v }} 
-{% endfor %}
-Dominios:
-{% for k,v in dominios.items %}
-    {{ k }}: {{ v }} 
-{% endfor %}
-Países:
-{% for k,v in paises.items %}
-    {{ k }}: {{ v }} 
-{% endfor %}
-
-SITIOS ACTIVOS
-{% for url in activas %}
-<a href='{{ url.captura_url }}'><img src='{{ url.captura_url }}' style="max-width:300px;max-height:300px;" /><br/></a>
-Identificador: <a href='{% url "url-detalle" pk=url.pk %}'>{{ url.identificador }}</a>
-Timestamp: {{ url.timestamp }}
-IP: {{ url.dominio.ip }}
-Código: {{ url.codigo_estado }}
-URL: {{ url.url }}
-Detección: {{ url.es_phishing }}
-Reportado: {{ url.reportado }}
-Título: {{ url.titulo }}
-Entidades: {{ url.entidades }}
-Archivo: <a href='{{ url.archivo_url }}'>Descarga</a>
-Ofuscación: {{ url.ofuscaciones }}
-Correos: {{ url.dominio.correos_abuso }}
-ISP: {{ url.dominio.isp }}
-País: {{ url.dominio.pais }}
-ASN: {{ url.dominio.asn }}
-Servidor: {{ url.dominio.servidor }}
-RIR: {{ url.dominio.rir }}
-Servidores DNS: {{ url.dominio.servidores_dns }}
-{% if url.ticket %}Ticket: {{ url.ticket }}{% endif %}
-{% endfor %}
-
-SITIOS INACTIVOS
-{% for url in inactivas %}
-Identificador: <a href='{% url "url-detalle" pk=url.pk %}'>{{ url.identificador }}</a>
-Timestamp: {{ url.timestamp }}
-IP: {{ url.dominio.ip }}
-Codigo: {{ url.codigo_estado }}
-URL: {{ url.url }}
-Reportado: {{ url.reportado }}
-Correos: {{ url.dominio.correos_abuso }}
-ISP: {{ url.dominio.isp }}
-País: {{ url.dominio.pais }}
-ASN: {{ url.dominio.asn }}
-Servidor: {{ url.dominio.servidor }}
-RIR: {{ url.dominio.rir }}
-Servidores DNS: {{ url.dominio.servidores_dns }}
-{% endfor %}
-
-REDIRECCIONES
-{% for url in redirecciones %}
-Identificador: <a href='{% url "url-detalle" pk=url.pk %}'>{{ url.identificador }}</a>
-Timestamp: {{ url.timestamp }}
-IP: {{ url.dominio.ip }}
-Código: {{ url.codigo_estado }}
-URL: {{ url.url }}
-Detección: {{ url.es_phishing }}
-Redirección: {{ url.redireccion }}
-Reportado: {{ url.reportado }}
-Correos: {{ url.dominio.correos_abuso }}
-ISP: {{ url.dominio.isp }}
-País: {{ url.dominio.pais }}
-ASN: {{ url.dominio.asn }}
-Servidor: {{ url.dominio.servidor }}
-RIR: {{ url.dominio.rir }}
-Servidores DNS: {{ url.dominio.servidores_dns }}
-{% endfor %}
-</pre>
+{% if redirecciones %}
+  <h4>REDIRECCIONES</h4>
+  <ul class="uk-comment-list">
+    {% for url in redirecciones %}
+      <li>
+        {% include 'url_reporte.html' %}
+      </li>
+    {% endfor %}
+  </ul>
+{% endif %}

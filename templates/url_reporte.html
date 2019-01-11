@@ -1,0 +1,54 @@
+<article class="uk-comment uk-visible-toggle">
+  <header class="uk-comment-header uk-position-relative">
+    <div class="uk-grid-medium uk-flex-middle" uk-grid>
+      <div class="uk-width-auto">
+        <div uk-lightbox>
+          <a href='{{ url.captura_url }}'>
+            <img src='{{ url.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;"/>
+          </a>
+        </div>
+      </div>
+      <div class="uk-width-expand">
+        <h4 class="uk-comment-title uk-margin-remove">
+          <a class="uk-link-reset" href="{% url 'url-detalle' url.pk %}">{{ url }}</a>
+        </h4>
+        <p class="uk-comment-meta uk-margin-remove-top"><a class="uk-link-reset" href="#">Fecha de actualización: {{ url.timestamp }}</a></p>
+      </div>
+    </div>
+  </header>
+  <div class="uk-comment-body">
+    <p>
+      <span class='uk-text-bold'>Identificador:</span> {{ url.identificador }}<br/>
+      <span class='uk-text-bold'>IP:</span> {{ url.dominio.ip }}<br/>
+      <span class='uk-text-bold'>Código:</span> {{ url.codigo_estado }}<br/>
+      <span class='uk-text-bold'>Fecha de creación:</span> {{ url.timestamp_creacion }}<br/>
+      <span class='uk-text-bold'>Detección:</span> {{ url.get_deteccion_display }}<br/>
+      <span class='uk-text-bold'>Reportado:</span> {{ url.reportado }}<br/>
+      {% if url.titulo %}<span class='uk-text-bold'>Título:</span> {{ url.titulo }}<br/>{% endif %}
+      <span class='uk-text-bold'>Estado:</span> {{ url.estado }} <br/>
+      <span class='uk-text-bold'>Entidades afectadas:</span> {{ url.entidades }}<br/>
+      <span class='uk-text-bold'>Archivo:</span> <a href='{{ url.archivo_url }}'>Descarga</a><br/>
+      <span class='uk-text-bold'>Ofuscación:</span> {{ url.ofuscaciones }}<br/>
+      <span class='uk-text-bold'>Correos:</span> {{ url.dominio.correos_abuso }}<br/>
+      <span class='uk-text-bold'>ISP:</span> {{ url.dominio.isp }}<br/>
+      <span class='uk-text-bold'>País:</span> {{ url.dominio.pais.name }}<br/>
+      <span class='uk-text-bold'>ASN:</span> {{ url.dominio.asn }}<br/>
+      <span class='uk-text-bold'>Servidor:</span> {{ url.dominio.servidor }}<br/>
+      <span class='uk-text-bold'>RIR:</span> {{ url.dominio.rir }}<br/>
+      <span class='uk-text-bold'>Servidores DNS:</span> {{ url.dominio.servidores_dns }}
+      {% if url.ticket %}<br/><span class='uk-text-bold'>Ticket:</span> {{ url.ticket }}{% endif %}
+      {% if url.reportado %}
+        <br/><span class='uk-text-bold'>Fecha de reporte:</span> {{ url.timestamp_reportado }}
+      {% endif %}
+      {% if url.timestamp_deteccion %}
+        <br/><span class='uk-text-bold'>Fecha de detección:</span> {{ url.timestamp_deteccion }}
+      {% endif %}
+      {% if url.timestamp_desactivado %}
+        <br/><span class='uk-text-bold'>Fecha de desactivación:</span> {{ url.timestamp_deteccion }}
+      {% endif %}
+      {% if url.hash_archivo %}
+        <br/><span class='uk-text-bold'>Hash MD5 de archivo:</span> {{ url.hash_archivo }}
+      {% endif %}
+    </p>
+  </div>
+</article>

@@ -3,86 +3,84 @@
 {% block title %}Ajustes{% endblock %}
 
 {% block contenido %}
-  <div class="container">
-    <h1 class="uk-heading-primary"><span>Ajustes</span></h1>
+  <h1 class="uk-heading-primary"><span>Ajustes</span></h1>
+<p uk-margin>
+  <a href='{% url 'ofuscaciones' %}' class="uk-button uk-button-danger">
+    Modificar métodos de ofuscación
+  </a>
+  <a href='{% url 'entidades' %}' class="uk-button uk-button-danger">
+    Modificar entidades
+  </a>
+</p>
 
-    <p uk-margin>
-      <a href='{% url 'ofuscaciones' %}' class="uk-button uk-button-danger">
-        Modificar métodos de ofuscación
-      </a>
-      <a href='{% url 'entidades' %}' class="uk-button uk-button-danger">
-        Modificar entidades
-      </a>
-    </p>
+<h4>Proxies</h4>
+<a href='{% url 'crea-proxy' %}' class="uk-button uk-button-secondary uk-button-small">Nuevo Proxy</a><br/>
+{% for proxy in proxies %}
+  
+  HTTP: {{ proxy.http }},
+  HTTPS: {{ proxy.https }} 
+  <a href='{% url "actualiza-proxy" pk=proxy.pk %}'>Actualiza</a>
+  <a href='{% url "elimina-proxy" pk=proxy.pk %}'>Elimina</a>
+{% endfor %}
 
-    <h4>Proxies</h4>
-    <a href='{% url 'crea-proxy' %}' class="uk-button uk-button-secondary uk-button-small">Nuevo Proxy</a><br/>
-    {% for proxy in proxies %}
-      
-      HTTP: {{ proxy.http }},
-      HTTPS: {{ proxy.https }} 
-      <a href='{% url "actualiza-proxy" pk=proxy.pk %}'>Actualiza</a>
-      <a href='{% url "elimina-proxy" pk=proxy.pk %}'>Elimina</a>
-    {% endfor %}
+<h4>Recursos</h4>
+<a href='{% url 'crea-recurso' %}' class="uk-button uk-button-secondary uk-button-small">Nuevo Recurso</a><br/>
+{% for recurso in recursos %}
+  {% if recurso.es_phishtank %}
+    Llave de API de phishtank: {{ recurso.recurso }}
+  {% else %}
+    URL: {{ recurso.recurso }}
+  {% endif %}
+  <br/>
+  Número máximo de URLs por consulta:
+  {% if recurso.max_urls >= 0 %}
+    {{ recurso.max_urls }}
+  {% else %}
+    Sin límite
+  {% endif %}
+  <br/>
+  <a href='{% url "actualiza-recurso" pk=recurso.pk %}'>Actualiza</a>
+  <a href='{% url "elimina-recurso" pk=recurso.pk %}'>Elimina</a>
+  <br/>
+  <br/>
+{% endfor %}
 
-    <h4>Recursos</h4>
-    <a href='{% url 'crea-recurso' %}' class="uk-button uk-button-secondary uk-button-small">Nuevo Recurso</a><br/>
-    {% for recurso in recursos %}
-      {% if recurso.es_phishtank %}
-        Llave de API de phishtank: {{ recurso.recurso }}
-      {% else %}
-        URL: {{ recurso.recurso }}
-      {% endif %}
-      <br/>
-      Número máximo de URLs por consulta:
-      {% if recurso.max_urls >= 0 %}
-        {{ recurso.max_urls }}
-      {% else %}
-        Sin límite
-      {% endif %}
-      <br/>
-      <a href='{% url "actualiza-recurso" pk=recurso.pk %}'>Actualiza</a>
-      <a href='{% url "elimina-recurso" pk=recurso.pk %}'>Elimina</a>
-      <br/>
-      <br/>
-    {% endfor %}
-    
-    <form action="" class="uk-margin-medium" method="post">
-      {% csrf_token %}
-      {% include 'form.html' with form=asunto_form %}
-      <input type="submit" name="cambia-asunto" class="uk-button uk-button-primary uk-button-small" value="Modificar" />
-    </form>
+<form action="" class="uk-margin-medium" method="post">
+  {% csrf_token %}
+  {% include 'form.html' with form=asunto_form %}
+  <input type="submit" name="cambia-asunto" class="uk-button uk-button-primary uk-button-small" value="Modificar" />
+</form>
 
-      <form action="" class="uk-margin-medium" method="post">
-        {% csrf_token %}
-        {% include 'form.html' with form=mensaje_form %}
-        <input type="submit" name="cambia-mensaje" class="uk-button uk-button-primary uk-button-small" value="Modificar" />
-      </form>
+<form action="" class="uk-margin-medium" method="post">
+  {% csrf_token %}
+  {% include 'form.html' with form=mensaje_form %}
+  <input type="submit" name="cambia-mensaje" class="uk-button uk-button-primary uk-button-small" value="Modificar" />
+</form>
 
-      <form action="" class="uk-margin-medium" method="post">
-        {% csrf_token %}
-        {% include 'form.html' with form=asunto_unam_form %}
-        <input type="submit" name="cambia-unam-asunto" class="uk-button uk-button-primary uk-button-small" value="Modificar" />
-      </form>
+<form action="" class="uk-margin-medium" method="post">
+  {% csrf_token %}
+  {% include 'form.html' with form=asunto_unam_form %}
+  <input type="submit" name="cambia-unam-asunto" class="uk-button uk-button-primary uk-button-small" value="Modificar" />
+</form>
 
-      <form action="" class="uk-margin-medium" method="post">
-        {% csrf_token %}
-        {% include 'form.html' with form=mensaje_unam_form %}
-        <input type="submit" name="cambia-unam-mensaje" class="uk-button uk-button-primary uk-button-small" value="Modificar" />
-      </form>
+<form action="" class="uk-margin-medium" method="post">
+  {% csrf_token %}
+  {% include 'form.html' with form=mensaje_unam_form %}
+  <input type="submit" name="cambia-unam-mensaje" class="uk-button uk-button-primary uk-button-small" value="Modificar" />
+</form>
 
-      Cambia frecuencia de actualización de base de datos (horas)
-      <form action="" class="uk-margin-medium" method="post">
-        {% csrf_token %}
-        {% include 'form.html' with form=actualizacion_form %}
-        <input type="submit" name="cambia-actualizacion" class="uk-button uk-button-primary uk-button-small" value="Modificar" />
-      </form>
-      
-      Cambia frecuencia de verificación de URLs (horas)
-      <form action="" class="uk-margin-medium" method="post">
-        {% csrf_token %}
-        {% include 'form.html' with form=verificacion_form %}
-        <input type="submit" name="cambia-verificacion" class="uk-button uk-button-primary uk-button-small" value="Modificar" />
-      </form>
-  </div>
+Cambia frecuencia de actualización de base de datos (horas)
+<form action="" class="uk-margin-medium" method="post">
+  {% csrf_token %}
+  {% include 'form.html' with form=actualizacion_form %}
+  <input type="submit" name="cambia-actualizacion" class="uk-button uk-button-primary uk-button-small" value="Modificar" />
+</form>
+
+Cambia frecuencia de verificación de URLs (horas)
+<form action="" class="uk-margin-medium" method="post">
+  {% csrf_token %}
+  {% include 'form.html' with form=verificacion_form %}
+  <input type="submit" name="cambia-verificacion" class="uk-button uk-button-primary uk-button-small" value="Modificar" />
+</form>
+
 {% endblock %}

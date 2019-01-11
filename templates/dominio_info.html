@@ -1,0 +1,36 @@
+<article class="uk-comment uk-comment-primary uk-visible-toggle">            
+  <header class="uk-comment-header uk-position-relative">
+    <div class="uk-grid-medium uk-flex-middle" uk-grid>
+      <div class="uk-width-auto">
+        <div uk-lightbox>
+          <a href='{{ dominio.captura_url }}'>
+            <img src='{{ dominio.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;"/>
+          </a>
+        </div>
+      </div>
+      <div class="uk-width-expand">
+        <h4 class="uk-comment-title uk-margin-remove">
+          {{ dominio }}
+        </h4>
+        <p class="uk-comment-meta uk-margin-remove-top">
+          <a class="uk-link-reset" href="#">IP: {{ dominio.ip }}</a>
+        </p>
+      </div>
+    </div>
+    <div class="uk-position-top-right uk-position-small">
+      <a href='{% url 'monitoreo-id' dominio.pk %}' class="uk-button uk-button-primary">
+        Reportar dominio
+      </a>
+    </div>      
+  </header>            
+  <div class="uk-comment-body">
+    <p>
+      País: {{ dominio.pais }} <br/>
+      RIR: {{ dominio.rir }} <br/>
+      Servidores DNS: {{ dominio.servidores_dns }} <br/>
+      ISP: {{ dominio.isp }} <br/>
+      ASN: {{ dominio.asn }} <br/>
+      Servidor: {{ dominio.servidor }} <br/>                
+    </p>
+  </div>
+</article>
