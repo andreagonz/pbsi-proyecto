@@ -168,6 +168,7 @@ def monitoreo_id(request, pk):
                 msg = genera_mensaje(dominio, de, para, cc, cco, asunto, mensaje, capturas)
                 enviado = manda_correo(para, cc, cco, msg)
                 if not enviado:
+                    context['dominio'] = dominio
                     return render(request, 'mensaje_error.html', context)                
                 try:
                     men = Mensaje.objects.get(ticket=ticket)

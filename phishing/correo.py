@@ -146,9 +146,9 @@ def manda_correo(para, cc, cco, msg):
     try:
         if settings.CORREO_SSL:
             server = smtplib.SMTP_SSL(settings.CORREO_SERVIDOR, settings.CORREO_PUERTO)
-            server.ehlo()
         else:
             server = smtplib.SMTP(settings.CORREO_SERVIDOR, settings.CORREO_PUERTO)
+            server.starttls()
         usr = settings.CORREO_USR
         passw = settings.CORREO_PASS
         if usr and passw:

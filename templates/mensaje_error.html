@@ -7,9 +7,10 @@
   <h1 class="uk-heading-primary uk-text-center"><span>Monitoreo</span></h1>
 
   <div class="uk-alert-danger" uk-alert>
-    <p>Error al enviar correo</p>
+    <p>Error al enviar correo para el dominio {{ dominio }}</p>
   </div>
 
-  <a href="{% url 'monitoreo' %}" class="uk-button uk-button-primary">Regresar a monitoreo<a/>
+  <a href='{% url 'monitoreo-id' dominio.pk %}' class="uk-button uk-button-primary">Regresar a monitoreo de dominio<a/>
+  <a href='{% url 'monitoreo' %}' class="uk-button uk-button-primary">Ir a monitoreo<a/>
     
 {% endblock %}
