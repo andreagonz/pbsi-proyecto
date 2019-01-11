@@ -262,12 +262,12 @@ def valida_urls(request):
 
 def url_detalle(request, pk):
     url = get_object_or_404(Url, pk=pk)
-    comentarios = archivo_comentarios(url)
+    # comentarios = archivo_comentarios(url)
     hashes = archivo_hashes(url)
     context = {
         'url': url,
-        'comentarios': comentarios,
-        'hashes': hashes,
+        # 'comentarios': comentarios
+        'hashes': hashes
     }
     return render(request, 'url_detalle.html', context)
 
