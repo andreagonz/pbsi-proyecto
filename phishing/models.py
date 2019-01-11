@@ -183,7 +183,7 @@ class Url(models.Model):
         url = self
         if self.codigo < 400 and self.codigo >= 300:
             url = self.get_redireccion
-        if url.captura and hasattr(url.captura, 'url'):
+        if url and url.captura and hasattr(url.captura, 'url'):
             return url.captura.url
         return '/media/na.png'
 

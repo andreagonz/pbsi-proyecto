@@ -169,7 +169,7 @@ def monitoreo_id(request, pk):
                 enviado = manda_correo(para, cc, cco, msg)
                 if not enviado:
                     context['dominio'] = dominio
-                    return render(request, 'mensaje_error.html', context)                
+                    return render(request, 'mensaje_error.html', context)
                 try:
                     men = Mensaje.objects.get(ticket=ticket)
                 except:
@@ -912,10 +912,10 @@ def entrada(request):
             if form.is_valid():
                 c = form.cleaned_data['correo']
                 resultados, urls, headers, archivos, error = parsecorreo(c)
-                context = {}
+                sitios = []
                 if len(urls) > 0:
                     sitios = verifica_urls(urls, None, False)
-                    context = context_reporte(sitios)
+                context = context_reporte(sitios)                    
                 context['resultados'] = resultados
                 context['urls'] = urls
                 context['headers'] = headers

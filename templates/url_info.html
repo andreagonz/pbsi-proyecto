@@ -18,6 +18,7 @@
           Estado: {{ url.estado }} <br/>
           Detección: {{ url.get_deteccion_display }}<br/>
           {% if url.activo %}Entidades afectadas: {{ url.entidades }}<br/>{% endif %}
+          {% if url.activo %}Ofuscación: {{ url.ofuscaciones }}<br/>{% endif %}
           {% if url.redireccion %}Redirección: {{ url.redireccion }}<br/>{% endif %}
           {% if url.get_redireccion %}
             Redirección final:
@@ -25,7 +26,7 @@
               {{ url.get_redireccion.url }}<br/>
             </a>
           {% endif %}
-          Timestamp: {{ url.timestamp }}
+          Fecha de actualización: {{ url.timestamp }}
         </p>
       </div>
       {% if monitoreo %}

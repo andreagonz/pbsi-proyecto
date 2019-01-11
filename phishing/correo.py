@@ -36,16 +36,17 @@ def crea_diccionario(dominio):
     for x in dominio.urls_activas:
         for e in x.entidades_afectadas.all():
             entidades[e] = str(e)
+    regex = re.compile(r'^htt')
     dicc = {
-        'urls': '\n'.join([str(x) for x in dominio.urls_activas]).replace('.', '(dot)'),
+        'urls': '\n'.join([regex.sub('hxx', str(x)) for x in dominio.urls_activas]).replace('.', '(.)'),
         'ip': dominio.ip,
         'pais': dominio.pais,
-        'dominio': dominio.dominio.replace('.', '(dot)'),
+        'dominio': dominio.dominio.replace('.', '(.)'),
         'asn': dominio.asn,
         'isp': dominio.isp,
         'rir': dominio.rir,
         'servidor': dominio.servidor_web,
-        'dns': dominio.servidores_dns,
+        'dns': dominio.servidores_dns.replace('.', '(.)'),
         'entidades': ', '.join(entidades.values()) if len(entidades) > 0 else 'No identificadas',
     }
     return dicc

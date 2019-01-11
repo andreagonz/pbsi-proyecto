@@ -1,62 +1,14 @@
 {% extends 'base.html' %}
 {% block title %}Búsqueda{% endblock %}
-{% block head %}
-<style type="text/css"> 
-hr.style {
-	height: 6px;
-	background: url(http://ibrahimjabbari.com/english/images/hr-12.png) repeat-x 0 0;
-    border: 0;
-}
-</style>
-{% endblock %}
 {% block contenido %}
-  <div class="container" style="padding-top: 30px">
-    Resultados de  <strong>{{ query }}</strong>:</br></br>
+  <h4>Resultados de <strong>{{ query }}</strong>:</h4>
+  
+  <ul class="uk-comment-list">
     {% for url in resultados %}
-      {% if url.captura_url %}
-        <a href='{{ url.captura_url }}'><img src='{{ url.captura_url }}' style="max-width:300px;max-height:300px;" /><br/></a></br>
-      {% endif %}
-      <a class='btn btn-warning btn-sm' href='{% url "url-detalle" pk=url.pk %}'>Detalle</a></br>
-      Identificador: {{ url.identificador }}</br>
-      Timestamp: {{ url.timestamp }}</br>
-      IP: {{ url.dominio.ip }}</br>
-      Código: {{ url.codigo_estado }}</br>
-      URL: {{ url.url }}</br>
-      Reportado: {{ url.reportado }}</br>
-      {% if url.titulo %}
-        Título: {{ url.titulo }}</br>
-      {% endif %}
-      {% if url.codigo > 0 and url.codigo < 300 or url.codigo >= 400 and url.codigo < 500 %}
-        Entidades: {{ url.entidades }}</br>
-      {% endif %}
-      {% if url.archivo_url %}
-        Archivo: <a href='{{ url.archivo_url }}'>Descarga</a></br>
-      {% endif %}
-      {% if url.codigo > 0 and url.codigo < 300 or url.codigo >= 400 and url.codigo < 500 %}
-        Ofuscación: {{ url.ofuscaciones }}</br>
-      {% endif %}
-      {% if url.correos %}
-        Correos: {{ url.dominio.correos_abuso }}</br>
-      {% endif %}
-      {% if url.dominio and url.dominio.isp %}
-        ISP: {{ url.dominio.isp }}</br>
-      {% endif %}
-      {% if url.dominio and url.dominio.isp %}
-        País: {{ url.dominio.pais }}</br>
-      {% endif %}
-      {% if url.dominio and url.dominio.asn %}
-        ASN: {{ url.dominio.asn }}</br>
-      {% endif %}
-      {% if url.dominio and url.dominio.servidor %}
-        Servidor: {{ url.dominio.servidor }}</br>
-      {% endif %}
-      {% if url.dominio and url.dominio.rir %}
-        RIR: {{ url.dominio.rir }}</br>
-      {% endif %}
-      {% if url.dominio and url.dominio.servidores_dns %}
-        Servidores DNS: {{ url.dominio.servidores_dns }}</br>
-      {% endif %}
-      <hr class="style">
+      <li>
+        {% include 'url_reporte.html' %}
+      </li>
     {% endfor %}
-  </div>
+  </ul>
+
 {% endblock %}

@@ -1,19 +1,20 @@
 {% extends "base.html" %}
 
-{% block title %}Phish-Mon Métodos de Ofuscación{% endblock %}
+{% block title %}Métodos de Ofuscación{% endblock %}
 
 {% block contenido %}
-  <div class="uk-container uk-container-medium">
-    <h1 class="uk-heading-divider">Métodos de Ofuscación</h1>
-  </div>
+  <h1 class="uk-heading-primary uk-text-center">Métodos de Ofuscación</h1>
 
-  <a href='{% url 'crea-ofuscacion' %}'>Nuevo Método de Ofuscación</a><br/>
-  {% for o in ofuscaciones %}
-    Nombre: {{ o.nombre }},
-    Expresión regular: "{{ o.regex }}"
-    <a href='{% url "actualiza-ofuscacion" pk=o.pk %}'>Actualiza</a>
-    <a href='{% url "elimina-ofuscacion" pk=o.pk %}'>Elimina</a>
-    <br/>
-  {% endfor %}
+  <a href='{% url 'crea-ofuscacion' %}' class="uk-button uk-button-primary">Nuevo Método de Ofuscación</a>
+
+  <ul class="uk-list">
+    {% for o in ofuscaciones %}
+      <li>
+        <span class="uk-text-bold">Nombre:</span> {{ o.nombre }}, <span class="uk-text-bold">Exp. regular:</span> "{{ o.regex }}" &nbsp;&nbsp;&nbsp;&nbsp;
+        <a class="uk-button uk-button-default uk-button-small" href='{% url "actualiza-ofuscacion" pk=o.pk %}'><span uk-icon="pencil"></span></a>
+        <a class="uk-button uk-button-danger uk-button-small" href='{% url "elimina-ofuscacion" pk=o.pk %}'><span uk-icon="close"></span></a>
+      </li>
+    {% endfor %}
+  </ul>
 
 {% endblock %}

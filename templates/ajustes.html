@@ -15,35 +15,38 @@
 
 <h4>Proxies</h4>
 <a href='{% url 'crea-proxy' %}' class="uk-button uk-button-secondary uk-button-small">Nuevo Proxy</a><br/>
-{% for proxy in proxies %}
-  
-  HTTP: {{ proxy.http }},
-  HTTPS: {{ proxy.https }} 
-  <a href='{% url "actualiza-proxy" pk=proxy.pk %}'>Actualiza</a>
-  <a href='{% url "elimina-proxy" pk=proxy.pk %}'>Elimina</a>
-{% endfor %}
+
+<ul class="uk-list">
+  {% for proxy in proxies %}
+      <li><span class="uk-text-bold">HTTP:</span> {{ proxy.http }}, <span class="uk-text-bold">HTTPS:</span> {{ proxy.https }} &nbsp;&nbsp;&nbsp;&nbsp;
+      <a class="uk-button uk-button-default uk-button-small" href='{% url "actualiza-proxy" pk=proxy.pk %}'><span uk-icon="pencil"></span></a>
+      <a class="uk-button uk-button-danger uk-button-small" href='{% url "elimina-proxy" pk=proxy.pk %}'><span uk-icon="close"></span></a></li>
+    {% endfor %}
+</ul>
 
 <h4>Recursos</h4>
 <a href='{% url 'crea-recurso' %}' class="uk-button uk-button-secondary uk-button-small">Nuevo Recurso</a><br/>
-{% for recurso in recursos %}
-  {% if recurso.es_phishtank %}
-    Llave de API de phishtank: {{ recurso.recurso }}
-  {% else %}
-    URL: {{ recurso.recurso }}
-  {% endif %}
-  <br/>
-  Número máximo de URLs por consulta:
-  {% if recurso.max_urls >= 0 %}
-    {{ recurso.max_urls }}
-  {% else %}
-    Sin límite
-  {% endif %}
-  <br/>
-  <a href='{% url "actualiza-recurso" pk=recurso.pk %}'>Actualiza</a>
-  <a href='{% url "elimina-recurso" pk=recurso.pk %}'>Elimina</a>
-  <br/>
-  <br/>
-{% endfor %}
+
+<ul class="uk-list">
+  {% for recurso in recursos %}
+    <li>
+      {% if recurso.es_phishtank %}
+        <span class="uk-text-bold">Llave de API de phishtank: {{ recurso.recurso }}</span></br>
+      {% else %}
+        <span class="uk-text-bold">URL: {{ recurso.recurso }}</span></br>
+      {% endif %}
+      Número máximo de URLs por consulta:
+      {% if recurso.max_urls >= 0 %}
+        {{ recurso.max_urls }}
+      {% else %}
+        Sin límite
+      {% endif %}
+      </br>
+      <a class="uk-button uk-button-default uk-button-small" href='{% url "actualiza-recurso" pk=recurso.pk %}'><span uk-icon="pencil"></span></a>
+      <a class="uk-button uk-button-danger uk-button-small" href='{% url "elimina-recurso" pk=recurso.pk %}'><span uk-icon="close"></span></a>
+    </li>
+  {% endfor %}
+</ul>
 
 <form action="" class="uk-margin-medium" method="post">
   {% csrf_token %}
