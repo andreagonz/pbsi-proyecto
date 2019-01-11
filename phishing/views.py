@@ -166,7 +166,9 @@ def monitoreo_id(request, pk):
                 capturas = mensaje_form.cleaned_data['capturas']
                 urls_reportadas = mensaje_form.cleaned_data['urls']
                 msg = genera_mensaje(dominio, de, para, cc, cco, asunto, mensaje, capturas)
-                manda_correo(para, cc, cco, msg)
+                enviado = manda_correo(para, cc, cco, msg)
+                if not enviado:
+                    return render(request, 'mensaje_error.html', context)                
                 try:
                     men = Mensaje.objects.get(ticket=ticket)
                 except:
