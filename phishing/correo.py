@@ -159,6 +159,7 @@ def manda_correo(para, cc, cco, msg):
             recipientes.append(cc)
         if cco[0]:
             recipientes.append(cco)
+        print(recipientes)
         server.sendmail(usr, recipientes, msg)
         log('Correo enviado. To:%s, Cc:%s, Bcc:%s' % (', '.join(para if para else []),
                                                       ', '.join(cc if cc else []),
@@ -240,9 +241,6 @@ def analisisarchivos(attachment):
         log('Error: %s' % str(e))
         return "1", "1", "1"
     return nombre, noentidades,tipo
-#resultados.append("Nombre de archivo: " + nombre+"\n")
-#resultados.append("\tArchivo malicioso: " +noentidades+"\n")
-#resultados.append("Mas informacion: https://www.virustotal.com/#/file/"+nombre)
 
 def parsecorreo(texto):
     """
@@ -261,17 +259,29 @@ def parsecorreo(texto):
                  'X-Spam-Score','X-Spam-Status','X-Spam-Level','Received']
         for head in lista:
             erroremail(resultados, head, mensaje)
+        regex1 = re.compile(r"hxxp://")
+        regex2 = re.compile(r"hxxps://")
+        regex3 = re.compile(r" ?[(][.][)] ?")
+        regex4 = re.compile(r" ?[(]dot[)] ?")
         if mensaje.is_multipart():
             for part in mensaje.walk():
                 ctype = part.get_content_type()
-                cdispo = str(part.get('Content-Disposition'))
+                cdispo = str(part.get('Content-Disposition'))            
                 if ctype == 'text/plain' and 'attachment' not in cdispo:
-                    body = part.get_payload(decode=True)
-                    url = re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',body.decode('utf-8', errors='ignore'))
+                    body = part.get_payload(decode=True).decode('utf-8', errors='ignore')
+                    body = regex1.sub('http://', body)
+                    body = regex2.sub('https://', body)
+                    body = regex3.sub('.', body)
+                    body = regex3.sub('.', body)
+                    url = re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', body)
                     break
         else:
-            body = mensaje.get_payload(decode=True)
-            url = re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',body.decode('utf-8', errors='ignore'))
+            body = mensaje.get_payload(decode=True).decode('utf-8', errors='ignore')
+            body = regex1.sub('http://', body)
+            body = regex2.sub('https://', body)
+            body = regex3.sub('.', body)
+            body = regex3.sub('.', body)
+            url = re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',body)
         mensaje = email.message_from_string(texto)
         tamanio = len(mensaje.get_payload())
         if tamanio < 20:
