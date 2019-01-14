@@ -24,13 +24,14 @@ class Command(BaseCommand):
             i = {
                 'url': u.url,
                 'codigo': u.codigo_estado,
-                'estado': u.estado
+                'estado': u.estado,
+                'deteccion': u.get_deteccion_display()
             }
             if u.titulo:
                 i['titulo'] = u.titulo
-            if len(u.ofuscacion.all()) > 0:
+            if u.ofuscacion.count() > 0:
                 i['metodo_ofuscacion'] = [x.nombre for x in u.ofuscacion.all()]
-            if len(u.entidades_afectadas.all()) > 0:
+            if u.entidades_afectadas.count() > 0:
                 i['entidades_afectadas'] = []
                 for x in u.entidades_afectadas.all():
                     e = {'nombre': x.nombre}
@@ -63,7 +64,8 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         hoy = timezone.localtime(timezone.now())
         ayer = hoy - timedelta(days=1)
-        urls_hoy = Url.objects.filter(timestamp_creacion__gt=ayer, deteccion__ne='I')
+        urls_hoy = Url.objects.filter(~Q(deteccion='I'), ~Q(deteccion='N'),
+                                      timestamp_reactivacion__date__gt=ayer)
         d = os.path.join(settings.DIR_SALIDA, str(hoy.date()))
         if not os.path.exists(d):
             os.makedirs(d)
@@ -76,27 +78,27 @@ class Command(BaseCommand):
              open(os.path.join(d, 'formato.txt'), 'a') as form, \
              open(os.path.join(d, 'sitios.json'), 'w') as sitios:
             for u in urls_hoy:
-                if u.codigo < 400 and u.codigo >= 300 and u.deteccion == 'P' or u.deteccion == 'M':
+                if u.codigo < 400 and u.codigo >= 300:
                     red.write('%s\n' % u.url)
                 if u.deteccion == 'P':
                     phishing.write('%s\n' % u.url)
                 elif u.deteccion == 'M':
-                    mal.write('%s\n' % u.url)                
+                    mal.write('%s\n' % u.url)
                 asn = '-'
                 nom = '-'
-                if u.dominio and u.dominio.asn:
+                if u.dominio.asn:
                     a = u.dominio.asn
                     i = a.find(' ')
                     if i > 0:
                         asn = a[2:i]
                         nom = a[i + 1:]
                 ip = '-'
-                if u.dominio and u.dominio.ip:
+                if u.dominio.ip:
                     ip = u.dominio.ip
                 t = time.strftime('%Y-%m-%d %H:%M:%S')
                 form.write('%s | %s | %s | %d saapm %d %s | %s\n' %
                            (asn, ip, t, u.pk, u.pk, u.url, nom))
-            urls_dom = urls_hoy.filter(~Q(dominio=None)).distinct('dominio')
+            urls_dom = urls_hoy.distinct('dominio')
             for u in urls_dom:
                 snort.write('Alert tcp $HOME_NET any -> $EXTERNAL_NET $HTTP_PORTS '
                             '(msg:"Regla sitio malicioso"; flow:to_server,established; content:'

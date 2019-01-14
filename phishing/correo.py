@@ -159,7 +159,6 @@ def manda_correo(para, cc, cco, msg):
             recipientes.append(cc)
         if cco[0]:
             recipientes.append(cco)
-        print(recipientes)
         server.sendmail(usr, recipientes, msg)
         log('Correo enviado. To:%s, Cc:%s, Bcc:%s' % (', '.join(para if para else []),
                                                       ', '.join(cc if cc else []),

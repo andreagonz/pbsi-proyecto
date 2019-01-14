@@ -290,21 +290,6 @@ def busca(request):
     q = ''
     if request.method == "GET" and request.GET.get('q', None):
         q = request.GET['q'].strip()
-        """
-        if request.GET.get('a', None) and request.GET['a'].strip() == '1':
-            urls = Url.objects.exclude(archivo=None)
-            for u in urls:
-                f = archivo_texto(u)
-                for h in lineas_md5(f):
-                    if h == q:
-                        resultados.append(u)
-                for x in leeComentariosHTML(f):
-                    if q in x:
-                        resultados.append(u)
-                if u.hash_archivo == q:
-                    resultados.append(u)
-            resultados = list(set(resultados))
-        """
         resultados = Url.objects.annotate(
             search=SearchVector('url') + SearchVector('dominio__dominio') +
             SearchVector('entidades_afectadas__clasificacion__nombre') +
@@ -316,7 +301,7 @@ def busca(request):
             SearchVector('identificador') + SearchVector('titulo') +
             SearchVector('hash_archivo') + SearchVector('redireccion') +
             SearchVector('dominio__servidor') +
-            SearchVector('mensaje__ticket')
+            SearchVector('mensajeurl__mensaje__ticket')
         ).filter(search=SearchQuery(q)).distinct('url')            
     return render(request, 'results.html',
                   {'resultados': resultados,
