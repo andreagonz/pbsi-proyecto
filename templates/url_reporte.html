@@ -22,6 +22,7 @@
       <span class='uk-text-bold'>IP:</span> {{ url.dominio.ip }}<br/>
       <span class='uk-text-bold'>Código:</span> {{ url.codigo_estado }}<br/>
       <span class='uk-text-bold'>Fecha de creación:</span> {{ url.timestamp_creacion }}<br/>
+      {% if url.activo_redirecciones %}<span class='uk-text-bold'>Fecha de activación:</span> {{ url.timestamp_reactivacion }}<br/>{% endif %}
       <span class='uk-text-bold'>Detección:</span> {{ url.get_deteccion_display }}<br/>
       <span class='uk-text-bold'>Reportado:</span> {% if url.reportado %}Sí{% else %}No{% endif %}<br/>
       {% if url.titulo %}<span class='uk-text-bold'>Título:</span> {{ url.titulo }}<br/>{% endif %}
@@ -36,10 +37,10 @@
       <span class='uk-text-bold'>Servidor:</span> {{ url.dominio.servidor }}<br/>
       <span class='uk-text-bold'>RIR:</span> {{ url.dominio.rir }}<br/>
       <span class='uk-text-bold'>Servidores DNS:</span> {{ url.dominio.servidores_dns }}
-      {% if url.tickets %}
+      {% if url.mensajeurl_set.all %}
         <br/><span class='uk-text-bold'>Tickets:</span>
         {% for mu in url.mensajeurl_set.all %}
-          <a href="{% url 'ticket' pk=mu.mensaje.pk %}">{{ t }}</a>
+          <a href="{% url 'ticket' pk=mu.mensaje.pk %}">{{ mu.mensaje }}</a>
           {% if not forloop.last %}
             , 
           {% endif %}

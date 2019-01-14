@@ -8,8 +8,22 @@
   <h4 class="uk-heading-bullet">Fecha: {{ mensaje.timestamp }}</h4>
   <h4>Sitios reportados</h4>
   <ul class="uk-list">
-    {% for mu in mensajeurl_set.all %}
-      <li><a href="{% url 'url-detalle' pk=mu.url.pk %}">{{ mu.url }}</a></li>
+    {% for mu in mensaje.mensajeurl_set.all %}
+      <li>
+        <a href="{% url 'url-detalle' pk=mu.url.pk %}">{{ mu.url }}</a><br/>
+        <span class="uk-text-bold">Fecha de creación:</span> {{ mu.timestamp_creacion_sitio }}</br>
+        {% if mu.timestamp_desactivado %}
+          <span class="uk-text-bold">Fecha de desactivación:</span> {{ mu.timestamp_desactivado }}</br>
+        {% endif %}
+        <span class="uk-text-bold">Fecha de detección:</span> {{ mu.timestamp_deteccion }}</br>
+        <span class="uk-text-bold">Entidades afectadas:</span> {{ mu.entidades }}</br>
+        {% if mu.pais %}
+          <span class="uk-text-bold">País:</span> {{ mu.pais }}</br>
+        {% endif %}
+        {% if mu.asn %}
+          <span class="uk-text-bold">ASN:</span> {{ mu.asn }}</br>
+        {% endif %}
+      </li>
     {% endfor %}
   </ul>
 {% endblock %}

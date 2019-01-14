@@ -191,7 +191,10 @@ def monitoreo_id(request, pk):
                 for x in urls_reportadas:
                     mu = MensajeURL(mensaje=men, timestamp_creacion_sitio=x.timestamp_reactivacion,
                                     url=x, timestamp_deteccion=tsd)
+                    mu.pais = x.dominio.pais
+                    mu.asn = x.dominio.asn
                     mu.save()
+                    mu.entidades_afectadas.add(*x.entidades_afectadas.all())
                     url_reporta(x, ts)
                 men.save()
                 context = {
@@ -336,15 +339,15 @@ def muestraResultados(request,srch):
 @login_required(login_url=reverse_lazy('login'))
 def historico(request):
     fin = timezone.localtime(timezone.now()).date()
-    inicio = fin - timedelta(days=1)
+    inicio = fin
     form = HistoricoForm()
     if request.method == 'POST':
         form = HistoricoForm(request.POST)
         if form.is_valid():
             inicio = form.cleaned_data['inicio']
             fin = form.cleaned_data['fin']
-    sitios = Url.objects.filter(timestamp_creacion__date__lte=fin,
-                                timestamp_creacion__date__gte=inicio)
+    sitios = Url.objects.filter(timestamp_reactivacion__date__lte=fin,
+                                timestamp_reactivacion__date__gte=inicio)
     context = context_reporte(sitios)
     context['inicio'] = inicio
     context['fin'] = fin
@@ -561,12 +564,11 @@ class ChartData(APIView):
         rand_color = randomcolor.RandomColor()
         urls = Url.objects.exclude(Q(deteccion='I')|Q(deteccion='N'))
 
-        paisesU = urls.filter(~Q(dominio__pais=None)).values(
+        paisesU = urls.filter(reportado=False).exclude(dominio__pais=None).values(
             'dominio__pais').annotate(
                 cuenta_pais=Count('dominio__pais'))
-        paisesMU = MensajeURL.objects.filter(~Q(pais=None)).values(
-            'pais').annotate(
-                cuenta_pais=Count('pais'))
+        paisesMU = MensajeURL.objects.exclude(pais=None).values('pais').annotate(
+            cuenta_pais=Count('pais'))
         l = []
         for s in paisesMU:
             try:
@@ -587,14 +589,14 @@ class ChartData(APIView):
             "default": [a[1] for a in l]
         }
 
-        hostingU = urls.filter(~Q(dominio__asn=None)).values(
+        hostingU = urls.filter(reportado=False).exclude(dominio__asn=None).values(
             'dominio__asn').annotate(cuenta_asn=Count('dominio__asn'))
-        hostingMU = MensajeURL.objects.filter(~Q(asn=None)).values(
+        hostingMU = MensajeURL.objects.exclude(asn=None).values(
             'asn').annotate(cuenta_asn=Count('asn'))
         l = []
         for s in hostingMU:
             try:
-                n = next(t['dominio__asn'] for t in hostingU if
+                n = next(t['cuenta_asn'] for t in hostingU if
                          t['dominio__asn'] == s['asn'])
             except:
                 n = 0
@@ -602,7 +604,7 @@ class ChartData(APIView):
         for s in hostingU:
             try:
                 n = next(1 for t in l if t[0] == s['dominio__asn'])
-            except:                        
+            except:
                 l.append((s['dominio__asn'], s['cuenta_asn']))
         l.sort(key=lambda x:x[1], reverse=True)
         l = l[:5]
@@ -629,16 +631,12 @@ class ChartData(APIView):
             'default': [delta_horas(x.tiempo_vida) for x in top_sitios]
         }
         
-        sectores = urls.filter(~Q(entidades_afectadas=None),
-                               ~Q(entidades_afectadas__clasificacion=None)).values(
-                                   'entidades_afectadas__clasificacion__nombre').annotate(
-                                       cuenta_sectores=Count(
-                                           'entidades_afectadas__clasificacion__nombre'))
         sectoresU = urls.filter(~Q(entidades_afectadas=None),
-                                         ~Q(entidades_afectadas__clasificacion=None)).values(
-                                             'entidades_afectadas__clasificacion__nombre').annotate(
-                                                 cuenta_sectores=Count(
-                                                     'entidades_afectadas__clasificacion__nombre'))
+                                ~Q(entidades_afectadas__clasificacion=None),
+                                reportado=False).values(
+                                    'entidades_afectadas__clasificacion__nombre').annotate(
+                                        cuenta_sectores=Count(
+                                            'entidades_afectadas__clasificacion__nombre'))
         sectoresMU = MensajeURL.objects.filter(~Q(entidades_afectadas=None),
                                                ~Q(entidades_afectadas__clasificacion=None)).values(
                                                    'entidades_afectadas__clasificacion__nombre').annotate(
@@ -657,11 +655,10 @@ class ChartData(APIView):
             if not s['entidades_afectadas__clasificacion__nombre'] in x:
                 x.append(s['entidades_afectadas__clasificacion__nombre'])
                 y.append(s['cuenta_sectores'])
-        labels = x
         sectores_data = {
-            "labels":  labels,
+            "labels":  x,
             "default": y,
-            "colores": rand_color.generate(count=len(labels))
+            "colores": rand_color.generate(count=len(x))
         }
         
         dias = obtener_dias()
@@ -677,10 +674,10 @@ class ChartData(APIView):
             'default': num_detecciones
         }
 
-        entidadesU = urls.filter(~Q(entidades_afectadas=None)).values(
+        entidadesU = urls.filter(reportado=False).exclude(entidades_afectadas=None).values(
             'entidades_afectadas__nombre').annotate(
                 cuenta_entidades=Count('entidades_afectadas__nombre'))
-        entidadesMU = MensajeURL.objects.filter(~Q(entidades_afectadas=None)).values(
+        entidadesMU = MensajeURL.objects.exclude(entidades_afectadas=None).values(
             'entidades_afectadas__nombre').annotate(
                 cuenta_entidades=Count('entidades_afectadas__nombre'))
         x, y = [], []
@@ -701,7 +698,7 @@ class ChartData(APIView):
             "default": y,
             "colores": rand_color.generate(count=len(x))
         }
-        
+
         tiempo_promedio_reporte = []
         tiempo_promedio_postreporte = []
         for x in range(6, -1, -1):
@@ -712,8 +709,7 @@ class ChartData(APIView):
             tiempo_promedio_postreporte.append(tickets.filter(
                 ~Q(timestamp_desactivado=None)).annotate(
                     tiempo_reportado=F('timestamp_desactivado') - F('mensaje__timestamp')).aggregate(
-                        Avg('tiempo_reportado')).get('tiempo_reportado__avg', 0))
-                
+                        Avg('tiempo_reportado')).get('tiempo_reportado__avg', 0))                
         tiempo_reporte_data = {
             'default1': [delta_horas(x) if x else 0 for x in tiempo_promedio_reporte],
             'default2': [delta_horas(x) if x else 0 for x in tiempo_promedio_postreporte]
@@ -740,7 +736,42 @@ def agrega_imagen(fig, documento):
         os.remove(path)
     except Exception as e:
         log_x('Error: %s' % str(e), 'reportes.log')
-        
+
+def url_info(u, q, d):
+    if u.captura and hasattr(u.captura, 'file'):
+        d.add_picture(u.captura.file, width=Inches(4.0))
+    q = d.add_paragraph("")
+    q.add_run("URL: %s\n" % u.url)
+    q.add_run("Identificador: %s\n" % u.identificador)
+    q.add_run("IP: %s\n" % u.dominio.ip)
+    q.add_run("Código: %s\n" % u.codigo_estado)
+    q.add_run("Fecha de creación: %s\n" % u.timestamp_creacion)
+    if u.activo_redirecciones:
+        q.add_run("Fecha de activación: %s\n" % u.timestamp_reactivacion)
+    q.add_run("Detección: %s\n" % u.get_deteccion_display)                    
+    q.add_run("Título: %s\n" % u.titulo)
+    q.add_run("Estado: %s\n" % u.estado)                  
+    q.add_run("Entidades: %s\n" % u.entidades)                    
+    q.add_run("Ofuscacion: %s\n" % u.ofuscaciones)
+    q.add_run("Correos: %s\n" % u.dominio.correos_abuso)
+    q.add_run("ISP: %s\n" % u.dominio.isp)
+    q.add_run("País: %s\n\n" % u.dominio.pais.name)
+    q.add_run("ASN: %s\n" % u.dominio.asn)
+    q.add_run("Servidor: %s\n" % u.dominio.servidor)
+    q.add_run("RIR: %s\n" % u.dominio.rir)
+    q.add_run("Servidores DNS: %s\n" % u.dominio.servidores_dns)
+    if u.timestamp_deteccion:
+        q.add_run("Fecha de detección: %s\n" % u.timestamp_deteccion)
+    if u.timestamp_desactivado:
+        q.add_run("Fecha de desactivación: %s\n" % u.timestamp_desactivado)
+    if u.hash_archivo:
+        q.add_run("Hash MD5 de archivo: %s\n" % u.hash_archivo)
+    if u.codigo >= 300 and u.codigo < 400:
+        q.add_run("Redirección: %s\n" % u.redireccion)
+        r = u.get_redireccion
+        if r:
+            q.add_run("Redirección final: %s\n" % r.url)
+                     
 @login_required(login_url=reverse_lazy('login'))
 def createDoc(request):
     if request.method == 'POST':
@@ -764,13 +795,15 @@ def createDoc(request):
             p.add_run('SAAPM').bold = True
             inicio = form.cleaned_data['inicio']
             fin = form.cleaned_data['fin']
-            urlsU = Url.objects.filter(~Q(timestamp_deteccion=None),
-                                       reportado=False,                 
-                                       timestamp_deteccion__date__gte=inicio,
-                                       timestamp_deteccion__date__lte=fin)
-            urlsMU = MensajeURL.objects.filter(~Q(timestamp_deteccion=None),
-                                               timestamp_deteccion__date__gte=inicio,
-                                               timestamp_deteccion__date__lte=fin)
+            urlsU = Url.objects.exclude(timestamp_deteccion=None).filter(
+                reportado=False,
+                timestamp_deteccion__date__gte=inicio,
+                timestamp_deteccion__date__lte=fin
+            )
+            urlsMU = MensajeURL.objects.exclude(timestamp_deteccion=None).filter(
+                timestamp_deteccion__date__gte=inicio,
+                timestamp_deteccion__date__lte=fin
+            )
             document.add_heading('Periodo',level=1)
             q = document.add_paragraph('De: ')
             q.add_run(str(inicio)).bold = True
@@ -796,21 +829,24 @@ def createDoc(request):
                 agrega_imagen(fig, document)
 
             if top_sitios:
+                hoy = timezone.localtime(timezone.now())
+                finf = hoy if hoy.date() == fin else fin + timedelta(days=1)
                 top_sitiosU = urlsU.filter(Q(timestamp_desactivado=None) |
                                            Q(timestamp_desactivado__date__lte=fin)).annotate(
                                                tiempo_vida=(
-                                                   fin - F('timestamp_reactivacion')))
-                tsU = [(x.url, x.tiempo_vida) for x in top_sitiosU]
+                                                   finf - F('timestamp_reactivacion')))
+                tsU = [(x.url, delta_horas(x.tiempo_vida)) for x in top_sitiosU]
                 top_sitiosMU = urlsMU.filter(Q(timestamp_desactivado=None) |
                                              Q(timestamp_desactivado__date__lte=fin)).annotate(
                                                  tiempo_vida=(
-                                                   fin - F('timestamp_creacion_sitio')))
-                tsMU = [(x.url.url, x.tiempo_vida) for x in top_sitiosMU]
+                                                   finf - F('timestamp_creacion_sitio')))
+                tsMU = [(x.url.url, delta_horas(x.tiempo_vida)) for x in top_sitiosMU]
                 top_sitios = (tsMU + tsU)
                 top_sitios.sort(key=lambda x:x[1], reverse=True)
+                print(top_sitios)
                 top_sitios = top_sitios[:5]
                 y = [x[0] for x in top_sitios]
-                x = [delta_horas(x[1]) for x in top_sitios]
+                x = [x[1] for x in top_sitios]
                 y_pos = np.arange(len(x))
                 fig, ax = plt.subplots()
                 fig.subplots_adjust(left=0.5)
@@ -852,10 +888,10 @@ def createDoc(request):
                 agrega_imagen(fig, document)
                 
             if entidades:
-                entidadesU = urlsU.filter(~Q(entidades_afectadas=None)).values(
+                entidadesU = urlsU.exclude(entidades_afectadas=None).values(
                     'entidades_afectadas__nombre').annotate(
                         cuenta_entidades=Count('entidades_afectadas__nombre'))
-                entidadesMU = urlsMU.filter(~Q(entidades_afectadas=None)).values(
+                entidadesMU = urlsMU.exclude(entidades_afectadas=None).values(
                     'entidades_afectadas__nombre').annotate(
                         cuenta_entidades=Count('entidades_afectadas__nombre'))
                 x, y = [], []
@@ -927,12 +963,10 @@ def createDoc(request):
                 agrega_imagen(fig, document)
 
             if top_paises:                
-                paisesU = urlsU.filter(~Q(dominio__pais=None)).values(
-                    'dominio__pais').annotate(
-                        cuenta_pais=Count('dominio__pais'))
-                paisesMU = urlsMU.filter(~Q(pais=None)).values(
-                    'pais').annotate(
-                        cuenta_pais=Count('pais'))
+                paisesU = urlsU.exclude(dominio__pais=None).values('dominio__pais').annotate(
+                    cuenta_pais=Count('dominio__pais'))
+                paisesMU = urlsMU.exclude(pais=None).values('pais').annotate(
+                    cuenta_pais=Count('pais'))
                 l = []
                 for s in paisesMU:
                     try:
@@ -959,16 +993,14 @@ def createDoc(request):
                 agrega_imagen(fig, document)
                 
             if top_hosting:
-                hostingU = urlsU.filter(~Q(dominio__asn=None)).values(
-                    'dominio__asn').annotate(
-                        cuenta_asn=Count('dominio__asn'))
-                hostingMU = urlsMU.filter(~Q(asn=None)).values(
-                    'asn').annotate(
-                        cuenta_asn=Count('asn'))                
+                hostingU = urlsU.exclude(dominio__asn=None).values('dominio__asn').annotate(
+                    cuenta_asn=Count('dominio__asn'))
+                hostingMU = urlsMU.exclude(asn=None).values('asn').annotate(
+                    cuenta_asn=Count('asn'))    
                 l = []
                 for s in hostingMU:
                     try:
-                        n = next(t['dominio__asn'] for t in hostingU if
+                        n = next(t['cuenta__asn'] for t in hostingU if
                                  t['dominio__asn'] == s['asn'])
                     except:
                         n = 0
@@ -990,20 +1022,21 @@ def createDoc(request):
                 plt.xticks(y_pos, x, rotation=70)
                 ax.set_title('Top 10 servicios de hosting que hospedan phishing')
                 agrega_imagen(fig, document)
-
+                
             if urls_info:
-                activas = urls_activas(urls)
-                inactivas = urls_inactivas(urls)
-                redirecciones = urls_redirecciones(urls)
-                dominios = urls_dominios(urls)
-                q = document.add_paragraph("URLs analizadas: %d\n" % cuenta_urls(urls))
+                activas = urls_activas(urlsU)
+                inactivas = urls_inactivas(urlsU)
+                redirecciones = urls_redirecciones(urlsU)
+                dominios = urls_dominios(urlsU)
+                q.add_run("\n\nURLS NO REPORTADAS\n").bold = True
+                q = document.add_paragraph("URLs analizadas: %d\n" % cuenta_urls(urlsU))
                 q.add_run("URLs activas: %d\n" % len(activas))
                 q.add_run("URLs inactivas: %d\n" % len(inactivas))
                 q.add_run("URLs redirecciones: %d\n" % len(redirecciones))
                 q.add_run("Dominios afectados: %d" % len(dominios))
                 q = document.add_paragraph("")
-                q.add_run("Entidades:\n").bold = True            
-                for e in urls_entidades(urls):
+                q.add_run("Entidades:\n").bold = True
+                for e in urls_entidades(urlsU):
                     q.add_run("%s\n" % e)
                 q = document.add_paragraph("")
                 q.add_run("Dominios:\n").bold = True
@@ -1011,52 +1044,34 @@ def createDoc(request):
                     q.add_run("%s\n" % e)
                 q = document.add_paragraph("")
                 q.add_run("Países:\n").bold = True
-                for e in urls_paises(urls):
+                for e in urls_paises(urlsU):
                     q.add_run("%s\n" % e)
 
-                q = document.add_paragraph("")                
+                q = document.add_paragraph("")         
                 q.add_run("SITIOS ACTIVOS:\n").bold = True
                 for u in activas:
-                    if u.captura and hasattr(u.captura, 'file'):
-                        document.add_picture(u.captura.file, width=Inches(4.0))
-                    q = document.add_paragraph("")
-                    q.add_run("Identificador: %s\n" % u.identificador)
-                    q.add_run("Timestamp: %s\n" % u.timestamp)
-                    q.add_run("IP: %s\n" % u.dominio.ip)
-                    q.add_run("Código: %d\n" % u.codigo)
-                    q.add_run("URL: %s\n" % u.url)
-                    q.add_run("Reportado: %s\n" % u.reportado)
-                    q.add_run("Título: %s\n" % u.titulo)
-                    q.add_run("Entidades: %s\n" % u.entidades)
-                    q.add_run("Ofuscacion: %s\n" % u.ofuscaciones)
-                    q.add_run("Correos: %s\n" % u.dominio.correos_abuso)
-                    q.add_run("ASN: %s\n" % u.dominio.asn)
-                    q.add_run("País: %s\n\n" % u.dominio.pais)
-
+                    url_info(u, q, document)
                 q = document.add_paragraph("")
                 q.add_run("SITIOS INACTIVOS:\n\n").bold = True
                 for u in inactivas:
-                    q.add_run("Identificador: %s\n" % u.identificador)
-                    q.add_run("Timestamp: %s\n" % u.timestamp)
-                    q.add_run("IP: %s\n" % u.dominio.ip)
-                    q.add_run("Código: %d\n" % u.codigo)
-                    q.add_run("URL: %s\n" % u.url)
-                    q.add_run("Reportado: %s\n" % u.reportado)
-                    q.add_run("Correos: %s\n" % u.dominio.correos_abuso)
-                    q.add_run("ASN: %s\n" % u.dominio.asn)
-                    q.add_run("País: %s\n\n" % u.dominio.pais)
-
+                    url_info(u, q, document)
                 q = document.add_paragraph("")
                 q.add_run("REDIRECCIONES:\n\n").bold = True
                 for u in redirecciones:
-                    q.add_run("Identificador: %s\n" % u.identificador)
-                    q.add_run("Timestamp: %s\n" % u.timestamp)
-                    q.add_run("IP: %s\n" % u.dominio.ip)
-                    q.add_run("Código: %d\n" % u.codigo)
+                    url_info(u, q, document)
+                q = document.add_paragraph("")
+                q.add_run("URLS REPORTADAS:\n\n").bold = True
+                for u in urlsMU:
+                    q = document.add_paragraph("")
                     q.add_run("URL: %s\n" % u.url)
-                    q.add_run("Correos: %s\n" % u.dominio.correos_abuso)
-                    q.add_run("ASN: %s\n" % u.dominio.asn)
-                    q.add_run("País: %s\n\n" % u.dominio.pais)
+                    q.add_run("Fecha de activación: %s\n" % u.timestamp_creacion_sitio)
+                    if u.timestamp_desactivado:
+                        q.add_run("Fecha de desactivación: %s\n" % u.timestamp_desactivado)
+                    q.add_run("Fecha de detección: %s\n" % u.timestamp_deteccion)
+                    q.add_run("Entidades afectadas: %s\n" % u.entidades)
+                    q.add_run("País: %s\n" % u.pais)
+                    q.add_run("ASN: %s\n" % u.asn)
+                    
             response = HttpResponse(
                 content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
             )

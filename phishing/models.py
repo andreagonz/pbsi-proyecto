@@ -114,7 +114,7 @@ class Dominio(models.Model):
 
     @property
     def correos_abuso(self):
-        if len(self.correos.all()) == 0:
+        if self.correos.count() == 0:
             return ''
         s = []
         for x in self.correos.all():
@@ -123,7 +123,7 @@ class Dominio(models.Model):
 
     @property
     def servidores_dns(self):
-        if len(self.dns.all()) == 0:
+        if self.dns.count() == 0:
             return 'No identificados'
         s = []
         for x in self.dns.all():
@@ -211,7 +211,7 @@ class Url(models.Model):
 
     @property
     def entidades(self):
-        if len(self.entidades_afectadas.all()) == 0:
+        if self.entidades_afectadas.count() == 0:
             return 'No Identificadas'
         s = []
         for x in self.entidades_afectadas.all():
@@ -220,7 +220,7 @@ class Url(models.Model):
 
     @property
     def ofuscaciones(self):
-        if len(self.ofuscacion.all()) == 0:
+        if self.ofuscacion.count() == 0:
             return 'No Identificada'
         s = []
         for x in self.ofuscacion.all():
@@ -312,3 +312,12 @@ class MensajeURL(models.Model):
     
     class Meta:
         get_latest_by = 'mensaje__timestamp'        
+
+    @property
+    def entidades(self):
+        if self.entidades_afectadas.count() == 0:
+            return 'No Identificadas'
+        s = []
+        for x in self.entidades_afectadas.all():
+            s.append(x.nombre.title() + (' (%s)' % x.clasificacion) if x.clasificacion else '')
+        return ', '.join(s)

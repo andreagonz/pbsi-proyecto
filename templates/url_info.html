@@ -17,8 +17,8 @@
           Código: {{ url.codigo_estado }}<br/>
           Estado: {{ url.estado }} <br/>
           Detección: {{ url.get_deteccion_display }}<br/>
-          {% if url.activo %}Entidades afectadas: {{ url.entidades }}<br/>{% endif %}
-          {% if url.activo %}Ofuscación: {{ url.ofuscaciones }}<br/>{% endif %}
+          Entidades afectadas: {{ url.entidades }}<br/>
+          Ofuscación: {{ url.ofuscaciones }}<br/>
           {% if url.redireccion %}Redirección: {{ url.redireccion }}<br/>{% endif %}
           {% if url.get_redireccion %}
             Redirección final:

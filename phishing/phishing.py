@@ -11,7 +11,7 @@ from lxml import html
 import hashlib
 from bs4 import BeautifulSoup, Comment
 from django.conf import settings
-from .models import Url, Entidades, Correo, Dominio, Ofuscacion, DNS, RIR
+from .models import *
 from django.utils import timezone
 from django.core.files import File
 from virus_total_apis import PublicApi as VirusTotalPublicApi
@@ -256,26 +256,28 @@ def desactiva_redirecciones(url, ts):
         return
     url.timestamp_desactivado = ts
     url.save()
-    mu = MensajeURL.filter(url__pk=url.pk).latest()
-    mu.timestamp_desactivado = ts
-    mu.save()
+    mu = MensajeURL.objects.filter(url__pk=url.pk)
+    if len(mu) > 0:
+        m = mu.latest()
+        m.timestamp_desactivado = ts
+        m.save()
     for p in Url.objects.filter(redireccion=url.url):
         desactiva_redirecciones(p, ts)
 
 def entidades_redirecciones(url, entidades):
-    if not entidades or url.entidades_afectadas:
+    if len(entidades) == 0:
         return
     for x in entidades:
-        sitio.entidades_afectadas.add(x)
+        url.entidades_afectadas.add(x)
     url.save()
     for p in Url.objects.filter(redireccion=url.url):
         entidades_redirecciones(p, entidades)
 
 def ofuscacion_redirecciones(url, ofuscaciones):
-    if not ofuscaciones or url.ofuscacion:
+    if len(ofuscaciones) == 0:
         return
     for x in ofuscaciones:
-        sitio.ofuscacion.add(x)
+        url.ofuscacion.add(x)
     url.save()
     for p in Url.objects.filter(redireccion=url.url):
         ofuscacion_redirecciones(p, ofuscaciones)
@@ -309,11 +311,11 @@ def verifica_url_aux(sitios, sitio, existe, entidades, ofuscaciones,
         if (sitio.deteccion == 'I' or malicioso) and sitio.activo and not (malicioso and mime != 'text/html'):
             if es_phishing(sitio.url):
                 deteccion_redirecciones(sitio, 'P', timezone.localtime(timezone.now()))
-                ofuscaciones = encuentra_ofuscacion(ofuscaciones, texto)
-                ofuscacion_redirecciones(sitio, ofuscaciones)
-        if not sitio.entidades_afectadas and sitio.activo and sitio.deteccion != 'M':
+        if not existe and sitio.activo and sitio.deteccion != 'M':
             entidades = obten_entidades_afectadas(entidades, texto)
             entidades_redirecciones(sitio, entidades)
+            ofuscaciones = encuentra_ofuscacion(ofuscaciones, texto)
+            ofuscacion_redirecciones(sitio, ofuscaciones)
         # if sitio.activo and sitio.deteccion == 'I':
         # heuristica_phishing(sitio)
         if sitio.codigo < 0:
@@ -334,6 +336,9 @@ def verifica_url_aux(sitios, sitio, existe, entidades, ofuscaciones,
         r = sitio.get_redireccion
         if r:
             sitio.deteccion = r.deteccion
+            sitio.timestamp_deteccion = r.timestamp_deteccion
+        if not existe:
+            sitio.entidades_afectadas.add(*r.entidades_afectadas.all())
     sitio.save()
 
 def correos_whois(w):
