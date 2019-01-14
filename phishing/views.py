@@ -560,23 +560,58 @@ class ChartData(APIView):
     def get(self, request, format=None):
         rand_color = randomcolor.RandomColor()
         urls = Url.objects.exclude(Q(deteccion='I')|Q(deteccion='N'))
-        top_paises = urls.filter(~Q(dominio__pais=None)).values('dominio__pais').annotate(
-            cuenta_pais=Count('dominio__pais')).order_by('-cuenta_pais')[:5]
+
+        paisesU = urls.filter(~Q(dominio__pais=None)).values(
+            'dominio__pais').annotate(
+                cuenta_pais=Count('dominio__pais'))
+        paisesMU = MensajeURL.objects.filter(~Q(pais=None)).values(
+            'pais').annotate(
+                cuenta_pais=Count('pais'))
+        l = []
+        for s in paisesMU:
+            try:
+                n = next(t['cuenta_pais'] for t in paisesU if
+                         t['dominio__pais'] == s['pais'])
+            except:
+                n = 0
+            l.append((s['pais'], s['cuenta_pais'] + n))
+        for s in paisesU:
+            try:
+                n = next(1 for t in l if t[0] == s['dominio__pais'])
+            except:                        
+                l.append((s['dominio__pais'], s['cuenta_pais']))
+        l.sort(key=lambda x:x[1], reverse=True)
+        l = l[:5]
         top_paises_data = {
-            "labels": [p['dominio__pais'] for p in top_paises],
-            "default": [p['cuenta_pais'] for p in top_paises]
+            "labels": [a[0] for a in l],
+            "default": [a[1] for a in l]
         }
 
-        top_hosting = urls.filter(~Q(dominio__asn=None)).values('dominio__asn').annotate(
-            cuenta_asn=Count('dominio__asn')).order_by('-cuenta_asn')[:5]
+        hostingU = urls.filter(~Q(dominio__asn=None)).values(
+            'dominio__asn').annotate(cuenta_asn=Count('dominio__asn'))
+        hostingMU = MensajeURL.objects.filter(~Q(asn=None)).values(
+            'asn').annotate(cuenta_asn=Count('asn'))
+        l = []
+        for s in hostingMU:
+            try:
+                n = next(t['dominio__asn'] for t in hostingU if
+                         t['dominio__asn'] == s['asn'])
+            except:
+                n = 0
+            l.append((s['asn'], s['cuenta_asn'] + n))
+        for s in hostingU:
+            try:
+                n = next(1 for t in l if t[0] == s['dominio__asn'])
+            except:                        
+                l.append((s['dominio__asn'], s['cuenta_asn']))
+        l.sort(key=lambda x:x[1], reverse=True)
+        l = l[:5]
         top_hosting_data = {
-            "labels": [p['dominio__asn'] for p in top_hosting],
-            "default": [p['cuenta_asn'] for p in top_hosting]
+            "labels": [a[0] for a in l],
+            "default": [a[1] for a in l]
         }
-
-        sitios_activos = 0
-        for x in urls:
-            sitios_activos += 1 if x.activo_redirecciones else 0
+        
+        sitios_activos = urls.filter(timestamp_desactivado=None).count()
         sitios_reportados = MensajeURL.objects.all().count()
         sitios_detectados = urls.filter(reportado=False).count() + MensajeURL.objects.all().count()
         sitios_data = {
@@ -589,8 +624,6 @@ class ChartData(APIView):
                                             tiempo_vida=(hoy_tiempo -
                                                 F('timestamp_reactivacion'))).order_by(
                                                     '-tiempo_vida')[:5]
-        for x in top_sitios:
-            print (x.tiempo_vida)
         top_sitios_data = {
             'labels': [x.url for x in top_sitios],
             'default': [delta_horas(x.tiempo_vida) for x in top_sitios]
@@ -601,10 +634,33 @@ class ChartData(APIView):
                                    'entidades_afectadas__clasificacion__nombre').annotate(
                                        cuenta_sectores=Count(
                                            'entidades_afectadas__clasificacion__nombre'))
-        labels = [e['entidades_afectadas__clasificacion__nombre'] for e in sectores]
+        sectoresU = urls.filter(~Q(entidades_afectadas=None),
+                                         ~Q(entidades_afectadas__clasificacion=None)).values(
+                                             'entidades_afectadas__clasificacion__nombre').annotate(
+                                                 cuenta_sectores=Count(
+                                                     'entidades_afectadas__clasificacion__nombre'))
+        sectoresMU = MensajeURL.objects.filter(~Q(entidades_afectadas=None),
+                                               ~Q(entidades_afectadas__clasificacion=None)).values(
+                                                   'entidades_afectadas__clasificacion__nombre').annotate(
+                                                       cuenta_sectores=Count(
+                                                           'entidades_afectadas__clasificacion__nombre'))
+        x, y = [], []
+        for s in sectoresMU:
+            try:
+                n = next(t['cuenta_sectores'] for t in sectoresU if
+                         t['entidades_afectadas__clasificacion__nombre'] == s['entidades_afectadas__clasificacion__nombre'])
+            except:
+                n = 0
+                x.append(s['entidades_afectadas__clasificacion__nombre'])
+                y.append(s['cuenta_sectores'] + n)
+        for s in sectoresU:
+            if not s['entidades_afectadas__clasificacion__nombre'] in x:
+                x.append(s['entidades_afectadas__clasificacion__nombre'])
+                y.append(s['cuenta_sectores'])
+        labels = x
         sectores_data = {
             "labels":  labels,
-            "default": [e['cuenta_sectores'] for e in sectores],
+            "default": y,
             "colores": rand_color.generate(count=len(labels))
         }
         
@@ -620,20 +676,34 @@ class ChartData(APIView):
             'labels': dias,
             'default': num_detecciones
         }
-        
-        entidades = urls.filter(~Q(entidades_afectadas=None)).values(
+
+        entidadesU = urls.filter(~Q(entidades_afectadas=None)).values(
             'entidades_afectadas__nombre').annotate(
                 cuenta_entidades=Count('entidades_afectadas__nombre'))
-        labels = [e['entidades_afectadas__nombre'] for e in entidades]
+        entidadesMU = MensajeURL.objects.filter(~Q(entidades_afectadas=None)).values(
+            'entidades_afectadas__nombre').annotate(
+                cuenta_entidades=Count('entidades_afectadas__nombre'))
+        x, y = [], []
+        for s in entidadesMU:
+            try:
+                n = next(t['cuenta_entidades'] for t in entidadesU if
+                         t['entidades_afectadas__nombre'] == s['entidades_afectadas__nombre'])
+            except:
+                n = 0
+                x.append(s['entidades_afectadas__nombre'])
+                y.append(s['cuenta_entidades'] + n)
+        for s in entidadesU:
+            if not s['entidades_afectadas__nombre'] in x:
+                x.append(s['entidades_afectadas__nombre'])
+                y.append(s['cuenta_entidades'])
         entidades_data = {
-            "labels":  labels,
-            "default": [e['cuenta_entidades'] for e in entidades],
-            "colores": rand_color.generate(count=len(labels))
+            "labels":  x,
+            "default": y,
+            "colores": rand_color.generate(count=len(x))
         }
         
         tiempo_promedio_reporte = []
         tiempo_promedio_postreporte = []
-
         for x in range(6, -1, -1):
             tickets = MensajeURL.objects.filter(mensaje__timestamp__date=hoy - datetime.timedelta(days=x))
             tiempo_promedio_reporte.append(tickets.annotate(
@@ -695,11 +765,12 @@ def createDoc(request):
             inicio = form.cleaned_data['inicio']
             fin = form.cleaned_data['fin']
             urlsU = Url.objects.filter(~Q(timestamp_deteccion=None),
-                                       reportado=False,                                       
+                                       reportado=False,                 
                                        timestamp_deteccion__date__gte=inicio,
                                        timestamp_deteccion__date__lte=fin)
-            urlsMU = MensajeURL.objects.filter(timestamp_deteccion__date__gte=inicio,
-                                             timestamp_deteccion__date__lte=fin)
+            urlsMU = MensajeURL.objects.filter(~Q(timestamp_deteccion=None),
+                                               timestamp_deteccion__date__gte=inicio,
+                                               timestamp_deteccion__date__lte=fin)
             document.add_heading('Periodo',level=1)
             q = document.add_paragraph('De: ')
             q.add_run(str(inicio)).bold = True
@@ -708,13 +779,10 @@ def createDoc(request):
             q.add_run(str(fin)).bold = True
 
             if sitios:
-                sitios_activos = 0
-                for x in urlsU:
-                    sitios_activos += 1 if x.timestamp_desactivado and \
-                                      x.timestamp_desactivado < fin else 0
-                for x in urlsMU:
-                    sitios_activos += 1 if x.timestamp_desactivado and \
-                                      x.timestamp_desactivado < fin else 0
+                sitios_activos = urlsU.filter(Q(timestamp_desactivado=None) |
+                                              Q(timestamp_desactivado__date__lt=fin)).count() + \
+                                              urlsMU.filter(Q(timestamp_desactivado=None) |
+                                                            Q(timestamp_desactivado__date__lt=fin)).count()
                 sitios_reportados = urlsMU.count()
                 sitios_detectados = urlsU.count() + urlsMU.count()
                 x = ['Activos', 'Reportados', 'Detectados']
@@ -758,13 +826,24 @@ def createDoc(request):
                                              'entidades_afectadas__clasificacion__nombre').annotate(
                                                  cuenta_sectores=Count(
                                                      'entidades_afectadas__clasificacion__nombre'))
-                sectoresMU = urlsMU.filter(~Q(url__entidades_afectadas=None),
-                                           ~Q(url__entidades_afectadas__clasificacion=None)).values(
-                                               'url__entidades_afectadas__clasificacion__nombre').annotate(
+                sectoresMU = urlsMU.filter(~Q(entidades_afectadas=None),
+                                           ~Q(entidades_afectadas__clasificacion=None)).values(
+                                               'entidades_afectadas__clasificacion__nombre').annotate(
                                                    cuenta_sectores=Count(
-                                                       'url__entidades_afectadas__clasificacion__nombre'))
-                x = [e['entidades_afectadas__clasificacion__nombre'] for e in sectoresU]
-                y = [e['cuenta_sectores'] for e in sectoresU]
+                                                       'entidades_afectadas__clasificacion__nombre'))
+                x, y = [], []
+                for s in sectoresMU:
+                    try:
+                        n = next(t['cuenta_sectores'] for t in sectoresU if
+                                 t['entidades_afectadas__clasificacion__nombre'] == s['entidades_afectadas__clasificacion__nombre'])
+                    except:
+                        n = 0
+                    x.append(s['entidades_afectadas__clasificacion__nombre'])
+                    y.append(s['cuenta_sectores'] + n)
+                for s in sectoresU:
+                    if not s['entidades_afectadas__clasificacion__nombre'] in x:
+                        x.append(s['entidades_afectadas__clasificacion__nombre'])
+                        y.append(s['cuenta_sectores'])
                 colores = rand_color.generate(count=len(x))
                 fig, ax = plt.subplots()
                 ax.pie(y, labels=x, colors=colores, autopct='%1.1f%%', startangle=90)
@@ -773,11 +852,25 @@ def createDoc(request):
                 agrega_imagen(fig, document)
                 
             if entidades:
-                entidades = urls.filter(~Q(entidades_afectadas=None)).values(
+                entidadesU = urlsU.filter(~Q(entidades_afectadas=None)).values(
                     'entidades_afectadas__nombre').annotate(
                         cuenta_entidades=Count('entidades_afectadas__nombre'))
-                x = [e['entidades_afectadas__nombre'] for e in entidades]
-                y = [e['cuenta_entidades'] for e in entidades]
+                entidadesMU = urlsMU.filter(~Q(entidades_afectadas=None)).values(
+                    'entidades_afectadas__nombre').annotate(
+                        cuenta_entidades=Count('entidades_afectadas__nombre'))
+                x, y = [], []
+                for s in entidadesMU:
+                    try:
+                        n = next(t['cuenta_entidades'] for t in entidadesU if
+                                 t['entidades_afectadas__nombre'] == s['entidades_afectadas__nombre'])
+                    except:
+                        n = 0
+                    x.append(s['entidades_afectadas__nombre'])
+                    y.append(s['cuenta_entidades'] + n)
+                for s in entidadesU:
+                    if not s['entidades_afectadas__nombre'] in x:
+                        x.append(s['entidades_afectadas__nombre'])
+                        y.append(s['cuenta_entidades'])
                 colores = rand_color.generate(count=len(x))
                 fig, ax = plt.subplots()
                 ax.pie(y, labels=x, colors=colores, autopct='%1.1f%%', startangle=90)
@@ -790,7 +883,9 @@ def createDoc(request):
                 fechas = [inicio + datetime.timedelta(days=i) for i in range(ndias + 1)]
                 y = []
                 for d in fechas:
-                    y.append(urls.filter(timestamp_deteccion__date=d).count())
+                    y.append(urlsU.filter(timestamp_deteccion__date=d).count() +
+                             urlsMU.filter(timestamp_deteccion__date=d).count()
+                    )
                 x = [str(f) for f in fechas]
                 y_pos = np.arange(len(x))
                 fig, ax = plt.subplots()
@@ -809,17 +904,14 @@ def createDoc(request):
                 tiempo_promedio_reporte = []
                 tiempo_promedio_postreporte = []
                 for d in fechas:
-                    tiempo_promedio_reporte.append(urls.filter(
-                        ~Q(timestamp_reportado=None),
-                        timestamp_reportado__date=d).annotate(tiempo_reportado=(
-                            F('timestamp_reportado') - F('timestamp_creacion'))).aggregate(
+                    tickets = urlsMU.filter(mensaje__timestamp__date=d)
+                    tiempo_promedio_reporte.append(tickets.annotate(
+                        tiempo_reportado=F('mensaje__timestamp') - F('timestamp_creacion_sitio')).aggregate(
+                            Avg('tiempo_reportado')).get('tiempo_reportado__avg', 0))
+                    tiempo_promedio_postreporte.append(tickets.filter(
+                        ~Q(timestamp_desactivado=None)).annotate(
+                            tiempo_reportado=F('timestamp_desactivado') - F('mensaje__timestamp')).aggregate(
                                 Avg('tiempo_reportado')).get('tiempo_reportado__avg', 0))
-                    tiempo_promedio_postreporte.append(urls.filter(
-                        ~Q(timestamp_reportado=None), ~Q(timestamp_desactivado=None),
-                        timestamp_reportado__date=d).annotate(
-                            tiempo_reportado=(F('timestamp_desactivado') -
-                                      F('timestamp_reportado'))).aggregate(
-                                          Avg('tiempo_reportado')).get('tiempo_reportado__avg', 0))
                 y1 = [delta_horas(x) if x else 0 for x in tiempo_promedio_reporte]
                 y2 = [delta_horas(x) if x else 0 for x in tiempo_promedio_postreporte]
                 fig, ax = plt.subplots()
@@ -834,12 +926,30 @@ def createDoc(request):
                 ax.legend(loc='best')
                 agrega_imagen(fig, document)
 
-            if top_paises:
-                top_paises = urls.filter(~Q(dominio__pais=None)).values(
+            if top_paises:                
+                paisesU = urlsU.filter(~Q(dominio__pais=None)).values(
                     'dominio__pais').annotate(
-                        cuenta_pais=Count('dominio__pais')).order_by('-cuenta_pais')[:10]
-                x = [p['dominio__pais'] for p in top_paises]
-                y = [p['cuenta_pais'] for p in top_paises]
+                        cuenta_pais=Count('dominio__pais'))
+                paisesMU = urlsMU.filter(~Q(pais=None)).values(
+                    'pais').annotate(
+                        cuenta_pais=Count('pais'))
+                l = []
+                for s in paisesMU:
+                    try:
+                        n = next(t['cuenta_pais'] for t in paisesU if
+                                 t['dominio__pais'] == s['pais'])
+                    except:
+                        n = 0
+                    l.append((s['pais'], s['cuenta_pais'] + n))
+                for s in paisesU:
+                    try:
+                        n = next(1 for t in l if t[0] == s['dominio__pais'])
+                    except:                        
+                        l.append((s['dominio__pais'], s['cuenta_pais']))
+                l.sort(key=lambda x:x[1], reverse=True)
+                l = l[:10]
+                x = [a[0] for a in l]
+                y = [a[1] for a in l]
                 fig, ax = plt.subplots()
                 ax.set_ylabel('Número de sitios')
                 y_pos = np.arange(len(x))
@@ -849,11 +959,29 @@ def createDoc(request):
                 agrega_imagen(fig, document)
                 
             if top_hosting:
-                top_hosting = urls.filter(~Q(dominio__asn=None)).values(
+                hostingU = urlsU.filter(~Q(dominio__asn=None)).values(
                     'dominio__asn').annotate(
-                        cuenta_asn=Count('dominio__asn')).order_by('-cuenta_asn')[:10]
-                x =  [p['dominio__asn'] for p in top_hosting]
-                y = [p['cuenta_asn'] for p in top_hosting]
+                        cuenta_asn=Count('dominio__asn'))
+                hostingMU = urlsMU.filter(~Q(asn=None)).values(
+                    'asn').annotate(
+                        cuenta_asn=Count('asn'))                
+                l = []
+                for s in hostingMU:
+                    try:
+                        n = next(t['dominio__asn'] for t in hostingU if
+                                 t['dominio__asn'] == s['asn'])
+                    except:
+                        n = 0
+                    l.append((s['asn'], s['cuenta_asn'] + n))
+                for s in hostingU:
+                    try:
+                        n = next(1 for t in l if t[0] == s['dominio__asn'])
+                    except:                        
+                        l.append((s['dominio__asn'], s['cuenta_asn']))
+                l.sort(key=lambda x:x[1], reverse=True)
+                l = l[:10]
+                x = [a[0] for a in l]
+                y = [a[1] for a in l]                
                 fig, ax = plt.subplots()
                 fig.subplots_adjust(bottom=0.5)
                 ax.set_ylabel('Número de sitios')

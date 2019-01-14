@@ -311,5 +311,4 @@ class MensajeURL(models.Model):
     asn = models.CharField(max_length=128, null=True)
     
     class Meta:
-        get_latest_by = 'mensaje__timestamp'
-        
+        get_latest_by = 'mensaje__timestamp'        

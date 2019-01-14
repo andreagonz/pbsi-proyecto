@@ -15,6 +15,7 @@ from .models import Url, Entidades, Correo, Dominio, Ofuscacion, DNS, RIR
 from django.utils import timezone
 from django.core.files import File
 from virus_total_apis import PublicApi as VirusTotalPublicApi
+import magic
 
 def log_phishing(mensaje):
     t = timezone.localtime(timezone.now())
@@ -190,9 +191,9 @@ def guarda_captura(url, out, proxy=None):
     se guarda el resultado en out
     """
     if proxy is None:
-        process = Popen('xvfb-run -a --server-args="-screen 0, 1280x1200x24" cutycapt --url="%s" --out="%s" --min-width=400 --min-height=300 --max-wait=25000' % (url, out), shell=True, stdout=PIPE, stderr=PIPE)
+        process = Popen('xvfb-run -a --server-args="-screen 0, 1280x1200x24" cutycapt --url="%s" --out="%s" --min-width=800 --min-height=600 --max-wait=25000' % (url, out), shell=True, stdout=PIPE, stderr=PIPE)
     else:
-        process = Popen('xvfb-run -a --server-args="-screen 0, 1280x1200x24" cutycapt --url="%s" --out="%s" --min-width=400 --min-height=300 --max-wait=25000 --http-proxy="%s"' % (url, out, proxy), shell=True, stdout=PIPE, stderr=PIPE)
+        process = Popen('xvfb-run -a --server-args="-screen 0, 1280x1200x24" cutycapt --url="%s" --out="%s" --min-width=800 --min-height=600 --max-wait=25000 --http-proxy="%s"' % (url, out, proxy), shell=True, stdout=PIPE, stderr=PIPE)
     stdout, stderr = process.communicate()
     return not stderr is None
 
@@ -289,7 +290,8 @@ def verifica_url_aux(sitios, sitio, existe, entidades, ofuscaciones,
         sitio.codigo, texto, sitio.titulo, content, existe = hacer_peticion(sitios, sesion, sitio, entidades, ofuscaciones,
                                                                             dominios_inactivos, max_redir, entidades_afectadas, existe)
         if sitio.codigo_anterior >= 200 and sitio.codigo_anterior < 400 and sitio.codigo >= 400:
-            desactiva_redirecciones(sitio, timezone.localtime(timezone.now()))        
+            desactiva_redirecciones(sitio, timezone.localtime(timezone.now()))
+        mime = ''
         if sitio.activo and content:
             nombre = 'archivos/%s.txt' % sitio.identificador
             archivo = guarda_archivo(content, nombre)
@@ -297,10 +299,14 @@ def verifica_url_aux(sitios, sitio, existe, entidades, ofuscaciones,
                 with open(archivo, 'rb') as f:
                     sitio.archivo.save(os.path.basename(archivo), File(f), True)
                 sitio.hash_archivo = md5_archivo(archivo)
+                magia = magic.Magic(mime=True)
+                mime = magia.from_file(archivo)
+        malicioso = False
         if not existe and sitio.activo and sitio.hash_archivo:
             if escanear_archivo(sitio.hash_archivo) > 0:
                 deteccion_redirecciones(sitio, 'M', timezone.localtime(timezone.now()))
-        if sitio.activo and sitio.deteccion == 'I':
+                malicioso = True
+        if (sitio.deteccion == 'I' or malicioso) and sitio.activo and not (malicioso and mime != 'text/html'):
             if es_phishing(sitio.url):
                 deteccion_redirecciones(sitio, 'P', timezone.localtime(timezone.now()))
                 ofuscaciones = encuentra_ofuscacion(ofuscaciones, texto)
@@ -324,6 +330,10 @@ def verifica_url_aux(sitios, sitio, existe, entidades, ofuscaciones,
                     sitio.captura.save(os.path.basename(captura), File(f), True)
     else:
         sitio.codigo = -1
+    if sitio.codigo < 400 and sitio.codigo >= 300:
+        r = sitio.get_redireccion
+        if r:
+            sitio.deteccion = r.deteccion
     sitio.save()
 
 def correos_whois(w):
