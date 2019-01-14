@@ -19,9 +19,10 @@
             {% endfor %}
           </ul>
         </li>
-    {% empty %}
-      <h4>No hay ninguna URL por mostrar</h4>        
-    {% endfor %}
-    
+      {% empty %}
+        <div class="uk-alert-warning" uk-alert>
+          <p>No hay ninguna URL por mostrar</p>
+        </div>       
+      {% endfor %}    
     </ul>  
 {% endblock %}

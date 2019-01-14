@@ -28,4 +28,5 @@ urlpatterns = [
     path('doc/', DocumentView.as_view(), name='doc'),
     path('creaDoc/',createDoc, name='creadoc'),
     path('entrada/', entrada, name='entrada'),
+    path('ticket/<int:pk>', TicketView.as_view(), name='ticket'),
 ]

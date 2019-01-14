@@ -123,10 +123,18 @@ def hacer_peticion(sitios, sesion, sitio, entidades, ofuscaciones, dominios_inac
         codigo = req.status_code
         if existe and codigo < 400 and sitio.timestamp_desactivado:
             sitio.timestamp_desactivado = None
-            sitio.timestamp_reportado = None
+            sitio.timestamp_deteccion = None
+            sitio.timestamp_reactivacion = timezone.localtime(timezone.now())
             sitio.ignorado = False
+            sitio.reportado = False
+            sitio.titulo = None
+            sitio.ofuscacion.clear()
+            sitio.hash_archivo = None
+            sitio.entidades_afectadas.clear()
+            sitio.redireccion = None
             existe = False
             sitio.deteccion = 'I'
+            sitio.save()
         if codigo < 400 and codigo >= 300:
             redireccion = urljoin(sitio.url, req.headers['location'])
             if redireccion != sitio.url and max_redir > 0:
@@ -247,9 +255,30 @@ def desactiva_redirecciones(url, ts):
         return
     url.timestamp_desactivado = ts
     url.save()
+    mu = MensajeURL.filter(url__pk=url.pk).latest()
+    mu.timestamp_desactivado = ts
+    mu.save()
     for p in Url.objects.filter(redireccion=url.url):
         desactiva_redirecciones(p, ts)
 
+def entidades_redirecciones(url, entidades):
+    if not entidades or url.entidades_afectadas:
+        return
+    for x in entidades:
+        sitio.entidades_afectadas.add(x)
+    url.save()
+    for p in Url.objects.filter(redireccion=url.url):
+        entidades_redirecciones(p, entidades)
+
+def ofuscacion_redirecciones(url, ofuscaciones):
+    if not ofuscaciones or url.ofuscacion:
+        return
+    for x in ofuscaciones:
+        sitio.ofuscacion.add(x)
+    url.save()
+    for p in Url.objects.filter(redireccion=url.url):
+        ofuscacion_redirecciones(p, ofuscaciones)
+    
 def verifica_url_aux(sitios, sitio, existe, entidades, ofuscaciones,
                      dominios_inactivos, sesion, max_redir, entidades_afectadas, monitoreo=False):
     texto = ''
@@ -274,11 +303,11 @@ def verifica_url_aux(sitios, sitio, existe, entidades, ofuscaciones,
         if sitio.activo and sitio.deteccion == 'I':
             if es_phishing(sitio.url):
                 deteccion_redirecciones(sitio, 'P', timezone.localtime(timezone.now()))
-                for x in encuentra_ofuscacion(ofuscaciones, texto):
-                    sitio.ofuscacion.add(x)
-        if entidades_afectadas is None and sitio.activo and sitio.deteccion != 'M':
-            for x in obten_entidades_afectadas(entidades, texto):
-                sitio.entidades_afectadas.add(x)
+                ofuscaciones = encuentra_ofuscacion(ofuscaciones, texto)
+                ofuscacion_redirecciones(sitio, ofuscaciones)
+        if not sitio.entidades_afectadas and sitio.activo and sitio.deteccion != 'M':
+            entidades = obten_entidades_afectadas(entidades, texto)
+            entidades_redirecciones(sitio, entidades)
         # if sitio.activo and sitio.deteccion == 'I':
         # heuristica_phishing(sitio)
         if sitio.codigo < 0:
@@ -420,9 +449,12 @@ def obten_sitio(url, sesion, proxy=None, dominio=None):
         if not dominio:
             d = obten_dominio(dom, u.scheme, sesion, proxy=proxy, monitoreo=False)
         if d:
-            sitio = Url(url=url, identificador=genera_id(url), dominio=d)
+            sitio = Url(url=url, identificador=genera_id(url), dominio=d,
+                        timestamp_reactivacion=timezone.localtime(timezone.now()))
     finally:
         if sitio:
+            sitio.save()
+            sitio.timestamp_reactivacion = sitio.timestamp_creacion
             sitio.save()
         return sitio, existe
 

@@ -96,8 +96,8 @@ class Dominio(models.Model):
     
     @property
     def urls_activas(self):
-        urls = self.url_set.filter(timestamp_reportado=None, ignorado=False, codigo__lt=400, codigo__gte=200)
-        return urls.filter(pk__in=[x.pk for x in urls if x.es_activa])
+        urls = self.url_set.filter(reportado=False, ignorado=False, codigo__lt=400, codigo__gte=200)
+        return urls.filter(pk__in=[x.pk for x in urls if x.activo_redirecciones])
 
     @property
     def activo(self):
@@ -143,8 +143,8 @@ class Url(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     timestamp_creacion = models.DateTimeField(auto_now_add=True)
     timestamp_deteccion = models.DateTimeField(null=True)
-    timestamp_reportado = models.DateTimeField(null=True)
     timestamp_desactivado = models.DateTimeField(null=True)
+    timestamp_reactivacion = models.DateTimeField()
     codigo = models.IntegerField(default=-1)
     codigo_anterior = models.IntegerField(default=-1)
     titulo = models.CharField(max_length=512, null=True)
@@ -156,6 +156,7 @@ class Url(models.Model):
     hash_archivo = models.CharField(max_length=32, null=True)
     entidades_afectadas = models.ManyToManyField(Entidades)
     ignorado = models.BooleanField(default=False)
+    reportado = models.BooleanField(default=False)
     dominio = models.ForeignKey(Dominio, on_delete=models.PROTECT)
     archivo = models.FileField(storage=OverwriteStorage(),
                                upload_to='archivos', blank=True, null=True)
@@ -241,37 +242,25 @@ class Url(models.Model):
     @property
     def activo(self):
         return self.codigo >= 200 and self.codigo < 300
-
-    @property
-    def reportado(self):
-        return not self.timestamp_reportado is None
     
     @property
-    def es_activa(self):
-        if self.codigo < 300 and self.codigo >= 200:
-            return True
-        url = self.get_redireccion
-        return not url is None and url.activo
+    def activo_redirecciones(self):
+        if self.codigo >= 400 or self.codigo < 200:
+            return False
+        url = self
+        if self.codigo >= 300:
+            url = self.get_redireccion            
+        return url and url.activo
         
     @property
     def estado(self):
-        if self.codigo >= 200 and self.codigo < 300:
+        if self.activo:
             return 'Sitio activo'
         elif self.codigo >= 300 and self.codigo < 400:
-            if self.es_activa:
+            if self.activo_redirecciones:
                 return 'Redirección activa'
             return 'Redirección inactiva'
         return 'Sitio inactivo'
-
-    @property
-    def ticket(self):
-        if len(self.mensaje_set.all()) > 0:
-            return ', '.join([x.ticket for x in self.mensaje_set.all()])
-        return ''
-
-    @property
-    def reportado(self):
-        return not self.timestamp_reportado is None
     
     def __str__(self):
         return self.url
@@ -301,8 +290,26 @@ class Proxy(models.Model):
         s.append('' if self.http is None else '%s' % self.http)
         s.append('' if self.https is None else '%s' % self.https)
         return ', '.join(s)
-
+    
 class Mensaje(models.Model):
 
     ticket = models.CharField(max_length=25, unique=True)
-    urls = models.ManyToManyField(Url)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return self.ticket
+
+class MensajeURL(models.Model):
+
+    url = models.ForeignKey(Url, on_delete=models.CASCADE)
+    mensaje = models.ForeignKey(Mensaje, on_delete=models.CASCADE)
+    timestamp_creacion_sitio = models.DateTimeField()
+    timestamp_desactivado = models.DateTimeField(null=True)
+    timestamp_deteccion = models.DateTimeField()
+    entidades_afectadas = models.ManyToManyField(Entidades)
+    pais = CountryField(null=True)
+    asn = models.CharField(max_length=128, null=True)
+    
+    class Meta:
+        get_latest_by = 'mensaje__timestamp'
+        

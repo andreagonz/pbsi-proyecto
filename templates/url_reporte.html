@@ -36,15 +36,20 @@
       <span class='uk-text-bold'>Servidor:</span> {{ url.dominio.servidor }}<br/>
       <span class='uk-text-bold'>RIR:</span> {{ url.dominio.rir }}<br/>
       <span class='uk-text-bold'>Servidores DNS:</span> {{ url.dominio.servidores_dns }}
-      {% if url.ticket %}<br/><span class='uk-text-bold'>Ticket:</span> {{ url.ticket }}{% endif %}
-      {% if url.reportado %}
-        <br/><span class='uk-text-bold'>Fecha de reporte:</span> {{ url.timestamp_reportado }}
+      {% if url.tickets %}
+        <br/><span class='uk-text-bold'>Tickets:</span>
+        {% for mu in url.mensajeurl_set.all %}
+          <a href="{% url 'ticket' pk=mu.mensaje.pk %}">{{ t }}</a>
+          {% if not forloop.last %}
+            , 
+          {% endif %}
+        {% endfor %}
       {% endif %}
       {% if url.timestamp_deteccion %}
         <br/><span class='uk-text-bold'>Fecha de detección:</span> {{ url.timestamp_deteccion }}
       {% endif %}
       {% if url.timestamp_desactivado %}
-        <br/><span class='uk-text-bold'>Fecha de desactivación:</span> {{ url.timestamp_deteccion }}
+        <br/><span class='uk-text-bold'>Fecha de desactivación:</span> {{ url.timestamp_desactivado }}
       {% endif %}
       {% if url.hash_archivo %}
         <br/><span class='uk-text-bold'>Hash MD5 de archivo:</span> {{ url.hash_archivo }}
