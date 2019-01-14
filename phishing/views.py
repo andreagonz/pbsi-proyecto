@@ -253,13 +253,13 @@ def valida_urls(request):
             form = ArchivoForm(request.POST)
             f = request.FILES['file'].read().decode('utf-8')
             name = request.FILES['file'].name
-            urls = []
-            if name.endswith('.txt'):
-                urls = lee_txt(f)
-            elif name.endswith('.json'):
+            urls = []            
+            if name.endswith('.json'):
                 urls = lee_json(f)
             elif name.endswith('.csv'):
                 urls = lee_csv(f)
+            else:
+                urls = lee_txt(f)
             sitios = verifica_urls(urls, None, False)
             no_reportados = False
             for x in sitios:
@@ -724,7 +724,7 @@ def url_info(u, q, d):
     q.add_run("Fecha de creación: %s\n" % u.timestamp_creacion)
     if u.activo_redirecciones:
         q.add_run("Fecha de activación: %s\n" % u.timestamp_reactivacion)
-    q.add_run("Detección: %s\n" % u.get_deteccion_display)                    
+    q.add_run("Detección: %s\n" % u.get_deteccion_display())
     q.add_run("Título: %s\n" % u.titulo)
     q.add_run("Estado: %s\n" % u.estado)                  
     q.add_run("Entidades: %s\n" % u.entidades)                    
