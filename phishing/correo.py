@@ -154,12 +154,7 @@ def manda_correo(para, cc, cco, msg):
         passw = settings.CORREO_PASS
         if usr and passw:
             server.login(usr, passw)
-        recipientes = [para]
-        if cc[0]:
-            recipientes.append(cc)
-        if cco[0]:
-            recipientes.append(cco)
-        server.sendmail(usr, recipientes, msg)
+        server.sendmail(usr, para + cc + cco, msg)
         log('Correo enviado. To:%s, Cc:%s, Bcc:%s' % (', '.join(para if para else []),
                                                       ', '.join(cc if cc else []),
                                                       ', '.join(cco if cco else [])))
