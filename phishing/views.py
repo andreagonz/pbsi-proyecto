@@ -178,8 +178,8 @@ def monitoreo_id(request, pk):
                     men = Mensaje(ticket=ticket)
                     men.save()
                 men.timestamp = ts
-                tsd = url.timestamp_deteccion if url.timestamp_deteccion else ts
                 for x in urls_reportadas:
+                    tsd = x.timestamp_deteccion if x.timestamp_deteccion else ts
                     mu = MensajeURL(mensaje=men, timestamp_creacion_sitio=x.timestamp_reactivacion,
                                     url=x, timestamp_deteccion=tsd)
                     mu.pais = x.dominio.pais
