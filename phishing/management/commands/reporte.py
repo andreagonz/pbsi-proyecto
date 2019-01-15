@@ -52,8 +52,7 @@ class Command(BaseCommand):
                         md = md5(d.dominio.encode('utf-8', 'backslashreplace'))
                         ticket = ('%d%02d%02d%s' % (hoy.year, hoy.month, hoy.day, md[:7])).upper()
                         de = settings.CORREO_DE
-                        # para = ['anduin.tovar@cert.unam.mx', 'victor.arteaga@cert.unam.mx']
-                        para = ['andreagonz@ciencias.unam.mx']
+                        para = ['anduin.tovar@cert.unam.mx', 'victor.arteaga@cert.unam.mx']
                         cc = []
                         cco = ['andrea.gonzalez@bec.seguridad.unam.mx']
                         asunto = obten_asunto(d, ticket)
@@ -80,5 +79,6 @@ class Command(BaseCommand):
                             mu.save()
                             mu.entidades_afectadas.add(*x.entidades_afectadas.all())
                             url_reporta(x, hoy)
+                        log("Dominio %s reportado" % d.dominio)
             os.rename(a, os.path.join(p, x))
         log("Termino ejecucion del script")
