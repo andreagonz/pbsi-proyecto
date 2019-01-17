@@ -67,17 +67,17 @@ class Command(BaseCommand):
                             men.save()
                         men.timestamp = hoy
                         men.save()
-                        for x in urls:
-                            tsd = x.timestamp_deteccion if x.timestamp_deteccion else hoy
+                        for u in urls:
+                            tsd = u.timestamp_deteccion if u.timestamp_deteccion else hoy
                             mu = MensajeURL(mensaje=men,
-                                            timestamp_creacion_sitio=x.timestamp_reactivacion,
-                                            url=x,
+                                            timestamp_creacion_sitio=u.timestamp_reactivacion,
+                                            url=u,
                                             timestamp_deteccion=tsd)
-                            mu.pais = x.dominio.pais
-                            mu.asn = x.dominio.asn
+                            mu.pais = u.dominio.pais
+                            mu.asn = u.dominio.asn
                             mu.save()
-                            mu.entidades_afectadas.add(*x.entidades_afectadas.all())
-                            url_reporta(x, hoy)
+                            mu.entidades_afectadas.add(*u.entidades_afectadas.all())
+                            url_reporta(u, hoy)
                         log("Dominio %s reportado" % d.dominio)
             os.rename(a, os.path.join(p, x))
         log("Termino ejecucion del script")
