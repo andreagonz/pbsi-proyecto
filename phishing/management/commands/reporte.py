@@ -1,7 +1,6 @@
 import os
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
-import phishing.correo as correo
 from phishing.phishing import verifica_urls
 from django.utils import timezone
 from phishing.phishing import md5
@@ -35,11 +34,11 @@ class Command(BaseCommand):
             log("Leyendo archivo %s" % x)
             a = os.path.join(d, x)
             with open(a) as f:
-                headers, urls, _, _, _ = correo.parsecorreo(f.read())                
+                headers, urls, _, _, _ = parsecorreo(f.read())                
                 sitios = verifica_urls(list(set(urls)), None, False)
                 for u in urls:
                     log("Verificada URL %s" % u)
-                if headers['Subject'] == 'Reporte Phishing - TSU':
+                if headers.get('Subject', '') == 'Reporte Phishing - TSU':
                     dominios = []
                     for s in sitios:
                         dominios.append(s.dominio)
