@@ -1,4 +1,4 @@
-from .models import Url
+from phishing.models import Url
 
 def cuenta_urls(sitios):
     return len(set([x.url for x in sitios]))

@@ -28,14 +28,14 @@
             <a href="{% url 'valida-urls' %}">Valida URLs</a>
           </li>
           <li>
-            <a href="{% url 'entrada' %}">Procesa Correo</a>
+            <a href="{% url 'procesa-correo' %}">Procesa Correo</a>
           </li>
           {% if user.is_authenticated %}
             <li>
               <a href="{% url 'historico' %}">Histórico</a>
             </li>            
             <li>
-              <a href="{% url 'doc' %}">Reporte</a>
+              <a href="{% url 'reporte' %}">Reporte</a>
             </li>
             <li>
               <a href="{% url 'ajustes' %}">Ajustes</a>

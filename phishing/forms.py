@@ -1,9 +1,10 @@
 from django import forms
-from .models import Proxy, Recurso, Url
+from .models import *
 from django.forms.widgets import SelectDateWidget
 from django.utils import timezone
 from django.forms import ModelForm
 from django.utils.translation import ugettext_lazy as _
+from django.core.validators import MaxValueValidator, MinValueValidator
 
 class UrlsForm(forms.Form):
     urls = forms.CharField(label='URLs', widget=forms.Textarea)
@@ -43,17 +44,8 @@ class CambiaUnamMensajeForm(forms.Form):
     mensaje = forms.CharField(label='Plantilla de mensaje UNAM', required=True, widget=forms.Textarea)
 
 class FrecuenciaForm(forms.Form):
-    frecuencia = forms.IntegerField(required=True)
-
-class RecursoForm(ModelForm):
-    class Meta:
-        model = Recurso
-        fields = ['es_phishtank', 'recurso', 'max_urls']
-        labels = {
-            "es_phistank": _("Es llave de API de phistank"),
-            "recurso": _("Recurso o llade de API de phishtank"),
-            "max_urls": _("Número máximo de URLs a extraer por consulta"),
-        }
+    frecuencia = forms.IntegerField(required=True,
+                                    validators=[MinValueValidator(1), MaxValueValidator(23)])
 
 class CorreoForm(forms.Form):
     correo = forms.CharField(label='Correo', widget=forms.Textarea, required=False)

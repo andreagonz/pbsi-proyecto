@@ -44,7 +44,8 @@ class Command(BaseCommand):
                         dominios.append(s.dominio)
                     dominios = list(set(dominios))
                     for d in dominios:
-                        urls = d.urls_activas
+                        urls = d.urls_activas.filter(Q(deteccion='P')|Q(deteccion='M')).exclude(
+                            entidades_afectadas=None)
                         if urls.count() == 0:
                             continue
                         hoy = timezone.localtime(timezone.now())

@@ -1,86 +1,17 @@
-<div uk-grid style="margin-top:20px;">
-  <div class="uk-width-1-3">
-    <table class="uk-table uk-table-divider" >
-      <thead style='display:none;'>
-        <tr>
-          <th class="uk-width-medium">Table Heading</th>
-          <th class="uk-width-expand">Table Heading</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr style="line-height:5px;">
-          <td class='uk-text-bold'># URLs analizadas</td>
-          <td>{{ urls_total }}</td>
-        </tr>
-        <tr style="line-height:5px;">
-          <td class='uk-text-bold'># URLs activas</td>
-          <td>{{ num_urls_activas }}</td>
-        </tr>
-        <tr style="line-height:5px;">
-          <td class='uk-text-bold'># URLs inactivas</td>
-          <td>{{ num_urls_inactivas }}</td>
-        </tr>
-        <tr style="line-height:5px;">
-          <td class='uk-text-bold'># Redirecciones</td>
-          <td>{{ num_urls_redirecciones }}</td>
-        </tr>
-        <tr style="line-height:5px;">
-          <td class='uk-text-bold'># Dominios afectados</td>
-          <td>{{ dominios|length }}</td>
-        </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
+{% extends 'base.html' %}
+{% block title %}Reporte{% endblock %}
 
-<dl class="uk-description-list">
-  <dt>Entidades</dt>
-  {% for k,v in entidades.items %}
-    <dd>&nbsp;&nbsp;&nbsp;&nbsp;{{ k }}: {{ v }}</dd>
-  {% endfor %}
-  <dt>Títulos</dt>
-  {% for k,v in titulos.items %}
-    <dd>&nbsp;&nbsp;&nbsp;&nbsp;{{ k }}: {{ v }}</dd>
-  {% endfor %}
-  <dt>Dominios</dt>
-  {% for k,v in dominios.items %}
-    <dd>&nbsp;&nbsp;&nbsp;&nbsp;{{ k }}: {{ v }}</dd>
-  {% endfor %}
-  <dt>Países</dt>
-  {% for k,v in paises.items %}
-    <dd>&nbsp;&nbsp;&nbsp;&nbsp;{{ k.name }} ({{ k }}): {{ v }}</dd>
-  {% endfor %}
-</dl>
-
-{% if activas %}
-  <h4>SITIOS ACTIVOS</h4>
-  <ul class="uk-comment-list">
-    {% for url in activas %}
-      <li>
-        {% include 'url_reporte.html' %}
-      </li>
-    {% endfor %}
-  </ul>
-{% endif %}
-
-{% if inactivas %}
-  <h4>SITIOS INACTIVOS</h4>
-  <ul class="uk-comment-list">
-    {% for url in inactivas %}
-      <li>
-        {% include 'url_reporte.html' %}
-      </li>
-    {% endfor %}
-  </ul>
-{% endif %}
-
-{% if redirecciones %}
-  <h4>REDIRECCIONES</h4>
-  <ul class="uk-comment-list">
-    {% for url in redirecciones %}
-      <li>
-        {% include 'url_reporte.html' %}
-      </li>
-    {% endfor %}
-  </ul>
-{% endif %}
+{% block contenido %}
+  <h1 class="uk-heading-primary uk-text-center"><span>Generación de Reporte</span></h1>
+  <form id='formulario' method='POST' action="{% url 'doc' %}" class="uk-form-horizontal">
+    {% csrf_token %}
+    {% include 'form.html' with form=form %}<br/>
+    <input type="submit" class="uk-button uk-button-primary" name="enviar" value="Enviar">
+  </form>
+  {% if env %}
+    <div class="uk-alert-success" uk-alert>
+      <a class="uk-alert-close" uk-close></a>
+      <p>Se creó el archivo {{ nom }}</p>
+    </div>
+  {% endif %}
+{% endblock %}
