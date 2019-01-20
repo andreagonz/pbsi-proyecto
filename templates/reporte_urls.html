@@ -35,20 +35,20 @@
 
 <dl class="uk-description-list">
   <dt>Entidades</dt>
-  {% for k,v in entidades.items %}
+  {% for k,v in entidades %}
     <dd>&nbsp;&nbsp;&nbsp;&nbsp;{{ k }}: {{ v }}</dd>
   {% endfor %}
   <dt>Títulos</dt>
-  {% for k,v in titulos.items %}
+  {% for k,v in titulos %}
     <dd>&nbsp;&nbsp;&nbsp;&nbsp;{{ k }}: {{ v }}</dd>
   {% endfor %}
   <dt>Dominios</dt>
-  {% for k,v in dominios.items %}
+  {% for k,v in dominios %}
     <dd>&nbsp;&nbsp;&nbsp;&nbsp;{{ k }}: {{ v }}</dd>
   {% endfor %}
   <dt>Países</dt>
-  {% for k,v in paises.items %}
-    <dd>&nbsp;&nbsp;&nbsp;&nbsp;{{ k.name }} ({{ k }}): {{ v }}</dd>
+  {% for k,v in paises %}
+    <dd>&nbsp;&nbsp;&nbsp;&nbsp;{{ k }}: {{ v }}</dd>
   {% endfor %}
 </dl>
 
@@ -57,7 +57,7 @@
   <ul class="uk-comment-list">
     {% for url in activas %}
       <li>
-        {% include "{{ template_urls }}" %}
+        {% include 'reporte_url.html' %}
       </li>
     {% endfor %}
   </ul>
@@ -68,7 +68,7 @@
   <ul class="uk-comment-list">
     {% for url in inactivas %}
       <li>
-        {% include "{{ template_urls }}" %}
+        {% include 'reporte_url.html' %}
       </li>
     {% endfor %}
   </ul>
@@ -79,7 +79,7 @@
   <ul class="uk-comment-list">
     {% for url in redirecciones %}
       <li>
-        {% include "{{ template_urls }}" %}
+        {% include 'reporte_url.html' %}
       </li>
     {% endfor %}
   </ul>

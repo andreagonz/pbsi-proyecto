@@ -251,8 +251,8 @@ def parsecorreo(texto):
             erroremail(resultados, head, mensaje)
         regex1 = re.compile(r"hxxp://")
         regex2 = re.compile(r"hxxps://")
-        regex3 = re.compile(r" ?[(][.][)] ?")
-        regex4 = re.compile(r" ?[(]dot[)] ?")
+        regex3 = re.compile(r" ?[(\[][.][)\]] ?")
+        regex4 = re.compile(r" ?[(\[]dot[)\]] ?")
         if mensaje.is_multipart():
             for part in mensaje.walk():
                 ctype = part.get_content_type()

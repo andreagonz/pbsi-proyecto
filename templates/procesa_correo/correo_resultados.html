@@ -49,7 +49,7 @@
           <pre>{{ headers }}</pre>
         </li>
 
-        <li>{% include 'reporte.html' %}</li>
+        <li>{% include 'reporte_urls.html' %}</li>
       </ul>
       
       <h3>URLs analizadas</h3>
@@ -64,6 +64,6 @@
       </ul>
       <a href="{% url 'monitoreo' %}" class="uk-button uk-button-primary">Ir a monitoreo</a>
     {% endif %}
-    <a href="{% url 'entrada' %}" class="uk-button uk-button-primary">Analizar otro correo</a>
+    <a href="{% url 'procesa-correo' %}" class="uk-button uk-button-primary">Analizar otro correo</a>
   </div>
 {% endblock %}

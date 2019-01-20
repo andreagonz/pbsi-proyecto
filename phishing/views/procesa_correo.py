@@ -1,6 +1,8 @@
 from phishing.forms import CorreoForm, CorreoArchivoForm
 from django.shortcuts import render
-from phishing.aux import correo
+from phishing.aux import correo, phishing
+from phishing.views import aux
+from phishing.models import Url
 
 def procesa_correo(request):
     if request.method == 'POST':
@@ -8,11 +10,14 @@ def procesa_correo(request):
             form = CorreoForm(request.POST)
             if form.is_valid():
                 c = form.cleaned_data['correo']
-                resultados, urls, headers, archivos, error = parsecorreo(c)
-                sitios = []
-                if len(urls) > 0:
-                    sitios = verifica_urls(urls, None, False)
-                context = context_reporte(sitios)                    
+                resultados, urls, headers, archivos, error = correo.parsecorreo(c)
+                sitios = Url.objects.none()
+                urls_limpias = list(set(urls))
+                if len(urls_limpias) > 0:                    
+                    sitios = phishing.verifica_urls(urls, None, False)
+                urls = Url.objects.filter(pk__in=[x.pk for x in sitios]).distinct()
+                urls = urls.prefetch_related('sitios__sitioactivoinfo')
+                context = aux.context_reporte(urls)
                 context['resultados'] = resultados
                 context['urls'] = urls
                 context['headers'] = headers
@@ -23,12 +28,14 @@ def procesa_correo(request):
             form = CorreoArchivoForm(request.POST)
             f = request.FILES['file'].read().decode('utf-8', 'ignore')
             name = request.FILES['file'].name
-            urls = []
-            resultados, urls, headers, archivos, error = parsecorreo(f)
-            context = {}
-            if len(urls) > 0:
-                sitios = verifica_urls(urls, None, False)
-                context = context_reporte(sitios)
+            resultados, urls, headers, archivos, error = correo.parsecorreo(f)
+            sitios = Url.objects.none()
+            urls_limpias = list(set(urls))
+            if len(urls_limpias) > 0:                
+                sitios = phishing.verifica_urls(urls, None, False)
+            urls = Url.objects.filter(pk__in=[x.pk for x in sitios]).distinct()
+            urls = urls.prefetch_related('sitios__sitioactivoinfo')
+            context = aux.context_reporte(urls)
             context['resultados'] = resultados
             context['urls'] = urls
             context['headers'] = headers
