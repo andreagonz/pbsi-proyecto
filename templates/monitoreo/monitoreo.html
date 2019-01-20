@@ -10,11 +10,11 @@
         
       {% for dominio in dominios %}
         <li>
-          {% include 'dominio_info.html' %}
+          {% include 'monitoreo/dominio_info.html' %}
           <ul>
             {% for url in dominio.urls_activas %}
               <li>
-                {% include 'url_info.html' %}
+                {% include 'monitoreo/url_info.html' %}
               </li>
             {% endfor %}
           </ul>

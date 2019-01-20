@@ -1,3 +1,7 @@
+from phishing.forms import CorreoForm, CorreoArchivoForm
+from django.shortcuts import render
+from phishing.aux import correo
+
 def procesa_correo(request):
     if request.method == 'POST':
         if request.POST.get("boton_correo"):
@@ -14,7 +18,7 @@ def procesa_correo(request):
                 context['headers'] = headers
                 context['archivos'] = archivos
                 context['error'] = error
-                return render(request, 'correo_resultados.html', context)
+                return render(request, 'procesa_correo/correo_resultados.html', context)
         elif request.POST.get("boton_archivo") and request.FILES.get('file', None):
             form = CorreoArchivoForm(request.POST)
             f = request.FILES['file'].read().decode('utf-8', 'ignore')
@@ -30,7 +34,7 @@ def procesa_correo(request):
             context['headers'] = headers
             context['archivos'] = archivos
             context['error'] = error
-            return render(request, 'correo_resultados.html', context)
+            return render(request, 'procesa_correo/correo_resultados.html', context)
     form1 = CorreoForm()
     form2 = CorreoArchivoForm()
-    return render(request, 'correo.html', {'form1': form1, 'form2': form2})
+    return render(request, 'procesa_correo/correo.html', {'form1': form1, 'form2': form2})

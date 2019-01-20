@@ -3,7 +3,14 @@
 {{ form.non_field_errors }}
 
 {% for field in form %}
-<!-- {{ field|fieldtype }} -->
+  {% if field.errors %}
+    {% for error in field.errors %}
+      <div class="uk-alert-danger" uk-alert>
+        <a class="uk-alert-close" uk-close></a>
+        <p>{{ error|escape }}</p>
+      </div>
+    {% endfor %}
+  {% endif %}
   {% if field|fieldtype == 'Textarea' or field|fieldtype == 'TextInput' or field|fieldtype == 'ClearableFileInput' %}
     <div class="uk-margin">
   {% else %}
@@ -30,13 +37,4 @@
       {% endif %}      
     </div>
   </div>
-  {% if field.errors %}
-    {% for error in field.errors %}
-      <div class="uk-alert-danger" uk-alert>
-        <a class="uk-alert-close" uk-close></a>
-        <p>{{ error|escape }}</p>
-      </div>
-    {% endfor %}
-  {% endif %}
-
 {% endfor %}

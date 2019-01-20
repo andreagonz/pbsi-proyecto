@@ -4,7 +4,7 @@
 
 {% block contenido %}
   <h1 class="uk-heading-primary uk-text-center"><span>Procesamiento de Correo</span></h1>
-  {% include 'descripcion_correo.html' %}
+  {% include 'procesa_correo/descripcion_correo.html' %}
   <form action="" method="post">
     {% csrf_token %}
     {% include 'form.html' with form=form1 %}

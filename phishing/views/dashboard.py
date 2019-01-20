@@ -1,11 +1,11 @@
 from django.views.generic import TemplateView, View
-from rest_framework.views import APIView
 from rest_framework.response import Response
-from phishing.models import *
-from phishing.forms import *
+from rest_framework.views import APIView
+from django.shortcuts import render
+from phishing.models import Url
 
 class HomeView(View):
-    def get(self,request, *args, **kwargs):
+    def get(self, request, *args, **kwargs):
         return render(request, 'dashboard.html', {})
 
 def obtener_dias():

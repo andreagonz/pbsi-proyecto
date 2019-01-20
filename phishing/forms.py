@@ -90,13 +90,14 @@ class MensajeForm(forms.Form):
     asunto = forms.CharField(label='Asunto')
     mensaje = forms.CharField(label='Mensaje', widget=forms.Textarea)
     capturas = forms.ModelMultipleChoiceField(label='Selecciona las capturas a enviar',
-                                              queryset=None, required=False)
-                                              # widget=forms.CheckboxSelectMultiple)
+                                              queryset=None, required=False,
+                                              widget=forms.CheckboxSelectMultiple)
                                               
     def __init__(self, *args, **kwargs):
         urls = kwargs.pop('urls', Url.objects.none())
         super().__init__(*args, **kwargs)
-        self.fields['capturas'].queryset = urls.exclude(captura=None)
+        self.fields['capturas'].queryset = SitioInfo.objects.filter(pk__in=
+            [x.sitio_info.pk for x in urls if x.sitio_info and x.sitio_info.captura]).distinct()
         self.fields['urls'].queryset = urls
         self.fields['urls'].error_messages['required'] = 'Seleccionar al menos una dirección URL'
 

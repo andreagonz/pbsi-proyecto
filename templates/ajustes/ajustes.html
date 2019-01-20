@@ -24,30 +24,6 @@
     {% endfor %}
 </ul>
 
-<h4>Recursos</h4>
-<a href='{% url 'crea-recurso' %}' class="uk-button uk-button-secondary uk-button-small">Nuevo Recurso</a><br/>
-
-<ul class="uk-list">
-  {% for recurso in recursos %}
-    <li>
-      {% if recurso.es_phishtank %}
-        <span class="uk-text-bold">Llave de API de phishtank: {{ recurso.recurso }}</span></br>
-      {% else %}
-        <span class="uk-text-bold">URL: {{ recurso.recurso }}</span></br>
-      {% endif %}
-      Número máximo de URLs por consulta:
-      {% if recurso.max_urls >= 0 %}
-        {{ recurso.max_urls }}
-      {% else %}
-        Sin límite
-      {% endif %}
-      </br>
-      <a class="uk-button uk-button-default uk-button-small" href='{% url "actualiza-recurso" pk=recurso.pk %}'><span uk-icon="pencil"></span></a>
-      <a class="uk-button uk-button-danger uk-button-small" href='{% url "elimina-recurso" pk=recurso.pk %}'><span uk-icon="close"></span></a>
-    </li>
-  {% endfor %}
-</ul>
-
 <form action="" class="uk-margin-medium" method="post">
   {% csrf_token %}
   {% include 'form.html' with form=asunto_form %}

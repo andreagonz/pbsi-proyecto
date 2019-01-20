@@ -105,13 +105,13 @@ class Dominio(models.Model):
     
     @property
     def urls_activas(self):
-        return self.urls.filter(pk__in=[x.pk for x in urls
+        return self.urls.filter(pk__in=[x.pk for x in self.urls.all()
                                         if x.sitio_activo and x.sitios.count() > 0])
 
     @property
     def urls_monitoreo(self):
         return self.urls.filter(pk__in=[x.pk for x in self.urls_activas
-                                        if not x.reportado and not x.ignorado])
+                                        if not x.reportado and not x.ignorado and not x.limpio])
 
     @property
     def activo(self):
@@ -131,7 +131,25 @@ class Dominio(models.Model):
         return 'No identificado'
 
     @property
-    def correos_str(self):
+    def pais_str(self):
+        return str(self.pais.name) if self.pais else 'No identificado'
+
+    @property
+    def ip_str(self):
+        return self.ip if self.ip else 'No identificada'
+
+    @property
+    def isp_str(self):
+        return self.isp if self.isp else 'No identificado'
+    
+    @property
+    def rir_str(self):
+        if self.rir:
+            return self.rir
+        return 'No identificado'
+
+    @property
+    def correos_mensaje_str(self):
         if self.correos.count() == 0:
             return ''
         s = []
@@ -140,6 +158,12 @@ class Dominio(models.Model):
         return ', '.join(s)
 
     @property
+    def correos_str(self):
+        if self.correos.count() == 0:
+            return 'No identificados'
+        return self.correos_mensaje_str
+    
+    @property
     def dns_str(self):
         if self.dns.count() == 0:
             return 'No identificados'
@@ -147,6 +171,19 @@ class Dominio(models.Model):
         for x in self.dns.all():
             s.append(x.nombre)
         return ', '.join(s)
+
+    @property
+    def dns_mensaje_str(self):
+        if self.dns.count() == 0:
+            return 'No identificados'
+        s = []
+        for x in self.dns.all():
+            s.append(x.nombre.replace('.', '[.]', 1))
+        return ', '.join(s)
+
+    @property
+    def asn_str(self):
+        return str(self.asn) if self.asn else 'No identificado'
     
 class Url(models.Model):
     
@@ -162,17 +199,24 @@ class Url(models.Model):
         return self.codigo >= 300 and self.codigo < 400
 
     @property
+    def mas_reciente(self):
+        try:
+            return self.sitios.latest()
+        except:
+            return None
+
+    @property
     def redireccion(self):
         if not self.es_redireccion:
             return None
-        s = self.sitios.latest()
+        s = self.mas_reciente
         return s.redireccion if s else None
         
     @property
     def redireccion_final(self):
         if not self.es_redireccion:
             return None
-        s = self.sitios.latest()
+        s = self.mas_reciente
         r = s.redireccion if s else None
         while r:
             s = r.sitios.latest()
@@ -200,32 +244,37 @@ class Url(models.Model):
         if self.es_redireccion:
             url = self.redireccion_final
         s = url.sitios.latest() if url else None
-        return s.info if s else None
+        return s.sitioactivoinfo if s else None
 
     @property
     def ignorado(self):
-        s = self.sitios.latest()
+        s = self.mas_reciente
         return s.ignorado if s else False
 
     @property
     def reportado(self):
-        s = self.sitios.latest()
+        s = self.mas_reciente
         return not s.ticket is None if s else False
+
+    @property
+    def timestamp_reportado(self):
+        s = self.mas_reciente
+        return s.ticket.timestamp if s and s.ticket else None
     
     @property
     def captura_url(self):
         i = self.sitio_info
-        return i.captura_anterior if i else '/media/na.png'
+        return i.captura_url if i else '/media/na.png'
 
     @property
     def captura_anterior_url(self):
         i = self.sitio_info
-        return i.captura_anterior if i else '/media/na.png'
+        return i.captura_anterior_url if i else '/media/na.png'
     
     @property
     def deteccion(self):
         i = self.sitio_info
-        return i.deteccion.get_deteccion_display() if i else 'Indefinido'
+        return i.get_deteccion_display() if i else 'Indefinido'
 
     @property
     def archivo_url(self):
@@ -263,6 +312,11 @@ class Url(models.Model):
     def entidad_afectada_str(self):
         e = self.entidad_afectada
         return e if e else 'No identificada'
+
+    @property
+    def limpio(self):
+        i = self.sitio_info
+        return not i is None and i.deteccion == 'N'
     
     def __str__(self):
         return self.url
@@ -284,7 +338,31 @@ class SitioInfo(models.Model):
     ignorado = models.BooleanField(default=False)
     redireccion = models.ForeignKey(Url, on_delete=models.SET_NULL, null=True,
                                     related_name='redirecciones')
-    
+
+    @property
+    def captura_url(self):
+        i = self.sitioactivoinfo
+        if i and i.captura and hasattr(i.captura, 'url'):
+            return i.captura.url
+        return '/media/na.png'
+
+    @property
+    def captura_anterior_url(self):
+        i = self.sitioactivoinfo
+        if i and i.captura_anterior and hasattr(i.captura_anterior, 'url'):
+            return i.captura.url
+        return '/media/na.png'
+
+    @property
+    def redireccion_final(self):
+        if not self.redireccion:
+            return None
+        r = self.redireccion
+        while r and r.es_redireccion:
+            s = r.sitios.latest()
+            r = s.redireccion if s and s.url.es_redireccion else None
+        return r
+
     class Meta:
         get_latest_by = "timestamp_creacion"
     
@@ -303,7 +381,7 @@ class SitioActivoInfo(models.Model):
                                 upload_to='capturas', blank=True, null=True)
     captura_anterior = models.ImageField(storage=OverwriteStorage(),
                                 upload_to='capturas_anteriores', blank=True, null=True)
-    sitio = models.OneToOneField(SitioInfo, on_delete=models.CASCADE, related_name='info')
+    sitio = models.OneToOneField(SitioInfo, on_delete=models.CASCADE)
     deteccion = models.CharField(max_length=1,
                                  choices=OPCIONES_DETECCION,
                                  default='I')
@@ -315,7 +393,7 @@ class SitioActivoInfo(models.Model):
 
     @property
     def captura_url(self):
-        if self.captura and hasattr(self.captura, 'url'):
+        if self.sitio.url.activo and self.captura and hasattr(self.captura, 'url'):
             return self.captura.url
         return '/media/na.png'
 
@@ -328,6 +406,10 @@ class SitioActivoInfo(models.Model):
     @property
     def entidad_afectada_str(self):
         return self.entidad_afectada if self.entidad_afectada else 'No identificada'
+
+    @property
+    def titulo_str(self):
+        return self.titulo if self.titulo else ''
 
     @property
     def archivo_url(self):

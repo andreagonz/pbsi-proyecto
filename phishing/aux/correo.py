@@ -15,13 +15,8 @@ import json
 from virus_total_apis import PublicApi as VirusTotalPublicApi
 import zipfile
 from django.utils import timezone
+from phishing.aux import log
 
-def log(mensaje):
-    t = timezone.localtime(timezone.now())
-    l = os.path.join(settings.DIR_LOG, 'correo.log')
-    with open(l, 'a') as w:
-        w.write('[%s] %s\n' % (t, mensaje))
-        
 def obten_texto(mensaje, archivo):
     if not os.path.exists(archivo):
         return ''
@@ -32,22 +27,23 @@ def obten_texto(mensaje, archivo):
             return f.readline()
     
 def crea_diccionario(dominio):
-    entidades = {}
-    for x in dominio.urls_activas:
-        for e in x.entidades_afectadas.all():
-            entidades[e] = str(e)
-    regex = re.compile(r'^htt')
+    urls = dominio.urls_monitoreo
+    entidades = [x['sitios__sitioactivoinfo__entidad_afectada'] for x in urls.exclude(
+        sitios__sitioactivoinfo__entidad_afectada__isnull=True).values(
+            'sitios__sitioactivoinfo__entidad_afectada'
+        ).distinct()]
+    regex = re.compile(r'^htt')    
     dicc = {
-        'urls': '\n'.join([regex.sub('hxx', str(x)) for x in dominio.urls_activas]).replace('.', '(.)'),
-        'ip': dominio.ip,
-        'pais': dominio.pais,
-        'dominio': dominio.dominio.replace('.', '(.)'),
-        'asn': dominio.asn,
-        'isp': dominio.isp,
-        'rir': dominio.rir,
-        'servidor': dominio.servidor_web,
-        'dns': dominio.servidores_dns.replace('.', '(.)'),
-        'entidades': ', '.join(entidades.values()) if len(entidades) > 0 else 'No identificadas',
+        'urls': '\n'.join([regex.sub('hxx', str(x)).replace('.', '[.]', 1) for x in urls]),
+        'ip': dominio.ip_str,
+        'pais': dominio.pais_str,
+        'dominio': dominio.dominio.replace('.', '[.]', 1),
+        'asn': dominio.asn_str,
+        'isp': dominio.isp_str,
+        'rir': dominio.rir_str,
+        'servidor': dominio.servidor_str,
+        'dns': dominio.dns_mensaje_str,
+        'entidades': ', '.join(entidades) if len(entidades) > 0 else 'No identificadas',
     }
     return dicc
 
@@ -66,7 +62,7 @@ def obten_plantilla(mensaje, sitio, ticket=''):
         s = obten_texto(mensaje, plantilla).format_map(dicc)
         return s
     except Exception as e:
-        log('Error: %s' % str(e))
+        log.log('Error: %s' % str(e), "correo.log")
         return 'Error en formato de texto'
 
 def obten_mensaje(sitio, ticket=''):
@@ -118,7 +114,7 @@ def adjunta_imagen(msg, sitio):
             part['Content-Disposition'] = 'attachment; filename="%s"' % basename
             msg.attach(part)
     except Exception as e:
-        log('Error: %s' % str(e))
+        log.log('Error: %s' % str(e), "correo.log")
         
 def genera_mensaje(sitio, fromadd, toadd, cc, bcc, asunto, mensaje, capturas):
     """
@@ -155,11 +151,11 @@ def manda_correo(para, cc, cco, msg):
         if usr and passw:
             server.login(usr, passw)
         server.sendmail(usr, para + cc + cco, msg)
-        log('Correo enviado. To:%s, Cc:%s, Bcc:%s' % (', '.join(para if para else []),
+        log.log('Correo enviado. To:%s, Cc:%s, Bcc:%s' % (', '.join(para if para else []),
                                                       ', '.join(cc if cc else []),
-                                                      ', '.join(cco if cco else [])))
+                                                          ', '.join(cco if cco else [])), "correo.log")
     except Exception as e:
-        log('Error: %s' % str(e))
+        log.log('Error: %s' % str(e), "correo.log")
         b = False
     finally:
         if server:
@@ -184,7 +180,7 @@ def virustotal(HASH_sha256):
 	    ###### Condicion si es mayor a 0 que se guarde en el directorio, si no que no se guarde
         return "No"
     except Exception as e:
-        log('Error: %s' % str(e))
+        log.log('Error: %s' % str(e), "correo.log")
         return "No encontro coincidencias"
 
 def erroremail(dicc, palabra, mensaje):
@@ -232,7 +228,7 @@ def analisisarchivos(attachment):
                 open(os.path.join(path, 'no_clasificado', nombre), 'wb').write(
                     attachment.get_payload(decode=True))
     except Exception as e:
-        log('Error: %s' % str(e))
+        log.log('Error: %s' % str(e), "correo.log")
         return "1", "1", "1"
     return nombre, noentidades,tipo
 

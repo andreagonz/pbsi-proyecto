@@ -1,8 +1,12 @@
 from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.urls import reverse_lazy
-from phishing.models import Dominio, Url
-from phishing.forms import ProxyForm
+from phishing.models import Dominio, Url, Ticket
+from phishing.forms import ProxyForm, MensajeForm
+from django.shortcuts import render, get_object_or_404, redirect
+from django.utils import timezone
+from phishing.aux import phishing, correo
+from django.conf import settings
 
 @login_required(login_url=reverse_lazy('login'))
 def monitoreo(request):
@@ -10,32 +14,40 @@ def monitoreo(request):
     activos = [d for d in dominios if d.activo_monitoreo]
     return render(request, 'monitoreo/monitoreo.html', context={'dominios':activos})
 
-def url_reporta(url, ts):
-    url.reportado = True
-    if url.deteccion == 'I':
-        url.timestamp_deteccion = ts
-        url.deteccion = 'P'
-    url.save()
-
+def url_reporta(url, ticket):
+    s = url.mas_reciente
+    if s:
+        s.ticket = ticket
+        s.save()
+        i = url.sitio_info
+        if i and (i.deteccion != 'P' or i.deteccion != 'M'):
+            i.deteccion = 'P'
+            i.timestamp_deteccion = ticket.timestamp
+            i.save()
+            
 def url_ignora(url):
-    url.ignorado = True
-    url.deteccion = 'N'
-    url.save()
-
+    s = url.mas_reciente
+    if s:
+        s.ignorado = True
+        s.save()
+        i = url.sitio_info
+        if i:
+            i.deteccion = 'N'
+            i.save()
+    
 @login_required(login_url=reverse_lazy('login'))
 def monitoreo_id(request, pk):
     dominio = get_object_or_404(Dominio, pk=pk)
-    if not dominio.activo:
-        raise Http404()
-    urls = dominio.urls_activas
+    urls = dominio.urls_monitoreo
     context = {
         'dominio': dominio,
         'monitoreo': False,
-        'activo': True,
+        'activo': urls.count() > 0,
     }
     proxy_form = ProxyForm()
     hoy = timezone.localtime(timezone.now())
-    md = md5(dominio.dominio.encode('utf-8', 'backslashreplace'))
+    cadena_urls = ''.join([str(x) for x in urls])
+    md = phishing.md5((dominio.dominio + cadena_urls).encode('utf-8', 'backslashreplace'))
     ticket = ('%d%02d%02d%s' % (hoy.year, hoy.month, hoy.day, md[:7])).upper()
     correos = []
     for url in urls:
@@ -45,12 +57,15 @@ def monitoreo_id(request, pk):
     datos = {
         'de': settings.CORREO_DE,
         'para': ', '.join(correos),
-        'asunto': obten_asunto(dominio, ticket),
-        'mensaje': obten_mensaje(dominio, ticket)
+        'asunto': correo.obten_asunto(dominio, ticket),
+        'mensaje': correo.obten_mensaje(dominio, ticket)
     }
     mensaje_form = MensajeForm(initial=datos, urls=urls)
     if request.method == 'POST':
         if request.POST.get('boton-curl'):
+            activo = dominio.activo_monitoreo
+            if not activo:
+                urls = dominio.urls.all()
             proxy_form = ProxyForm(request.POST)
             if proxy_form.is_valid():
                 http = proxy_form.cleaned_data['http']
@@ -73,16 +88,28 @@ def monitoreo_id(request, pk):
                         proxy['http'] = proxies.http
                     if not proxies.https is None:
                         proxy['https'] = proxies.https
-                monitorea_dominio(dominio.dominio, dominio.urls_activas, proxy)
+                phishing.monitorea_dominio(dominio, urls, proxy)
+                if not activo and dominio.activo_monitoreo:
+                    urls = dominio.urls_monitoreo
+                    cadena_urls = ''.join([str(x) for x in urls])
+                    md = phishing.md5((dominio.dominio + cadena_urls).encode('utf-8', 'backslashreplace'))
+                    ticket = ('%d%02d%02d%s' % (hoy.year, hoy.month, hoy.day, md[:7])).upper()
+                    datos = {
+                        'de': settings.CORREO_DE,
+                        'para': ', '.join(correos),
+                        'asunto': correo.obten_asunto(dominio, ticket),
+                        'mensaje': correo.obten_mensaje(dominio, ticket)
+                    }
+                    mensaje_form = MensajeForm(initial=datos, urls=urls)
             context['monitoreo'] = True
             mensaje_form.actualiza()
             context['mensaje_form'] = mensaje_form
-            context['activo'] = dominio.activo
+            context['activo'] = dominio.activo_monitoreo
             context['proxy_form'] = proxy_form
-            return render(request, 'monitoreo_id.html', context)
+            return render(request, 'monitoreo/monitoreo_id.html', context)
         elif request.POST.get('boton-mensaje'):
-            # if not dominio.activo:
-            # return render(request, 'monitoreo_error.html', {'dominio': dominio})
+            if not dominio.activo_monitoreo:
+                return render(request, 'monitoreo/monitoreo_error_inactivo.html', {'dominio': dominio})
             mensaje_form = MensajeForm(request.POST, urls=urls)
             if mensaje_form.is_valid():
                 if not mensaje_form.cleaned_data.get('para', None):
@@ -92,7 +119,7 @@ def monitoreo_id(request, pk):
                     mensaje_form._errors['para'].append('Campo necesario')
                     context['mensaje_form'] = mensaje_form
                     context['proxy_form'] = proxy_form
-                    return render(request, 'monitoreo_id.html', context)
+                    return render(request, 'monitoreo/monitoreo_id.html', context)
                 de = mensaje_form.cleaned_data['de']
                 para = [x.strip() for x in mensaje_form.cleaned_data['para'].split(',')]
                 cc = [x.strip() for x in mensaje_form.cleaned_data['cc'].split(',')]
@@ -100,32 +127,24 @@ def monitoreo_id(request, pk):
                 asunto = mensaje_form.cleaned_data['asunto']
                 mensaje = mensaje_form.cleaned_data['mensaje']
                 capturas = mensaje_form.cleaned_data['capturas']
-                urls_reportadas = mensaje_form.cleaned_data['urls']
-                msg = genera_mensaje(dominio, de, para, cc, cco, asunto, mensaje, capturas)
-                enviado = manda_correo(para, cc, cco, msg)
+                urls_reportadas = [x for x in mensaje_form.cleaned_data['urls']
+                                   if not x.reportado and x.sitio_activo]
+                msg = correo.genera_mensaje(dominio, de, para, cc, cco, asunto, mensaje, capturas)
+                enviado = correo.manda_correo(para, cc, cco, msg)
                 ts = timezone.localtime(timezone.now())
                 if not enviado:
                     context['dominio'] = dominio
-                    return render(request, 'monitoreo_error.html', context)
+                    return render(request, 'monitoreo/monitoreo_error.html', context)
                 try:
-                    men = Ticket.objects.get(ticket=ticket)
+                    ticketO = Ticket.objects.get(ticket=ticket)
                 except:
-                    men = Ticket(ticket=ticket)
-                    men.save()
-                men.timestamp = ts
+                    ticketO = Ticket(ticket=ticket, timestamp=ts)
+                    ticketO.save()
                 for x in urls_reportadas:
-                    tsd = x.timestamp_deteccion if x.timestamp_deteccion else ts
-                    mu = MensajeURL(mensaje=men, timestamp_creacion_sitio=x.timestamp_reactivacion,
-                                    url=x, timestamp_deteccion=tsd)
-                    mu.pais = x.dominio.pais
-                    mu.asn = x.dominio.asn
-                    mu.save()
-                    mu.entidades_afectadas.add(*x.entidades_afectadas.all())
-                    url_reporta(x, ts)
-                men.save()
+                    url_reporta(x, ticketO)
                 context = {
                     'dominio': dominio,
-                    'urls': ', '.join([url.url for x in urls_reportadas]),
+                    'urls': ', '.join([x.url for x in urls_reportadas]),
                     'de': de,
                     'para': ', '.join(para),
                     'cc': ', '.join(cc),
@@ -136,6 +155,8 @@ def monitoreo_id(request, pk):
                 }
                 return render(request, 'monitoreo/monitoreo_exito.html', context)
         elif request.POST.get('boton-ignorar') and request.user.is_superuser:
+            if not dominio.activo_monitoreo:
+                return render(request, 'monitoreo/monitoreo_error_inactivo.html', {'dominio': dominio})
             for x in urls:
                 url_ignora(x)
             return redirect('monitoreo')

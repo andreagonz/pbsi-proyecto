@@ -1,0 +1,85 @@
+<article class="uk-comment uk-visible-toggle">
+  <header class="uk-comment-header uk-position-relative">
+    <div class="uk-grid-medium uk-flex-middle" uk-grid>
+      {% if url.mas_reciente.sitioactivoinfo %}
+        <div class="uk-width-auto">
+          <div uk-lightbox>
+            <a href='{{ url.captura_url }}'>
+              <img src='{{ url.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;"/>
+            </a>
+          </div>
+        </div>
+      {% endif %}
+      <div class="uk-width-expand">
+        <h4 class="uk-comment-title uk-margin-remove">
+          <a class="uk-link-reset" href="{% url 'url-detalle' url.pk %}">{{ url }}</a>
+        </h4>
+        <p class="uk-comment-meta uk-margin-remove-top"><a class="uk-link-reset" href="#">Fecha de actualización: {{ url.timestamp_actualizacion }}</a></p>
+      </div>
+    </div>
+  </header>
+  <div class="uk-comment-body">
+    <p>
+      <span class='uk-text-bold'>IP:</span> {{ url.dominio.ip_str }}<br/>
+      <span class='uk-text-bold'>Código:</span> {{ url.codigo_str }}<br/>      
+      <span class='uk-text-bold'>Estado:</span> {{ url.estado }} <br/>
+      <span class='uk-text-bold'>Correos:</span> {{ url.dominio.correos_str }}<br/>
+      <span class='uk-text-bold'>ISP:</span> {{ url.dominio.isp_str }}<br/>
+      <span class='uk-text-bold'>País:</span> {{ url.dominio.pais_str }}<br/>
+      <span class='uk-text-bold'>ASN:</span> {{ url.dominio.asn_str }}<br/>
+      <span class='uk-text-bold'>Servidor:</span> {{ url.dominio.servidor_str }}<br/>
+      <span class='uk-text-bold'>RIR:</span> {{ url.dominio.rir_str }}<br/>
+      <span class='uk-text-bold'>Servidores DNS:</span> {{ url.dominio.dns_str }}
+      {% if url.mas_reciente %}
+        <br/><span class='uk-text-bold'>Fecha de creación:</span> {{ url.mas_reciente.timestamp_creacion }}
+      {% else %}
+        <br/><span class='uk-text-bold'>Fecha de creación:</span> {{ url.timestamp_creacion }}
+      {% endif %}
+      
+      {% if url.mas_reciente %}        
+        <br/><span class='uk-text-bold'>Detección:</span> {{ url.deteccion }}
+        <br/><span class='uk-text-bold'>Reportado:</span> {% if url.reportado %}Sí{% else %}No{% endif %}
+        {% if url.reportado %}
+          <br/><span class='uk-text-bold'>Fecha de reporte:</span> {{ url.timestamp_reportado }}
+        {% endif %}
+        <br/><span class='uk-text-bold'>Ignorado:</span> {% if url.ignorado %}Sí{% else %}No{% endif %}
+        {% if url.activo and url.mas_reciente.sitioactivoinfo %}
+          {% with url.mas_reciente.sitioactivoinfo as info %}
+            <br/><span class='uk-text-bold'>Título:</span> {{ info.titulo_str }}
+            <br/><span class='uk-text-bold'>Entidad afectada:</span> {{ info.entidad_afectada_str }}
+            <br/><span class='uk-text-bold'>Archivo:</span> <a href='{{ info.archivo_url }}'>Descarga</a>
+            <br/><span class='uk-text-bold'>Ofuscación:</span> {{ info.ofuscaciones_str }}
+            {% if info.hash_archivo %}
+              <br/><span class='uk-text-bold'>Hash MD5 de archivo:</span> {{ info.hash_archivo }}
+            {% endif %}
+          {% endwith %}
+        {% endif %}
+        
+        {% if url.mas_reciente.tickets.all %}
+          <br/><span class='uk-text-bold'>Tickets:</span>
+          {% for t in url.mas_reciente.tickets.all %}
+            <a href="{% url 'ticket' pk=t.pk %}">{{ t }}</a>
+            {% if not forloop.last %}
+              ,
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+        
+        {% if url.es_redireccion %}<br/><span class='uk-text-bold'>Redirección:</span>
+          <a href={% url 'url-detalle' pk=url.redireccion.pk %}>
+            {{ url.redireccion }}
+          </a><br/>
+          <span class='uk-text-bold'>Redirección final:</span>
+          <a href={% url 'url-detalle' pk=url.redireccion_final.pk %}>
+            {{ url.redireccion_final }}
+          </a>
+        {% endif %}
+        
+        {% if url.mas_reciente.timestamp_desactivacion %}
+          <br/><span class='uk-text-bold'>Fecha de desactivación:</span> {{ url.sitio_info.timestamp_desactivacion }}
+        {% endif %}
+        
+      {% endif %}      
+    </p>
+  </div>
+</article>

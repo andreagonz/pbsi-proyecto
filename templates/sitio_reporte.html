@@ -1,0 +1,69 @@
+<article class="uk-comment uk-visible-toggle">
+  <header class="uk-comment-header uk-position-relative">
+    <div class="uk-grid-medium uk-flex-middle" uk-grid>
+      <div class="uk-width-auto">
+        <div uk-lightbox>
+          <a href='{{ sitio.captura_url }}'>
+            <img src='{{ sitio.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;"/>
+          </a>
+        </div>
+      </div>
+      <div class="uk-width-expand">
+        <h4 class="uk-comment-title uk-margin-remove">
+          <a class="uk-link-reset" href="{% url 'url-detalle' sitio.url.pk %}">{{ sitio.url }}</a>
+        </h4>
+        <p class="uk-comment-meta uk-margin-remove-top"><a class="uk-link-reset" href="#">Fecha de actualización: {{ sitio.timestamp_actualizacion }}</a></p>
+      </div>
+    </div>
+  </header>
+  <div class="uk-comment-body">
+    <p>
+      <span class='uk-text-bold'>IP:</span> {{ sitio.url.dominio.ip }}<br/>
+      <span class='uk-text-bold'>Código:</span> {{ sitio.url.codigo_str }}<br/>
+      <span class='uk-text-bold'>Fecha de creación:</span> {{ sitio.timestamp_creacion }}<br/>
+      <span class='uk-text-bold'>Detección:</span> {{ sitio.url.deteccion }}<br/>
+      <span class='uk-text-bold'>Reportado:</span> {% if sitio.url.reportado %}Sí{% else %}No{% endif %}<br/>
+      {% if sitio.sitioactivoinfo %}
+        <span class='uk-text-bold'>Título:</span> {{ sitio.sitioactivoinfo.titulo }}<br/>
+        <span class='uk-text-bold'>Entidad afectada:</span> {{ sitio.sitioactivoinfo.entidad_afectada_str }}<br/>
+        <span class='uk-text-bold'>Archivo:</span> <a href='{{ sitio.sitioactivoinfo.archivo_url }}'>Descarga</a><br/>
+        <span class='uk-text-bold'>Ofuscación:</span> {{ sitio.sitioactivoinfo.ofuscaciones_str }}<br/>
+        {% if sitio.sitioactivoinfo.hash_archivo %}
+          <span class='uk-text-bold'>Hash MD5 de archivo:</span> {{ sitio.sitioactivoinfo.hash_archivo }}<br/>
+        {% endif %}
+        {% if sitio.sitioactivoinfo.timestamp_deteccion %}
+          <span class='uk-text-bold'>Fecha de detección:</span> {{ sitio.sitioactivoinfo.timestamp_deteccion }}<br/>
+        {% endif %}
+      {% endif %}
+      <span class='uk-text-bold'>Estado:</span> {{ sitio.url.estado }} <br/>
+      <span class='uk-text-bold'>Correos:</span> {{ sitio.url.dominio.correos_abuso }}<br/>
+      <span class='uk-text-bold'>ISP:</span> {{ sitio.url.dominio.isp }}<br/>
+      <span class='uk-text-bold'>País:</span> {{ sitio.url.dominio.pais.name }}<br/>
+      <span class='uk-text-bold'>ASN:</span> {{ sitio.url.dominio.asn }}<br/>
+      <span class='uk-text-bold'>Servidor:</span> {{ sitio.url.dominio.servidor_str }}<br/>
+      <span class='uk-text-bold'>RIR:</span> {{ sitio.url.dominio.rir_str }}<br/>
+      <span class='uk-text-bold'>Servidores DNS:</span> {{ sitio.url.dominio.dns_str }}
+      {% if url.tickets.all %}
+        <br/><span class='uk-text-bold'>Tickets:</span>
+        {% for t in sitio.tickets.all %}
+          <a href="{% url 'ticket' pk=t.pk %}">{{ t }}</a>
+          {% if not forloop.last %}
+            , 
+          {% endif %}
+        {% endfor %}
+      {% endif %}      
+      {% if sitio.timestamp_desactivado %}
+        <br/><span class='uk-text-bold'>Fecha de desactivación:</span> {{ sitio.timestamp_desactivado }}
+      {% endif %}
+      {% if sitio.redireccion %}<br/><span class='uk-text-bold'>Redirección:</span>
+        <a href={% url 'url-detalle' pk=sitio.redireccion.pk %}>{{ sitio.redireccion }}</a>
+      {% endif %}
+      {% if sitio.redireccion_final %}
+        <br/><span class='uk-text-bold'>Redirección final:</span>
+        <a href={% url 'url-detalle' pk=sitio.redireccion_final.pk %}>
+          {{ sitio.redireccion_final }}
+        </a>
+      {% endif %}
+    </p>
+  </div>
+</article>

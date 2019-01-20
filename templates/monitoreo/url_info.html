@@ -14,19 +14,22 @@
           <a class="uk-link-reset" href='{% url 'url-detalle' pk=url.pk %}'>{{ url }}</a>
         </h4>
         <p class="uk-comment-meta uk-margin-remove-top">
-          Código: {{ url.codigo_estado }}<br/>
+          Código: {{ url.codigo_str }}<br/>
           Estado: {{ url.estado }} <br/>
-          Detección: {{ url.get_deteccion_display }}<br/>
-          Entidades afectadas: {{ url.entidades }}<br/>
-          Ofuscación: {{ url.ofuscaciones }}<br/>
-          {% if url.redireccion %}Redirección: {{ url.redireccion }}<br/>{% endif %}
-          {% if url.get_redireccion %}
+          Detección: {{ url.deteccion }}<br/>
+          Entidad afectada: {{ url.sitio_info.entidad_afectada_str }}<br/>
+          Ofuscación: {{ url.sitio_info.ofuscaciones_str }}<br/>
+          {% if url.es_redireccion %}
+            Redirección:
+            <a href={% url 'url-detalle' pk=url.redireccion.pk %}>
+              {{ url.redireccion }}<br/>
+            </a>
             Redirección final:
-            <a href={% url 'url-detalle' pk=url.get_redireccion.pk %}>
-              {{ url.get_redireccion.url }}<br/>
+            <a href={% url 'url-detalle' pk=url.redireccion_final.pk %}>
+              {{ url.redireccion_final }}<br/>
             </a>
           {% endif %}
-          Fecha de actualización: {{ url.timestamp }}
+          Fecha de actualización: {{ url.timestamp_actualizacion }}
         </p>
       </div>
       {% if monitoreo %}
@@ -40,7 +43,7 @@
             Estado anterior
           </h4>
           <p class="uk-comment-meta uk-margin-remove-top">
-            Código: {{ url.codigo_anterior_estado }}<br/>
+            Código: {{ url.codigo_anterior_str }}<br/>
           </p>
         </div>
       {% endif %}

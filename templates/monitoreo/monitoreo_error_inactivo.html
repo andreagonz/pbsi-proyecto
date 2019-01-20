@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Monitoreo{% endblock %}
+
+{% block contenido %}
+
+  <h1 class="uk-heading-primary uk-text-center"><span>Monitoreo</span></h1>
+
+  <div class="uk-alert-danger" uk-alert>
+    <p>El dominio {{ dominio }} no tiene direcciones URL qué reportar/ignorar</p>
+  </div>
+
+  <a href='{% url 'monitoreo' %}' class="uk-button uk-button-primary">Ir a monitoreo<a/>
+    
+{% endblock %}

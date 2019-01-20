@@ -5,13 +5,11 @@
 {% block contenido %}
     
     <h1 class="uk-heading-divider">Monitoreo</h1>
-    {% if activo %}
-      <form class="uk-form-horizontal uk-margin-large" method="post" action=""> 
-        {% csrf_token %}
-        {% include 'form.html' with form=proxy_form %}
-        <input type="submit" name="boton-curl" class="uk-button uk-button-primary" value="Monitorear" />
-      </form>
-    {% endif %}
+    <form class="uk-form-horizontal uk-margin-large" method="post" action=""> 
+      {% csrf_token %}
+      {% include 'form.html' with form=proxy_form %}
+      <input type="submit" name="boton-curl" class="uk-button uk-button-primary" value="Monitorear" />
+    </form>
     
     <ul class="uk-comment-list">
       <li>
@@ -35,13 +33,13 @@
           </header>            
           <div class="uk-comment-body">
             <p>
-              País: {{ dominio.pais }}<br/>
-              IP: {{ dominio.ip }}<br/>
-              ASN: {{ dominio.asn }}<br/>
-              Sevidores DNS: {{ dominio.servidores_dns }}<br/>
-              Servidor: {{ dominio.servidor }}<br/>
-              RIR: {{ dominio.rir }}<br/>
-              Correos de abuso: {{ dominio.correos_abuso }}
+              País: {{ dominio.pais_str }}<br/>
+              IP: {{ dominio.ip_str }}<br/>
+              ASN: {{ dominio.asn_str }}<br/>
+              Sevidores DNS: {{ dominio.dns_str }}<br/>
+              Servidor: {{ dominio.servidor_str }}<br/>
+              RIR: {{ dominio.rir_str }}<br/>
+              Correos de abuso: {{ dominio.correos_str }}
             </p>
           </div>
         </article>
@@ -50,7 +48,7 @@
 
     <form action="" method="post">
       {% csrf_token %}
-      {% include 'form_monitoreo_mensaje.html' with form=mensaje_form %}
+      {% include 'monitoreo/form_monitoreo_mensaje.html' with form=mensaje_form %}
       {% if activo %}
         <input type="submit" name="boton-mensaje" class="uk-button uk-button-primary" value="Reportar" />
         {% if user.is_superuser %}
@@ -60,10 +58,5 @@
         <a href="{% url 'monitoreo' %}" class="uk-button uk-button-primary">Regresar a monitoreo</a>
       {% endif %}
     </form>
-    <!--form action="" method="post">
-      {% csrf_token %}
-      <input type="submit" name="boton-saltar" class="btn btn-secondary" value="Saltar" />
-    </form-->
-
-
+    
 {% endblock %}

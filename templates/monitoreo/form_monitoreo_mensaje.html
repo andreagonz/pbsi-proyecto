@@ -10,7 +10,9 @@
 {% if activo %}
   <label for="urls"><h3>Selecciona las direcciones URL a reportar/ignorar</h3></label>
 {% else %}
-  <label for="urls"><h3>URLs desactivadas</h3></label>
+  <div class="uk-alert-danger" uk-alert>
+    <p>URLs desactivadas</p>
+  </div>
 {% endif %}
 
 {% for field in form %}
@@ -27,14 +29,14 @@
 <ul class="uk-comment-list" id="id_urls">
   {% for url in form.fields.urls.queryset %}
     <li>
-      {% include 'url_info.html' %}
+      {% include 'monitoreo/url_info.html' %}
     </li>
   {% endfor %}
 </ul>
 
 {% if activo %}
   {% for field in form %}
-    {% if not field.name == 'urls' %}
+    {% if not field.name == 'urls' and not field.name == 'capturas' %}
       {% if field.errors %}
         {% for error in field.errors %}
           <div class="uk-alert-danger" uk-alert>
@@ -43,32 +45,56 @@
           </div>
         {% endfor %}
       {% endif %}
-  {% if field|fieldtype == 'Textarea' or field|fieldtype == 'TextInput' or field|fieldtype == 'ClearableFileInput' %}
-    <div class="uk-margin">
-  {% else %}
-    <div class="uk-margin uk-grid-small uk-child-width-auto uk-grid">
-  {% endif %}
-    <label class="uk-form-label" for="{{ field.name }}">{{ field.label }}</label>
-    <div class="uk-form-controls">
-      {% if field.errors %}
-        {{ field|addclass:'uk-input uk-form-danger' }}
+      {% if field|fieldtype == 'Textarea' or field|fieldtype == 'TextInput' or field|fieldtype == 'ClearableFileInput' %}
+        <div class="uk-margin">
       {% else %}
-        {% if field|fieldtype == 'Textarea' %}
-          {{ field|addclass:'uk-textarea' }}
-        {% elif field|fieldtype == 'ClearableFileInput' or field|fieldtype == 'TextInput' or field|fieldtype == 'URLInput' %}
-          {{ field|addclass:'uk-input' }}
-        {% elif field|fieldtype == 'CheckboxInput' %}
-          {{ field|addclass:'uk-checkbox' }}
-        {% elif field|fieldtype == 'NumberInput' %}
-          {{ field|addclass:'uk-range' }}
-        {% elif field|fieldtype == 'Select' %}
-          {{ field|addclass:'uk-select uk-form-width-medium' }}
+        <div class="uk-margin uk-grid-small uk-child-width-auto uk-grid">
+      {% endif %}
+      <label class="uk-form-label" for="{{ field.name }}">{{ field.label }}</label>
+      <div class="uk-form-controls">
+        {% if field.errors %}
+          {{ field|addclass:'uk-input uk-form-danger' }}
         {% else %}
-          {{ field }}
-        {% endif %}
-      {% endif %}      
+          {% if field|fieldtype == 'Textarea' %}
+            {{ field|addclass:'uk-textarea' }}
+          {% elif field|fieldtype == 'ClearableFileInput' or field|fieldtype == 'TextInput' or field|fieldtype == 'URLInput' %}
+            {{ field|addclass:'uk-input' }}
+          {% elif field|fieldtype == 'CheckboxInput' %}
+            {{ field|addclass:'uk-checkbox' }}
+          {% elif field|fieldtype == 'NumberInput' %}
+            {{ field|addclass:'uk-range' }}
+          {% elif field|fieldtype == 'Select' %}
+            {{ field|addclass:'uk-select uk-form-width-medium' }}
+          {% else %}
+            {{ field }}
+          {% endif %}
+        {% endif %}      
+      </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+
+    <label for="capturas"><h4>Selecciona las capturas a enviar en el mensaje</h4></label>
+
+    {% for field in form %}
+      {% if field.name == 'capturas' and field.errors %}
+        {% for error in field.errors %}
+          <div class="uk-alert-danger" uk-alert>
+            <a class="uk-alert-close" uk-close></a>
+            <p>{{ error|escape }}</p>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endfor %}
+
+    <div style="margin-bottom:40px;" class="uk-child-width-1-6@m" uk-grid uk-lightbox="animation: slide" id="id_capturas">
+      {% for x in form.fields.capturas.queryset %}          
+        <div>
+          <input type="checkbox" class="uk-checkbox" name="capturas" value="{{ x.pk }}" checked />&nbsp;&nbsp;
+          <a class="uk-inline" href="{{ x.captura_url }}">
+            <img src="{{ x.captura_url }}" style="object-fit: cover;width: 100px;height: 100px;">
+          </a>
+        </div>
+      {% endfor %}
     </div>
-    </div>
-{% endif %}
-{% endfor %}
-{% endif %}
+  {% endif %}
