@@ -7,13 +7,13 @@
 
   <ul uk-tab>
     <li class="uk-active"><a href="#">Datos</a></li>
-    <!-- <li><a href="#">Comentarios</a></li> -->
     <li><a href="#">Hashes</a></li>
+    <li><a href="#">Historial</a></li>
   </ul>
 
   <ul class="uk-switcher uk-margin">
     <li>
-      {% include 'url_reporte.html' %}
+      {% include 'reporte_url.html' %}
       <h4>Captura de dominio</h4>
       <div uk-lightbox>
         <a href='{{ url.dominio.captura_url }}'>
@@ -21,15 +21,19 @@
         </a>
       </div>
     </li>
-    <!--li>
-      {% for x in comentarios %}
-        {{ x }}
-      {% endfor %}
-    </li-->
     <li>
       {% for x in hashes %}
         {{ x }}
       {% endfor %}
+    </li>
+    <li>
+      <ul class="uk-list">
+        {% for sitio in url.sitios.all %}
+          <li>
+            {% include 'reporte_sitio.html' with historial=True %}
+          </li>
+        {% endfor %}
+      </ul>
     </li>
   </ul>  
 {% endblock %}

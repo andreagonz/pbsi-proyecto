@@ -60,9 +60,9 @@ def archivo_texto(sitio):
         if sitio.archivo is None:
             return ''
         with sitio.archivo.open() as f:
-            return f.read().decode()
+            return f.read().decode(encoding="utf-8", errors="ignore")
     except Exception as e:
-        log_phishing('Error: %s' % str(e))
+        log.log('Error: %s' % str(e), "phishing.log")
         return ''
 
 def archivo_hashes(sitio):

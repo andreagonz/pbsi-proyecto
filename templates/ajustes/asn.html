@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}ASN{% endblock %}
+
+{% block contenido %}
+
+  <h1 class="uk-heading-primary"><span>ASN</span></h1>
+  
+  <a class="uk-button uk-button-primary" href='{% url 'crea-asn' %}'>Nuevo ASN</a>
+  
+  <dl class="uk-description-list uk-description-list-divider">
+  {% for o in asn %}
+      <dt><span class="uk-text-bold">Nombre: {{ o }}</span></dt>
+      <dd><span class="uk-text-bold">Formularios de abuso:</span>
+        {% if o.formularios_lst %}
+          <ul style="margin:5px;">
+            {% for f in o.formularios_lst %}
+              <li><a href='{{ f }}'>{{ f }}</a></li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          No asignados
+        {% endif %}
+      </dd>
+      <dd>
+        <a class="uk-button uk-button-default uk-button-small" href='{% url "actualiza-asn" pk=o.pk %}'><span uk-icon="pencil"></span></a>
+      </dd>
+    {% endfor %}
+  </dl>
+{% endblock %}

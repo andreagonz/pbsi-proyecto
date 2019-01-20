@@ -27,7 +27,7 @@ class Entidad(models.Model):
             e = Entidad.objects.get(nombre__iexact=self.nombre)
             if e.pk != self.pk:
                 raise ValidationError('Ya existe una entidad con este nombre.')
-        except Entidades.DoesNotExist:
+        except Entidad.DoesNotExist:
             pass
 
 class ASN(models.Model):
@@ -195,6 +195,14 @@ class Url(models.Model):
     codigo_anterior = models.IntegerField(default=-1)    
 
     @property
+    def tickets(self):
+        tickets = []
+        for x in self.sitios.select_related('ticket'):            
+            if x.ticket:
+                tickets.append(x.ticket)
+        return tickets
+        
+    @property
     def es_redireccion(self):
         return self.codigo >= 300 and self.codigo < 400
 
@@ -280,6 +288,11 @@ class Url(models.Model):
     def archivo_url(self):
         i = self.sitio_info
         return i.archivo_url if i else None
+
+    @property
+    def archivo(self):
+        i = self.sitio_info
+        return i.archivo if i else None
 
     @property
     def entidad_afectada(self):

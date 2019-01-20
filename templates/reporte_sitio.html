@@ -1,0 +1,47 @@
+<article class="uk-comment uk-visible-toggle">
+  <header class="uk-comment-header uk-position-relative">
+    <div class="uk-grid-medium uk-flex-middle" uk-grid>
+      {% if not sitio.redireccion %}
+        <div class="uk-width-auto">
+          <div uk-lightbox>
+            <a href='{{ sitio.captura_url }}'>
+              <img src='{{ sitio.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;"/>
+            </a>
+          </div>
+        </div>
+      {% endif %}
+      <div class="uk-width-expand">
+        <h4 class="uk-comment-title uk-margin-remove">
+          <a class="uk-link-reset" href="{% url 'url-detalle' pk=sitio.url.pk %}">{{ sitio.url }}</a><br/>
+        </h4>
+        <p class="uk-comment-meta uk-margin-remove-top">
+          <span class="uk-text-bold">Fecha de creación:</span> {{ sitio.timestamp_creacion }}
+          {% if sitio.timestamp_desactivado %}
+            <br/><span class="uk-text-bold">Fecha de desactivación:</span> {{ sitio.timestamp_desactivado }}
+          {% endif %}
+          {% if not sitio.redireccion %}
+            {% with sitio.sitioactivoinfo as info %}
+              <br/><span class="uk-text-bold">Entidad afectada:</span> {{ info.entidad_afectada_str }}
+              <br/><span class="uk-text-bold">Fecha de detección:</span> {{ info.timestamp_deteccion }}
+              <br/><span class="uk-text-bold">Detección:</span> {{ info.get_deteccion_display }}
+              <br/><span class="uk-text-bold">Título:</span> {{ info.titulo_str }}
+              <br/><span class="uk-text-bold">Ofuscación:</span> {{ info.ofuscaciones_str }}
+              {% if info.archivo %}
+                <br/><span class='uk-text-bold'>Archivo:</span> <a href='{{ info.archivo_url }}'>Descarga</a>
+              {% endif %}
+              {% if info.hash_archivo %}
+                <br/><span class='uk-text-bold'>Hash MD5 de archivo:</span> {{ info.hash_archivo }}
+              {% endif %}
+            {% endwith %}
+          {% else %}
+            <br/><span class='uk-text-bold'>Redirección:</span> <a href="{% url 'url-detalle' pk=sitio.redireccion.pk %}">{{ sitio.redireccion.url }}</a>
+          {% endif %}
+          {% if historial and sitio.ticket %}
+            <br/><span class="uk-text-bold">Fecha de reporte:</span> {{ sitio.ticket.timestamp }}
+            <br/><span class="uk-text-bold">Ticket:</span> <a href='{% url 'ticket' pk=sitio.ticket.pk %}'>{{ sitio.ticket }}</a>
+          {% endif %}
+        </p>
+      </div>
+    </div>            
+  </header>          
+</article> 

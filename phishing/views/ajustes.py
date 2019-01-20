@@ -9,6 +9,7 @@ from phishing.forms import(
 )
 from phishing.models import Proxy, Ofuscacion, Entidad, Clasificacion_entidad, ASN
 from phishing.aux import phishing
+from django.forms import Textarea
 
 @login_required(login_url=reverse_lazy('login'))
 def ajustes(request):
@@ -169,7 +170,7 @@ def asn_view(request):
     context = {
         'asn': ASN.objects.all(),
     }
-    return render(request, 'asn.html', context)
+    return render(request, 'ajustes/asn.html', context)
 
 class ActualizaASN(LoginRequiredMixin, UpdateView):
     model = ASN
@@ -198,9 +199,3 @@ class NuevoASN(LoginRequiredMixin, CreateView):
         form.fields['formularios'].widget = Textarea()
         form.fields['formularios'].label = 'Formularios de abuso (separados por un salto de línea)'
         return form
-
-@login_required(login_url=reverse_lazy('login'))
-def elimina_asn(request, pk):
-    c = get_object_or_404(ASN, pk=pk)
-    c.delete()
-    return redirect('asn')

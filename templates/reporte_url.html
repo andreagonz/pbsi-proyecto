@@ -55,9 +55,9 @@
           {% endwith %}
         {% endif %}
         
-        {% if url.mas_reciente.tickets.all %}
+        {% if url.tickets %}
           <br/><span class='uk-text-bold'>Tickets:</span>
-          {% for t in url.mas_reciente.tickets.all %}
+          {% for t in url.tickets %}
             <a href="{% url 'ticket' pk=t.pk %}">{{ t }}</a>
             {% if not forloop.last %}
               ,
