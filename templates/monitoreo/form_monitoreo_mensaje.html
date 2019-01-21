@@ -28,9 +28,11 @@
   
 <ul class="uk-comment-list" id="id_urls">
   {% for url in form.fields.urls.queryset %}
-    <li>
-      {% include 'url_info.html' %}
-    </li>
+    {% if not url.reportado and not url.ignorado %}
+      <li>
+        {% include 'url_info.html' %}
+      </li>
+    {% endif %}
   {% endfor %}
 </ul>
 

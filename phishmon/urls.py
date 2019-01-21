@@ -18,18 +18,17 @@ from django.urls import path, include
 from django.contrib.auth import views as auth_views
 from django.conf.urls.static import static
 from django.conf import settings
-from phishing.views import busca
-from phishing import views
+from phishing.views import busqueda
+from phishing.views import dashboard
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('login/', auth_views.LoginView.as_view(), name='login'),
     path('logout/', auth_views.logout_then_login, name='logout'),
-    path('buscar/', views.busca, name='buscar'),
-    #path('dashboard/',views.graphs),
-    path('api/chart/data/',views.ChartData.as_view()),
-    path('',views.HomeView.as_view(), name='home'),
+    path('buscar/', busqueda.busqueda, name='buscar'),
+    path('api/chart/data/',dashboard.ChartData.as_view()),
+    path('',dashboard.HomeView.as_view(), name='home'),
     path('seccion/', include('phishing.urls')),
 ]
 

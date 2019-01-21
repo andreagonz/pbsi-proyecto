@@ -151,7 +151,7 @@ def hacer_peticion(sitios, sesion, sitio, entidades, ofuscaciones,
                 a.titulo = None if titulo is None else titulo.strip().replace('\n', ' ')
                 a.save()
     except Exception as e:
-        log('Error: %s' % str(e), "phishing.log")
+        log.log('Error: %s' % str(e), "phishing.log")
     finally:
         return codigo, texto, content, existe, redireccion
 
@@ -187,14 +187,13 @@ def guarda_captura(url, out, proxy=None):
     Se genera la captura de pantalla de la url especificada,
     se guarda el resultado en out
     """
-    url = urllib.parse.quote_plus(url, safe=';/?:@&=+$,')
-    if proxy.startswith('socks5://'):
+    url = urllib.parse.quote_plus(url, safe=';/?:@&=+$,_-')
+    if proxy and proxy.startswith('socks5://'):
         process = Popen("proxychains xvfb-run -a --server-args='-screen 0, 1280x1200x24' cutycapt --url='%s' --out='%s' --min-width=800 --min-height=600 --max-wait=25000" % (url, out), shell=True, stdout=PIPE, stderr=PIPE)
     elif proxy:
         o = urlparse(proxy)
         proxy = "%s://%s" % (o.scheme, o.netloc) if o.scheme and o.netloc else ''
         proxy = urllib.parse.quote_plus(proxy, safe='/:')
-        print(proxy)
         process = Popen("xvfb-run -a --server-args='-screen 0, 1280x1200x24' cutycapt --url='%s' --out='%s' --min-width=800 --min-height=600 --max-wait=25000 --http-proxy='%s'" % (url, out, proxy), shell=True, stdout=PIPE, stderr=PIPE)
     else:
         process = Popen("xvfb-run -a --server-args='-screen 0, 1280x1200x24' cutycapt --url='%s' --out='%s' --min-width=800 --min-height=600 --max-wait=25000" % (url, out), shell=True, stdout=PIPE, stderr=PIPE)

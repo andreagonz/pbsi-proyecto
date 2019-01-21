@@ -1,5 +1,5 @@
 from django import forms
-from .models import *
+from phishing.models import *
 from django.forms.widgets import SelectDateWidget
 from django.utils import timezone
 from django.forms import ModelForm
@@ -112,4 +112,26 @@ class MensajeForm(forms.Form):
 
     def actualiza(self):
         urls = [x.pk for x in self.fields['urls'].queryset]
-        self.fields['urls'].queryset = Url.objects.filter(pk__in=urls)
+        qs = Url.objects.filter(pk__in=urls)
+        self.fields['urls'].queryset = qs
+        self.fields['capturas'].queryset = SitioInfo.objects.filter(pk__in=
+            [x.sitio_info.pk for x in qs if x.sitio_info and x.sitio_info.captura]).distinct()
+
+class ActualizaURL(forms.Form):
+
+    OPCIONES_DETECCION = (
+        ('M', 'Sitio malicioso'),
+        ('P', 'Sitio phishing'),
+        ('I', 'Indefinido'),
+        ('N', 'Sitio no malicioso'),
+    )
+    
+    entidad = forms.ModelChoiceField(label='Entidad afectada', queryset=Entidad.objects.all(),
+                                     required=False)
+    deteccion = forms.ChoiceField(choices=OPCIONES_DETECCION, required=True)
+
+    def __init__(self, *args, **kwargs):
+        info = kwargs.pop('info', None)
+        super().__init__(*args, **kwargs)
+        self.fields['entidad'].initial = info.entidad_afectada
+        self.fields['deteccion'].initial = info.deteccion

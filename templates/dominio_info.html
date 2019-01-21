@@ -33,7 +33,7 @@
       RIR: {{ dominio.rir_str }} <br/>
       Servidores DNS: {{ dominio.dns_str }} <br/>
       ISP: {{ dominio.isp_str }} <br/>
-      ASN: {{ dominio.asn_str }} <br/>
+      ASN: {% if dominio.asn %}<a href='{% url "asn" dominio.asn.pk %}'>{% endif %}{{ dominio.asn_str }}{% if dominio.asn %}</a>{% endif %} <br/>
       Servidor: {{ dominio.servidor_str }} <br/>
       Correos de abuso: {{ dominio.correos_str }}
     </p>

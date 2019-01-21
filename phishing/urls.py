@@ -33,4 +33,5 @@ urlpatterns = [
     path('actualiza-asn/<int:pk>', ajustes.ActualizaASN.as_view(), name='actualiza-asn'),
     path('asn/<int:pk>', detalle.ASNView.as_view(), name='asn'),
     path('dominio/<int:pk>', detalle.DominioView.as_view(), name='dominio'),
+    path('actualiza-url/<int:pk>', detalle.actualiza_url, name='actualiza-url'),
 ]

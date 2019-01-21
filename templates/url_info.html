@@ -3,7 +3,7 @@
     <div class="uk-grid-medium uk-flex-middle" uk-grid>
       <div class="uk-width-auto">
         <div uk-lightbox>
-          {% if activo %}
+          {% if activo and url.sitio_activo %}
             <input type="checkbox" class="uk-checkbox" name="urls" value="{{ url.id }}" checked />&nbsp;&nbsp;
           {% endif %}
           <a href='{{ url.captura_url }}'><img src='{{ url.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;" /></a>

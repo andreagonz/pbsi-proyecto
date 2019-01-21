@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Monitoreo{% endblock %}
+
+{% block contenido %}
+
+  <article class="uk-article">
+
+    <h1 class="uk-article-title">Direcciones URL ignoradas exitósamente</h1>
+
+    <h4>Sitios ignorados:</h4>
+    <ul>
+      {% for u in urls %}
+        <li>
+          <a href='{% url "url-detalle" pk=u.pk %}'>{{ u }}</a>
+        </li>
+      {% endfor %}
+    </ul>
+  <a href="{% url 'monitoreo' %}" class="uk-button uk-button-primary">Regresar a monitoreo<a/>
+{% endblock %}

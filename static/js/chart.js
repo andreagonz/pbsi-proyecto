@@ -53,7 +53,7 @@ $.ajax({
 		},
 		title: {
 		    display: true,
-		    text: 'Top 5 Países',
+		    text: ['TOP 5 PAÍSES','Top 5 países que hospedan sitios phishing'],
 		    fontSize: 16
 		},
                 legend: {
@@ -116,7 +116,7 @@ $.ajax({
 		},
 		title: {
 		    display: true,
-		    text: 'Top 5 Hosting',
+		    text: ['TOP 5 HOSTING', 'Top 5 servicios de hosting que hospedan sitios phishing'],
 		    fontSize: 16
 		},
                 legend: {
@@ -166,7 +166,7 @@ $.ajax({
 		},
 		title: {
 		    display: true,
-		    text: 'Sitios Phishing',
+		    text: ['SITIOS PHISHING', 'Número de sitios phishing detectados, activos y reportados'],
 		    fontSize: 16
 		},
                 legend: {
@@ -231,7 +231,7 @@ $.ajax({
 		},
 		title: {
 		    display: true,
-		    text: 'Top 5 - Sitios vs Tiempo de Vida',
+		    text: ['TOP 5 - SITIOS VS TIEMPO DE VIDA', 'Top 5 sitios phishing con mayor tiempo de vida desde su registro en el sistema'],
 		    fontSize: 16
 		},
                 legend: {
@@ -265,7 +265,7 @@ $.ajax({
 		},
 		title: {
 		    display: true,
-		    text: 'Sectores Afectados',
+		    text: ['SECTORES AFECTADOS', 'Sectores que han sido afectados por sitios phishing'],
 		    fontSize: 16
 		}
 	    }
@@ -317,7 +317,7 @@ $.ajax({
 		},
 		title: {
 		    display: true,
-		    text: 'Detecciones en últimos 7 días',
+		    text: ['DETECCIONES EN ÚLTIMOS 7 DÍAS', 'Número de detecciones de sitios phishing por día en la última semana'],
 		    fontSize: 16
 		}
 	    }
@@ -347,7 +347,7 @@ $.ajax({
 		},
 		title: {
 		    display: true,
-		    text: 'Entidades Afectadas',
+		    text: ['ENTIDADES AFECTADAS', 'Entidades que han sido afectadas por sitios phishing'],
 		    fontSize: 16
 		}
 	    }	    
@@ -419,7 +419,7 @@ $.ajax({
 		},
 		title: {
 		    display: true,
-		    text: 'Tiempo de reporte',
+		    text: ['TIEMPO DE REPORTE', 'Tiempo promedio por día de reporte de sitio phishing desde su registro y tiempo', 'promedio por día de vida de sitios phishing después de ser reportados en la última semana'],
 		    fontSize: 16
 		}
 	    }	    

@@ -37,7 +37,7 @@ class Entidad(models.Model):
 class ASN(models.Model):
 
     asn = models.PositiveIntegerField(unique=True)
-    nombre = models.CharField(max_length=128, unique=True, null=True)
+    nombre = models.CharField(max_length=128)
     formularios = models.CharField(max_length=2048, null=True)
 
     @property
@@ -356,6 +356,14 @@ class SitioInfo(models.Model):
     redireccion = models.ForeignKey(Url, on_delete=models.SET_NULL, null=True,
                                     related_name='redirecciones')
 
+    @property
+    def reportado_str(self):
+        return "Sí" if self.ticket else "No"
+
+    @property
+    def ignorado_str(self):
+        return "Sí" if self.ignorado else "No"
+    
     @property
     def captura_url(self):
         i = self.sitioactivoinfo

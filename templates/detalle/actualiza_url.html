@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Actualiza URL{% endblock %}
+
+{% block contenido %}
+  <h1 class="uk-heading-primary uk-text-center">Actualiza URL</h1>
+  <h4 class="uk-heading-bullet"><a href='{% url 'url-detalle' pk=url.pk %}'>{{ url }}</a></h4>
+  <form action="" method="post">
+    {% csrf_token %}
+    {% include 'form.html' with form=form %}
+    <input type="submit" value="Actualiza" class="uk-button uk-button-primary"/>
+  </form>
+  
+{% endblock %}

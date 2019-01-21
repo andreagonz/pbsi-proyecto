@@ -36,6 +36,8 @@
           {% else %}
             <br/><span class='uk-text-bold'>Redirección:</span> <a href="{% url 'url-detalle' pk=sitio.redireccion.pk %}">{{ sitio.redireccion.url }}</a>
           {% endif %}
+          <br/><span class="uk-text-bold">Ignorado:</span> {{ sitio.ignorado_str }}
+          <br/><span class="uk-text-bold">Reportado:</span> {{ sitio.reportado_str }}
           {% if historial and sitio.ticket %}
             <br/><span class="uk-text-bold">Fecha de reporte:</span> {{ sitio.ticket.timestamp }}
             <br/><span class="uk-text-bold">Ticket:</span> <a href='{% url 'ticket' pk=sitio.ticket.pk %}'>{{ sitio.ticket }}</a>

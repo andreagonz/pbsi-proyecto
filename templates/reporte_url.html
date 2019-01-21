@@ -44,8 +44,8 @@
           <br/><span class='uk-text-bold'>Fecha de reporte:</span> {{ url.timestamp_reportado }}
         {% endif %}
         <br/><span class='uk-text-bold'>Ignorado:</span> {% if url.ignorado %}Sí{% else %}No{% endif %}
-        {% if url.activo and url.mas_reciente.sitioactivoinfo %}
-          {% with url.mas_reciente.sitioactivoinfo as info %}
+        {% if url.sitio_info %}
+          {% with url.sitio_info as info %}
             <br/><span class='uk-text-bold'>Título:</span> {{ info.titulo_str }}
             <br/><span class='uk-text-bold'>Entidad afectada:</span> {{ info.entidad_afectada_str }}
             <br/><span class='uk-text-bold'>Archivo:</span> <a href='{{ info.archivo_url }}'>Descarga</a>
