@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Dashboard{% endblock title %}
+{% block title %}Sistema de Análisis Automatizado de Phishing y Sitios Maliciosos{% endblock title %}
 
 {% load staticfiles %}
 
@@ -11,40 +11,40 @@
 
 {% block contenido %}
 
-  <h1 class="uk-heading-primary uk-text-center"><span>Dashboard</span></h1>
+  <h1 class="uk-text-center"><span>Sistema de Análisis Automatizado de Phishing y Sitios Maliciosos</span></h1>
 
   <div class="uk-child-width-1-1@s uk-child-width-1-3@m" uk-grid>
-    <div style="height:350px;">
+    <div class="grafica">
       <canvas id="top5-paises"></canvas>
     </div> 
-    <div style="height:350px;">
+    <div class="grafica">
       <canvas id="top5-hosting"></canvas>
     </div>
-    <div style="height:350px;">
+    <div class="grafica">
       <canvas id="sitios-phishing"></canvas>
     </div>
   </div>
   
   <div class="uk-auto">
-    <div style="height:300px">
+    <div class="grafica">
       <canvas id="top5-sitios"></canvas>
     </div>
   </div>
   
   <div class="uk-child-width-1-1@s uk-child-width-1-2@m" uk-grid>
-    <div style="height:300px">
+    <div class="grafica">
       <canvas id="entidades"></canvas>
     </div>
-    <div style="height:300px">
+    <div class="grafica">
       <canvas id="sectores"></canvas>
     </div>
   </div>
   
   <div class="uk-child-width-1-1@s uk-child-width-1-2@m" uk-grid>
-    <div style="height:350px">
+    <div class="grafica no-margen">
       <canvas id="detecciones"></canvas>
     </div>
-    <div style="height:350px">
+    <div class="grafica no-margen">
       <canvas id="tiempo-reporte"></canvas>
     </div>
   </div>

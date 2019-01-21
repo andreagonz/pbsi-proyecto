@@ -6,6 +6,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href='{% static "css/uikit.min.css" %}' />
+    <link rel="stylesheet" href='{% static "css/estilo.css" %}' />
     <script src='{% static "js/jquery.min.js" %}'></script>
     <script src='{% static "js/uikit.min.js" %}'></script>
     <script src='{% static "js/uikit-icons.min.js" %}'></script>
@@ -17,7 +18,10 @@
     
     <nav class="uk-navbar-container uk-margin" uk-navbar>
       <div class="uk-navbar-left">
-        <a class="uk-navbar-item uk-logo" href="{% url 'home' %}">SAAPM</a>
+        <!-- <a class="uk-navbar-item uk-logo" href="{% url 'home' %}">SAAPM</a> -->
+        <a href="{% url 'home' %}">
+          <img class="logo" src="{% static 'logo.png' %}" alt="Logo UNAM-CERT" />
+        </a>
         <ul class="uk-navbar-nav">
           {% if user.is_authenticated %}
             <li>
