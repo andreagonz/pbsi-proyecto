@@ -21,15 +21,19 @@ class Search(forms.Form):
     archivos = forms.BooleanField(label='Búsqueda en archivos', required=False)
 
 class HistoricoForm(forms.Form):
-    inicio = forms.DateField(label='Fecha inicio', widget=SelectDateWidget(
-        years=range(timezone.localtime(timezone.now()).year - 10,
-                    timezone.localtime(timezone.now()).year + 1)),
-                             initial=timezone.localtime(timezone.now()))
-    fin = forms.DateField(label='Fecha fin',
-                          widget=SelectDateWidget(
-                              years=range(timezone.localtime(timezone.now()).year - 10,
-                                          timezone.localtime(timezone.now()).year + 1)),
-                          initial=timezone.localtime(timezone.now()))
+    inicio = forms.DateTimeField(label='Fecha inicio',
+                                 widget=forms.DateTimeInput(
+                                     attrs={'class': 'datetimepicker'},
+                                     format="%Y-%m-%d %H:%M"
+                                 ),
+                                 initial=timezone.localtime(timezone.now()) -
+                                 timezone.timedelta(days=1))
+    fin = forms.DateTimeField(label='Fecha fin',
+                              widget=forms.DateTimeInput(
+                                  attrs={'class': 'datetimepicker'},
+                                  format="%Y-%m-%d %H:%M",
+                              ),
+                              initial=timezone.localtime(timezone.now()))
     
 class CambiaAsuntoForm(forms.Form):
     asunto = forms.CharField(label='Plantilla de asunto', max_length=512, required=True)
@@ -59,15 +63,20 @@ class CorreoArchivoForm(forms.Form):
 class GraficasForm(forms.Form):
 
     archivo = forms.CharField(label='Nombre de archivo', max_length=128)
-    inicio = forms.DateField(label='Fecha inicio', widget=SelectDateWidget(
-        years=range(timezone.localtime(timezone.now()).year - 10,
-                    timezone.localtime(timezone.now()).year + 1)),
-                             initial=timezone.localtime(timezone.now()))
-    fin = forms.DateField(label='Fecha fin',
-                          widget=SelectDateWidget(
-                              years=range(timezone.localtime(timezone.now()).year - 10,
-                                          timezone.localtime(timezone.now()).year + 1)),
-                          initial=timezone.localtime(timezone.now()))
+
+    inicio = forms.DateTimeField(label='Fecha inicio',
+                                 widget=forms.DateTimeInput(
+                                     attrs={'class': 'datetimepicker'},
+                                     format="%Y-%m-%d %H:%M"
+                                 ),
+                                 initial=timezone.localtime(timezone.now()) -
+                                 timezone.timedelta(days=1))
+    fin = forms.DateTimeField(label='Fecha fin',
+                              widget=forms.DateTimeInput(
+                                  attrs={'class': 'datetimepicker'},
+                                  format="%Y-%m-%d %H:%M",
+                              ),
+                              initial=timezone.localtime(timezone.now()))
     sitios = forms.BooleanField(label='Sitios de phishing', required=False)
     top_sitios = forms.BooleanField(label='Top 5 sitios phishing vs tiempo de vida', required=False)
     sectores = forms.BooleanField(label='Sectores afectados', required=False)

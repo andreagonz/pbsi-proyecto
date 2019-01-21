@@ -10,18 +10,22 @@
       </div>
       <div class="uk-width-expand">
         <h4 class="uk-comment-title uk-margin-remove">
-          {{ dominio }}
+          <a class="uk-link-reset" href='{% url 'dominio' pk=dominio.pk %}'>{{ dominio }}</a>
         </h4>
         <p class="uk-comment-meta uk-margin-remove-top">
-          <a class="uk-link-reset" href="#">IP: {{ dominio.ip }}</a>
+          IP: {{ dominio.ip }}
         </p>
       </div>
     </div>
-    <div class="uk-position-top-right uk-position-small">
-      <a href='{% url 'monitoreo-id' dominio.pk %}' class="uk-button uk-button-primary">
-        Reportar dominio
-      </a>
-    </div>      
+
+    {% if reportar %}
+      <div class="uk-position-top-right uk-position-small">
+        <a href='{% url 'monitoreo-id' dominio.pk %}' class="uk-button uk-button-primary">
+          Reportar dominio
+        </a>
+      </div>
+    {% endif %}
+    
   </header>            
   <div class="uk-comment-body">
     <p>

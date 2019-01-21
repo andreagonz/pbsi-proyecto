@@ -1,6 +1,14 @@
 {% extends "base.html" %}
-
+{% load static %}
 {% block title %}Histórico{% endblock %}
+{% block head %}
+  <link rel="stylesheet" href='{% static "css/jquery-ui.min.css" %}' />
+  <link rel="stylesheet" href='{% static "css/jquery-ui.structure.min.css" %}' />
+  <link rel="stylesheet" href='{% static "css/jquery-ui.theme.min.css" %}' />
+  <link rel="stylesheet" href='{% static "css/jquery-ui-timepicker-addon.css" %}' />
+  <script src='{% static "js/jquery-ui.min.js" %}'></script>  
+  <script src='{% static "js/jquery-ui-timepicker-addon.js" %}'></script>  
+{% endblock %}
 
 {% block contenido %}
   <h1 class="uk-heading-primary uk-text-center"><span>Histórico</span></h1>
@@ -11,6 +19,11 @@
     <input class="uk-button uk-button-primary" type="submit" value="Aceptar" />
   </form>
 
-  {% include 'reporte_sitios.html' %}
+  {% include 'reporte_urls.html' %}
   
+  <script type="text/javascript">
+    $('.datetimepicker').datetimepicker({
+      dateFormat: 'yy-mm-dd'
+    });
+  </script>
 {% endblock %}

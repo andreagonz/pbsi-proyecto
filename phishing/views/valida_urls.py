@@ -27,7 +27,6 @@ def valida_urls(request):
                         no_reportados = True
                         break
                 urls = Url.objects.filter(pk__in=[x.pk for x in sitios]).distinct()
-                urls = urls.prefetch_related('sitios__sitioactivoinfo')
                 context = aux.context_reporte(urls)
                 context['no_reportados'] = no_reportados
                 return render(request, 'valida_urls/reporte_validacion.html', context)
@@ -50,7 +49,6 @@ def valida_urls(request):
                     no_reportados = True
                     break
             urls = Url.objects.filter(pk__in=[x.pk for x in sitios]).distinct()
-            urls = urls.prefetch_related('sitios__sitioactivoinfo')
             context = aux.context_reporte(urls)
             context['no_reportados'] = no_reportados
             return render(request, 'valida_urls/reporte_validacion.html', context)

@@ -1,5 +1,14 @@
 {% extends 'base.html' %}
 {% block title %}Reporte{% endblock %}
+{% load static %}
+{% block head %}
+  <link rel="stylesheet" href='{% static "css/jquery-ui.min.css" %}' />
+  <link rel="stylesheet" href='{% static "css/jquery-ui.structure.min.css" %}' />
+  <link rel="stylesheet" href='{% static "css/jquery-ui.theme.min.css" %}' />
+  <link rel="stylesheet" href='{% static "css/jquery-ui-timepicker-addon.css" %}' />
+  <script src='{% static "js/jquery-ui.min.js" %}'></script>  
+  <script src='{% static "js/jquery-ui-timepicker-addon.js" %}'></script>  
+{% endblock %}
 
 {% block contenido %}
   <h1 class="uk-heading-primary uk-text-center"><span>Generación de Reporte</span></h1>
@@ -14,4 +23,10 @@
       <p>Se creó el archivo {{ nom }}</p>
     </div>
   {% endif %}
+
+  <script type="text/javascript">
+    $('.datetimepicker').datetimepicker({
+      dateFormat: 'yy-mm-dd'
+    });
+  </script>
 {% endblock %}

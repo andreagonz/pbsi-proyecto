@@ -4,13 +4,13 @@
 
 {% block contenido %}
 
-  <h1 class="uk-heading-primary"><span>ASN</span></h1>
+  <h1 class="uk-heading-primary"><span>Lista de ASNs</span></h1>
   
   <a class="uk-button uk-button-primary" href='{% url 'crea-asn' %}'>Nuevo ASN</a>
   
   <dl class="uk-description-list uk-description-list-divider">
   {% for o in asn %}
-      <dt><span class="uk-text-bold">Nombre: {{ o }}</span></dt>
+      <dt><span class="uk-text-bold"><asn><a class="uk-link-reset" href='{% url "asn" pk=o.pk %}'>{{ o }}</a></span></dt>
       <dd><span class="uk-text-bold">Formularios de abuso:</span>
         {% if o.formularios_lst %}
           <ul style="margin:5px;">

@@ -9,6 +9,7 @@
     <li class="uk-active"><a href="#">Datos</a></li>
     <li><a href="#">Hashes</a></li>
     <li><a href="#">Historial</a></li>
+    <li><a href="#">Formularios de abuso</a></li>
   </ul>
 
   <ul class="uk-switcher uk-margin">
@@ -34,6 +35,15 @@
           </li>
         {% endfor %}
       </ul>
+    </li>
+    <li>
+      {% if url.dominio.asn.formularios_lst %}
+        <ul>
+          {% for f in url.dominio.asn.formularios_lst %}
+            <li><a href='{{ f }}'>{{ f }}</a></li>
+          {% endfor %}
+        </ul>
+      {% endif %}
     </li>
   </ul>  
 {% endblock %}

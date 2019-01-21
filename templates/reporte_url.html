@@ -1,15 +1,15 @@
 <article class="uk-comment uk-visible-toggle">
   <header class="uk-comment-header uk-position-relative">
     <div class="uk-grid-medium uk-flex-middle" uk-grid>
-      {% if url.mas_reciente.sitioactivoinfo %}
-        <div class="uk-width-auto">
-          <div uk-lightbox>
-            <a href='{{ url.captura_url }}'>
-              <img src='{{ url.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;"/>
-            </a>
-          </div>
+
+      <div class="uk-width-auto">
+        <div uk-lightbox>
+          <a href='{{ url.captura_url }}'>
+            <img src='{{ url.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;"/>
+          </a>
         </div>
-      {% endif %}
+      </div>
+
       <div class="uk-width-expand">
         <h4 class="uk-comment-title uk-margin-remove">
           <a class="uk-link-reset" href="{% url 'url-detalle' url.pk %}">{{ url }}</a>
@@ -20,13 +20,14 @@
   </header>
   <div class="uk-comment-body">
     <p>
+      <span class='uk-text-bold'>Dominio:</span> <a href='{% url "dominio" pk=url.dominio.pk %}'>{{ url.dominio }}</a><br/>
       <span class='uk-text-bold'>IP:</span> {{ url.dominio.ip_str }}<br/>
       <span class='uk-text-bold'>Código:</span> {{ url.codigo_str }}<br/>      
       <span class='uk-text-bold'>Estado:</span> {{ url.estado }} <br/>
       <span class='uk-text-bold'>Correos:</span> {{ url.dominio.correos_str }}<br/>
       <span class='uk-text-bold'>ISP:</span> {{ url.dominio.isp_str }}<br/>
       <span class='uk-text-bold'>País:</span> {{ url.dominio.pais_str }}<br/>
-      <span class='uk-text-bold'>ASN:</span> {{ url.dominio.asn_str }}<br/>
+      {% if url.dominio.asn %}<span class='uk-text-bold'>ASN:</span> <a href='{% url "asn" pk=url.dominio.asn.pk %}'>{{ url.dominio.asn_str }}</a><br/>{% endif %}
       <span class='uk-text-bold'>Servidor:</span> {{ url.dominio.servidor_str }}<br/>
       <span class='uk-text-bold'>RIR:</span> {{ url.dominio.rir_str }}<br/>
       <span class='uk-text-bold'>Servidores DNS:</span> {{ url.dominio.dns_str }}

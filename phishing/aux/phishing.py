@@ -17,15 +17,15 @@ from django.core.files import File
 from virus_total_apis import PublicApi as VirusTotalPublicApi
 import magic
 from phishing.aux import log
+import gzip
+import urllib.parse
 
 def md5(x):
     return hashlib.md5(x).hexdigest()
 
-def md5_archivo(fname):
+def md5_content(c):
     h = hashlib.md5()
-    with open(fname, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            h.update(chunk)
+    h.update(c)
     return h.hexdigest()
 
 def lineas_md5(texto):
@@ -59,7 +59,7 @@ def archivo_texto(sitio):
     try:
         if sitio.archivo is None:
             return ''
-        with sitio.archivo.open() as f:
+        with gzip.open(sitio.archivo.path, "rb") as f:
             return f.read().decode(encoding="utf-8", errors="ignore")
     except Exception as e:
         log.log('Error: %s' % str(e), "phishing.log")
@@ -148,7 +148,7 @@ def hacer_peticion(sitios, sesion, sitio, entidades, ofuscaciones,
             i = sitio.mas_reciente
             a = i.sitioactivoinfo if i else None
             if a:
-                a.titulo = '' if titulo is None else titulo.strip().replace('\n', ' ')
+                a.titulo = None if titulo is None else titulo.strip().replace('\n', ' ')
                 a.save()
     except Exception as e:
         log('Error: %s' % str(e), "phishing.log")
@@ -187,10 +187,17 @@ def guarda_captura(url, out, proxy=None):
     Se genera la captura de pantalla de la url especificada,
     se guarda el resultado en out
     """
-    if proxy is None:
-        process = Popen('xvfb-run -a --server-args="-screen 0, 1280x1200x24" cutycapt --url="%s" --out="%s" --min-width=800 --min-height=600 --max-wait=25000' % (url, out), shell=True, stdout=PIPE, stderr=PIPE)
+    url = urllib.parse.quote_plus(url, safe=';/?:@&=+$,')
+    if proxy.startswith('socks5://'):
+        process = Popen("proxychains xvfb-run -a --server-args='-screen 0, 1280x1200x24' cutycapt --url='%s' --out='%s' --min-width=800 --min-height=600 --max-wait=25000" % (url, out), shell=True, stdout=PIPE, stderr=PIPE)
+    elif proxy:
+        o = urlparse(proxy)
+        proxy = "%s://%s" % (o.scheme, o.netloc) if o.scheme and o.netloc else ''
+        proxy = urllib.parse.quote_plus(proxy, safe='/:')
+        print(proxy)
+        process = Popen("xvfb-run -a --server-args='-screen 0, 1280x1200x24' cutycapt --url='%s' --out='%s' --min-width=800 --min-height=600 --max-wait=25000 --http-proxy='%s'" % (url, out, proxy), shell=True, stdout=PIPE, stderr=PIPE)
     else:
-        process = Popen('xvfb-run -a --server-args="-screen 0, 1280x1200x24" cutycapt --url="%s" --out="%s" --min-width=800 --min-height=600 --max-wait=25000 --http-proxy="%s"' % (url, out, proxy), shell=True, stdout=PIPE, stderr=PIPE)
+        process = Popen("xvfb-run -a --server-args='-screen 0, 1280x1200x24' cutycapt --url='%s' --out='%s' --min-width=800 --min-height=600 --max-wait=25000" % (url, out), shell=True, stdout=PIPE, stderr=PIPE)
     stdout, stderr = process.communicate()
     return not stderr is None
 
@@ -201,7 +208,7 @@ def genera_captura(url, nombre, proxy=None):
 
 def guarda_archivo(content, nombre):
     archivo = os.path.join(settings.MEDIA_ROOT, nombre)
-    with open(archivo, 'wb') as w:
+    with gzip.open(archivo, 'wb') as w:
         w.write(content)
     return archivo
     
@@ -274,12 +281,12 @@ def verifica_url_aux(sitios, url, existe, entidades, ofuscaciones, dominios_inac
         mime = ''
         sitio_activo_info = sitio_info.sitioactivoinfo
         if url.activo and content and sitio_activo_info:
-            nombre = 'archivos/%s.txt' % sitio_activo_info.identificador
+            nombre = 'archivos/%s.gz' % sitio_activo_info.identificador
             archivo = guarda_archivo(content, nombre)
             if os.path.exists(archivo):
                 with open(archivo, 'rb') as f:
                     sitio_activo_info.archivo.save(os.path.basename(archivo), File(f), True)
-                sitio_activo_info.hash_archivo = md5_archivo(archivo)
+                sitio_activo_info.hash_archivo = md5_content(content)
                 magia = magic.Magic(mime=True)
                 mime = magia.from_file(archivo)
         malicioso = False
@@ -289,24 +296,26 @@ def verifica_url_aux(sitios, url, existe, entidades, ofuscaciones, dominios_inac
                 sitio_activo_info.timestamp_deteccion = timezone.localtime(timezone.now())
                 malicioso = True
         if (sitio_activo_info.deteccion == 'I' or malicioso) and url.activo and not \
-           (malicioso and mime != 'text/html'):
+           (malicioso and not mime.startswith('text')):
             if es_phishing(url.url):
                 sitio_activo_info.deteccion = 'P'
                 sitio_activo_info.timestamp_deteccion = timezone.localtime(timezone.now())
-        if not existe and url.activo and sitio_activo_info.deteccion != 'M':
-            entidad = obten_entidad_afectada(entidades, texto)
-            if entidad:
-                sitio_activo_info.entidad_afectada = entidad
-            ofuscaciones = encuentra_ofuscacion(ofuscaciones, texto)
-            for o in ofuscaciones:
-                sitio_activo_info.ofuscaciones.add(o)
+        if url.activo:
+            if not sitio_activo_info.entidad_afectada:
+                entidad = obten_entidad_afectada(entidades, texto)
+                if entidad:
+                    sitio_activo_info.entidad_afectada = entidad
+            if sitio_activo_info.ofuscaciones.count() == 0:
+                ofuscaciones = encuentra_ofuscacion(ofuscaciones, texto)
+                for o in ofuscaciones:
+                    sitio_activo_info.ofuscaciones.add(o)
         # if sitio.activo and sitio.deteccion == 'I':
         # heuristica_phishing(sitio)
         if url.codigo < 0:
             dominios_inactivos[dominio] = 1
         if (monitoreo or not existe) and url.activo and sitio_activo_info:
             proxy = get_proxy(sesion)
-            nombre = 'capturas/%s.png' % sitio_activo_info.identificador
+            nombre = 'capturas/%s.jpg' % sitio_activo_info.identificador
             if sitio_activo_info.captura and os.path.exists(sitio_activo_info.captura.path):
                 with open(sitio_activo_info.captura.path, 'rb') as f:
                     sitio_activo_info.captura_anterior.save(
@@ -431,7 +440,7 @@ def get_info(dominio, sesion):
                         dominio.asn = asnO
         dominio.save()
         
-def actualiza_dominio(dominio, scheme, sesion, proxy):
+def actualiza_dominio(dominio, scheme, sesion):
     get_info(dominio, sesion)
     get_dns(dominio)
     if dominio.ip:
@@ -441,7 +450,8 @@ def actualiza_dominio(dominio, scheme, sesion, proxy):
             correos = correos_whois(w)
             for x in correos:                
                 dominio.correos.add(get_correo(x))
-    nombre = 'capturas/%s.png' % genera_id(dominio.dominio)
+    nombre = 'capturas/%s.jpg' % genera_id(dominio.dominio)
+    proxy = get_proxy(sesion)
     captura = genera_captura(dominio.dominio, nombre, proxy)
     if os.path.exists(captura):
         with open(captura, 'rb') as f:
@@ -463,7 +473,7 @@ def obten_dominio(dominio, scheme, sesion, monitoreo=False, proxy=None):
             log.log("Error al crear dominio '%s': %s" % (dominio, str(e)), "phishing.log")
             return None
     if monitoreo:
-        actualiza_dominio(d, scheme, sesion, proxy)
+        actualiza_dominio(d, scheme, sesion)
     return d
 
 def obten_sitio(url, sesion, proxy=None, dominio=None):
@@ -498,6 +508,14 @@ def verifica_url(sitios, url, entidades, ofuscaciones, dominios_inactivos,
                          dominios_inactivos, sesion, max_redir, monitoreo=monitoreo)
         sitios.append(sitio)
 
+def mi_ip(sesion):
+    try:
+        r = sesion.get('https://api.ipify.org')
+        log.log("IP de salida: %s" % r.text, "ip.log")
+        print("\033[92mIP: %s\033[0m" % r.text)
+    except Exception as e:
+        log.log("Error al obtener IP de salida: %s" % str(e), "phishing.log")
+
 def monitorea_dominio(dominio, urls, proxy):
     scheme = 'http'
     for u in urls:
@@ -505,7 +523,9 @@ def monitorea_dominio(dominio, urls, proxy):
         if url.scheme == 'https':
             scheme = 'https'
     sesion = obten_sesion(proxy)
-    actualiza_dominio(dominio, scheme, sesion, proxy)
+    if settings.DEBUG:
+        mi_ip(sesion)
+    actualiza_dominio(dominio, scheme, sesion)
     entidades = {}
     dominios_inactivos = {}
     for x in Entidad.objects.all():
@@ -513,9 +533,11 @@ def monitorea_dominio(dominio, urls, proxy):
     for u in urls:
         verifica_url_aux([], u, True, entidades, Ofuscacion.objects.all(),
                          dominios_inactivos, sesion, settings.MAX_REDIRECCIONES, monitoreo=True)
-
+    
 def verifica_urls(urls, proxy, cron=False):
     sesion = obten_sesion(proxy)
+    if settings.DEBUG:
+        mi_ip(sesion)
     mkdir(os.path.join(settings.MEDIA_ROOT, 'capturas'))
     mkdir(os.path.join(settings.MEDIA_ROOT, 'archivos'))
     entidades = {}

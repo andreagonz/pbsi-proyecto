@@ -28,9 +28,9 @@ def obten_texto(mensaje, archivo):
     
 def crea_diccionario(dominio):
     urls = dominio.urls_monitoreo
-    entidades = [x['sitios__sitioactivoinfo__entidad_afectada'] for x in urls.exclude(
+    entidades = [x['sitios__sitioactivoinfo__entidad_afectada__nombre'] for x in urls.exclude(
         sitios__sitioactivoinfo__entidad_afectada__isnull=True).values(
-            'sitios__sitioactivoinfo__entidad_afectada'
+            'sitios__sitioactivoinfo__entidad_afectada__nombre'
         ).distinct()]
     regex = re.compile(r'^htt')    
     dicc = {

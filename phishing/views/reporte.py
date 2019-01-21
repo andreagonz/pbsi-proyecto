@@ -9,7 +9,7 @@ from phishing.forms import GraficasForm
 class DocumentView(LoginRequiredMixin, View):
     
     def get(self,request, *args, **kwargs):
-            return render(request,'reporte.html', {'form': GraficasForm()})
+            return render(request,'reporte/reporte.html', {'form': GraficasForm()})
 
 def agrega_imagen(fig, documento):
     try:
@@ -364,4 +364,4 @@ def crear_doc(request):
             document.save(response)
             return response
         else:
-            return render(request,'reporte.html', {'form': GraficasForm()})
+            return render(request,'reporte/reporte.html', {'form': GraficasForm()})

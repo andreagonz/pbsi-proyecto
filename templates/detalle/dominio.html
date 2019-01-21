@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle de dominio{% endblock %}
+
+{% block contenido %}
+  <h1 class="uk-heading-primary uk-text-center"><span>Detalle de dominio</span></h1>
+
+  <ul class="uk-comment-list">        
+    <li>
+      {% include 'dominio_info.html' with reportar=True %}
+      <ul>
+        {% for url in dominio.urls.all %}
+          <li>
+            {% include 'url_info.html' %}
+          </li>
+        {% empty %}
+          <div class="uk-alert-warning" uk-alert>
+            <p>No hay ninguna URL por mostrar</p>
+          </div>
+        {% endfor %}    
+      </ul>
+    </li>
+  </ul>  
+  
+{% endblock %}

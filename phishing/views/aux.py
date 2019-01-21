@@ -1,4 +1,4 @@
-from django.db.models import Count, Q
+from django.db.models import Count, Q, Count, When, Case, CharField
 
 def cuenta_urls(sitios):
     return sitios.count()
@@ -12,18 +12,17 @@ def urls_inactivas(sitios):
 def urls_redirecciones(sitios):
     return sitios.filter(codigo__gte=300, codigo__lt=400)
 
-def urls_entidades(sitios):  
+def urls_entidades(sitios):
     return [(x['sitios__sitioactivoinfo__entidad_afectada__nombre'], x['cuenta'])
-            for x in sitios.exclude(
-                    sitios__sitioactivoinfo__entidad_afectada__isnull=True).values(
-                        'sitios__sitioactivoinfo__entidad_afectada__nombre').annotate(
-                            cuenta=Count('sitios__sitioactivoinfo__entidad_afectada__nombre'))]
+            for x in sitios.values('sitios__sitioactivoinfo__entidad_afectada__nombre').annotate(
+                    cuenta=Count('sitios__sitioactivoinfo__entidad_afectada__nombre'))
+            if x['sitios__sitioactivoinfo__entidad_afectada__nombre']]
         
 def urls_titulos(sitios):
     return [(x['sitios__sitioactivoinfo__titulo'], x['cuenta'])
-            for x in sitios.exclude(sitios__sitioactivoinfo__titulo__isnull=True).values(
-                        'sitios__sitioactivoinfo__titulo').annotate(
-                            cuenta=Count('sitios__sitioactivoinfo__titulo'))]
+            for x in sitios.values('sitios__sitioactivoinfo__titulo').annotate(
+                    cuenta=Count('sitios__sitioactivoinfo__titulo'))
+            if x['sitios__sitioactivoinfo__titulo']]
 
 def urls_dominios(sitios):
     return [(x['dominio__dominio'], x['cuenta'])
@@ -31,8 +30,8 @@ def urls_dominios(sitios):
 
 def urls_paises(sitios):
     return [(x['dominio__pais'], x['cuenta'])
-            for x in sitios.exclude(dominio__pais__isnull=True).values(
-                    'dominio__pais').annotate(cuenta=Count('dominio__pais'))]
+            for x in sitios.values('dominio__pais').annotate(cuenta=Count('dominio__pais'))
+            if x['dominio__pais']]
 
 def context_reporte(sitios):
     activas = urls_activas(sitios)
@@ -51,5 +50,4 @@ def context_reporte(sitios):
         'inactivas': inactivas,
         'redirecciones': redirecciones
     }
-    print(context['entidades'])
     return context

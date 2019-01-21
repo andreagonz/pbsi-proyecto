@@ -11,18 +11,7 @@
   <dl class="uk-description-list uk-description-list-divider">
   {% for o in entidades %}
       <dt><span class="uk-text-bold">Nombre: {{ o.nombre }}</span></dt>
-      <dd><span class="uk-text-bold">Clasificación:</span> {{ o.clasificacion }}</dd>
-      <dd><span class="uk-text-bold">Formularios de abuso:</span>
-        {% if o.formularios_lst %}
-          <ul style="margin:5px;">
-            {% for f in o.formularios_lst %}
-              <li><a href='{{ f }}'>{{ f }}</a></li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          No asignados
-        {% endif %}
-      </dd>
+      <dd><span class="uk-text-bold">Clasificación:</span> {{ o.clasificacion_str }}</dd>
       <dd>
         <a class="uk-button uk-button-default uk-button-small" href='{% url "actualiza-entidad" pk=o.pk %}'><span uk-icon="pencil"></span></a>
         <a class="uk-button uk-button-danger uk-button-small" href='{% url "elimina-entidad" pk=o.pk %}'><span uk-icon="close"></span></a>

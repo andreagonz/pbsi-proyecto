@@ -13,36 +13,7 @@
     
     <ul class="uk-comment-list">
       <li>
-        <article class="uk-comment uk-comment-primary uk-visible-toggle">            
-          <header class="uk-comment-header uk-position-relative">
-            <div class="uk-grid-medium uk-flex-middle" uk-grid>
-              <div class="uk-width-auto">
-                <div uk-lightbox>
-                  <a href='{{ dominio.captura_url }}'><img src='{{ dominio.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;"/></a>
-                </div>
-              </div>
-              <div class="uk-width-expand">
-                <h4 class="uk-comment-title uk-margin-remove">
-                  Dominio: {{ dominio }}
-                </h4>
-                <p class="uk-comment-meta uk-margin-remove-top">
-                  <a class="uk-link-reset" href="#">IP: {{ dominio.ip }}</a>
-                </p>
-              </div>
-            </div>
-          </header>            
-          <div class="uk-comment-body">
-            <p>
-              País: {{ dominio.pais_str }}<br/>
-              IP: {{ dominio.ip_str }}<br/>
-              ASN: {{ dominio.asn_str }}<br/>
-              Sevidores DNS: {{ dominio.dns_str }}<br/>
-              Servidor: {{ dominio.servidor_str }}<br/>
-              RIR: {{ dominio.rir_str }}<br/>
-              Correos de abuso: {{ dominio.correos_str }}
-            </p>
-          </div>
-        </article>
+        {% include 'dominio_info.html' %}
       </li>
     </ul>
 

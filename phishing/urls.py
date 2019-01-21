@@ -28,7 +28,9 @@ urlpatterns = [
     path('doc/', reporte.crear_doc, name='doc'),
     path('procesa-correo/', procesa_correo.procesa_correo, name='procesa-correo'),
     path('ticket/<int:pk>', detalle.TicketView.as_view(), name='ticket'),
-    path('asn', ajustes.asn_view, name='asn'),
+    path('asns', ajustes.asn_view, name='asns'),
     path('crea-asn', ajustes.NuevoASN.as_view(), name='crea-asn'),
     path('actualiza-asn/<int:pk>', ajustes.ActualizaASN.as_view(), name='actualiza-asn'),
+    path('asn/<int:pk>', detalle.ASNView.as_view(), name='asn'),
+    path('dominio/<int:pk>', detalle.DominioView.as_view(), name='dominio'),
 ]

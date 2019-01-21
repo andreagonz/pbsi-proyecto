@@ -2,55 +2,29 @@ from django.contrib.auth.decorators import login_required
 from django.urls import reverse_lazy
 from django.utils import timezone
 from phishing.forms import HistoricoForm
-from phishing.models import SitioInfo
+from phishing.models import SitioInfo, Url
 from django.shortcuts import render
-from django.db.models import Q, Count
+from phishing.views import aux
 
 @login_required(login_url=reverse_lazy('login'))
 def historico(request):
-    fin = timezone.localtime(timezone.now()).date()
-    inicio = fin
+    fin = timezone.localtime(timezone.now())
+    inicio = fin - timezone.timedelta(days=1)
     form = HistoricoForm()
     if request.method == 'POST':
         form = HistoricoForm(request.POST)
         if form.is_valid():
             inicio = form.cleaned_data['inicio']
             fin = form.cleaned_data['fin']
-    sitios = SitioInfo.objects.filter(timestamp_creacion__date__lte=fin,
-                                      timestamp_creacion__date__gte=inicio)
-    activos = sitios.filter(timestamp_desactivado=None).filter(redireccion=None)
-    inactivos = sitios.exclude(timestamp_desactivado=None)
-    redirecciones = sitios.exclude(redireccion=None)
-    entidades = sitios.exclude(Q(sitioactivoinfo=None)|
-                               Q(sitioactivoinfo__entidad_afectada=None)).values(
-                                   'sitioactivoinfo__entidad_afectada').distinct()
-    print(entidades)
-    titulos = sitios.exclude(Q(sitioactivoinfo=None)|
-                             Q(sitioactivoinfo__titulo=None)).values(
-                                 'sitioactivoinfo__titulo').distinct()
-    print(titulos)
-    dominios = [(x['url__dominio__dominio'], x['cuenta'])
-                for x in sitios.values('url__dominio__dominio').annotate(
-                        cuenta=Count('url__dominio__dominio'))]
-    print(dominios)
-    paises = sitios.values('url__dominio__pais').distinct()
-    paises = [(x['url__dominio__pais'], x['cuenta'])
-                for x in sitios.exclude(url__dominio__pais=None).values('url__dominio__pais').annotate(
-                        cuenta=Count('url__dominio__pais'))]
-    print(paises)
-    context = {
-        'sitios_total': sitios.count(),
-        'num_activos': activos.count(),
-        'num_inactivos': inactivos.count(),
-        'num_redirecciones': redirecciones.count(),
-        'entidades': entidades,
-        'titulos': titulos,
-        'dominios': dominios,
-        'paises': paises,
-        'activas': activos,
-        'inactivas': inactivos,
-        'redirecciones': redirecciones
-    }
+    activos = SitioInfo.objects.filter(timestamp_creacion__lte=fin,
+                                       timestamp_creacion__gte=inicio)
+
+    inactivos = Url.objects.filter(timestamp_creacion__lte=fin,
+                                   timestamp_creacion__gte=inicio,
+                                   sitios=None)    
+    urls_activos = Url.objects.filter(pk__in=[x.url.pk for x in activos])
+    urls = (inactivos|urls_activos).distinct()
+    context = aux.context_reporte(urls)
     context['inicio'] = inicio
     context['fin'] = fin
     context['form'] = form

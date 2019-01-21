@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Detalle de ASN{% endblock %}
+
+{% block contenido %}
+  <h1 class="uk-heading-primary uk-text-center"><span>Detalle de ASN</span></h1>
+  <h4 class="uk-heading-bullet">{{ asn }}</h4>
+
+  <h4>Formularios de abuso</h4>
+  <ul>
+    {% for f in asn.formularios_lst %}
+      <li><a href='{{ f }}'>{{ f }}</a></li>
+    {% endfor %}
+  </ul>
+
+  <h4>Dominios</h4>
+  <ul>
+    {% for dominio in asn.dominio_set.all %}
+      <li>
+        <a href='{% url "dominio" pk=dominio.pk %}'>{{ dominio }}</a>
+      </li>
+    {% endfor %}
+  </ul>
+  
+{% endblock %}

@@ -10,18 +10,18 @@
         
       {% for dominio in dominios %}
         <li>
-          {% include 'monitoreo/dominio_info.html' %}
+          {% include 'dominio_info.html' with reportar=True %}
           <ul>
             {% for url in dominio.urls_activas %}
               <li>
-                {% include 'monitoreo/url_info.html' %}
+                {% include 'url_info.html' %}
               </li>
             {% endfor %}
           </ul>
         </li>
       {% empty %}
         <div class="uk-alert-warning" uk-alert>
-          <p>No hay ninguna URL por mostrar</p>
+          <p>No hay ningún dominio por mostrar</p>
         </div>       
       {% endfor %}    
     </ul>  

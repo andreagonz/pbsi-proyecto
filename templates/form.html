@@ -18,7 +18,7 @@
   {% endif %}
     <label class="uk-form-label" for="{{ field.name }}">{{ field.label }}</label>
     <div class="uk-form-controls">
-      {% if field.errors %}
+      {% if field.errors and field|fieldtype != 'DateTimeInput' %}
         {{ field|addclass:'uk-input uk-form-danger' }}
       {% else %}
         {% if field|fieldtype == 'Textarea' %}

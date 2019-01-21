@@ -21,6 +21,10 @@ class Entidad(models.Model):
     def __str__(self):        
         return self.nombre
 
+    @property
+    def clasificacion_str(self):
+        return self.clasificacion if self.clasificacion else 'No asignada'
+    
     def clean(self):
         super(Entidad, self).clean()
         try:
@@ -227,7 +231,7 @@ class Url(models.Model):
         s = self.mas_reciente
         r = s.redireccion if s else None
         while r:
-            s = r.sitios.latest()
+            s = r.mas_reciente
             r = s.redireccion if s and s.url.es_redireccion else None
         return s.url if s else None
 
@@ -251,7 +255,7 @@ class Url(models.Model):
         url = self
         if self.es_redireccion:
             url = self.redireccion_final
-        s = url.sitios.latest() if url else None
+        s = url.mas_reciente if url else None
         return s.sitioactivoinfo if s else None
 
     @property
@@ -307,7 +311,7 @@ class Url(models.Model):
 
     @property
     def codigo_anterior_str(self):
-        if self.codigo >= 0:
+        if self.codigo_anterior >= 0:
             return str(self.codigo_anterior)
         return 'Sin respuesta'
                 
@@ -363,16 +367,23 @@ class SitioInfo(models.Model):
     def captura_anterior_url(self):
         i = self.sitioactivoinfo
         if i and i.captura_anterior and hasattr(i.captura_anterior, 'url'):
-            return i.captura.url
+            return i.captura_anterior.url
         return '/media/na.png'
 
+    @property
+    def mas_reciente(self):
+        try:
+            return self.sitios.latest()
+        except:
+            return None
+        
     @property
     def redireccion_final(self):
         if not self.redireccion:
             return None
         r = self.redireccion
         while r and r.es_redireccion:
-            s = r.sitios.latest()
+            s = r.mas_reciente
             r = s.redireccion if s and s.url.es_redireccion else None
         return r
 
@@ -413,7 +424,7 @@ class SitioActivoInfo(models.Model):
     @property
     def captura_anterior_url(self):
         if self.captura_anterior and hasattr(self.captura_anterior, 'url'):
-            return self.captura.url
+            return self.captura_anterior.url
         return '/media/na.png'
 
     @property

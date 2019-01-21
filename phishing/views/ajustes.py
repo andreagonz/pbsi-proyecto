@@ -175,8 +175,8 @@ def asn_view(request):
 class ActualizaASN(LoginRequiredMixin, UpdateView):
     model = ASN
     template_name = 'ajustes/actualiza_asn.html'
-    success_url = reverse_lazy('asn')
-    fields = ('formularios', 'asn', 'nombre')
+    success_url = reverse_lazy('asns')
+    fields = ('asn', 'nombre', 'formularios')
 
     def get_form(self, form_class=None):
         form = super(ActualizaASN, self).get_form(form_class)
@@ -189,8 +189,8 @@ class ActualizaASN(LoginRequiredMixin, UpdateView):
 class NuevoASN(LoginRequiredMixin, CreateView):
     model = ASN
     template_name = 'ajustes/nuevo_asn.html'
-    success_url = reverse_lazy('asn')
-    fields = ('formularios', 'asn', 'nombre')
+    success_url = reverse_lazy('asns')
+    fields = ('asn', 'nombre', 'formularios')
 
     def get_form(self, form_class=None):
         form = super(NuevoASN, self).get_form(form_class)
