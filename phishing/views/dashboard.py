@@ -7,6 +7,7 @@ import randomcolor
 from django.db.models import Count, Q, F, Avg
 from django.utils import timezone
 import datetime
+from phishing.views import aux
 
 class HomeView(View):
     def get(self, request, *args, **kwargs):
@@ -19,9 +20,6 @@ def obtener_dias():
     dias = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
     hoy = timezone.localtime(timezone.now()).weekday() + 1
     return dias[hoy:] + dias[:hoy]
-
-def delta_horas(td):
-    return td.total_seconds() / 3600
 
 class ChartData(APIView):
     
@@ -78,7 +76,7 @@ class ChartData(APIView):
             tiempo_vida=(hoy_tiempo - F('timestamp_creacion'))).order_by('-tiempo_vida')[:5]
         top_sitios_data = {
             'labels': [x.url.url for x in top_sitios],
-            'default': [delta_horas(x.tiempo_vida) for x in top_sitios]
+            'default': [aux.delta_horas(x.tiempo_vida) for x in top_sitios]
         }
 
         sectores = urls.values('sitios__sitioactivoinfo__entidad_afectada__clasificacion__nombre').annotate(
@@ -122,12 +120,12 @@ class ChartData(APIView):
                 tiempo_reportado=F('ticket__timestamp') - F('timestamp_creacion')).aggregate(
                     Avg('tiempo_reportado')).get('tiempo_reportado__avg', 0))
             tiempo_promedio_postreporte.append(sitiosA.filter(
-                timestamp_desactivado__isnull=True).annotate(
+                timestamp_desactivado__isnull=False).annotate(
                     tiempo_reportado=F('timestamp_desactivado') - F('ticket__timestamp')).aggregate(
                         Avg('tiempo_reportado')).get('tiempo_reportado__avg', 0))
         tiempo_reporte_data = {
-            'default1': [delta_horas(x) if x else 0 for x in tiempo_promedio_reporte],
-            'default2': [delta_horas(x) if x else 0 for x in tiempo_promedio_postreporte]
+            'default1': [aux.delta_horas(x) if x else 0 for x in tiempo_promedio_reporte],
+            'default2': [aux.delta_horas(x) if x else 0 for x in tiempo_promedio_postreporte]
         }
         
         graphs = [top_paises_data, top_hosting_data, sitios_data, top_sitios_data,

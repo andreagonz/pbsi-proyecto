@@ -8,7 +8,7 @@
           {% endif %}
           <a href='{{ url.captura_url }}'><img src='{{ url.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;" /></a>
         </div>
-      </div>
+      </div>      
       <div class="uk-width-expand">
         <h4 class="uk-comment-title uk-margin-remove">
           <a class="uk-link-reset" href='{% url 'url-detalle' pk=url.pk %}'>{{ url }}</a>
@@ -29,7 +29,19 @@
               {{ url.redireccion_final }}<br/>
             </a>
           {% endif %}
-          Fecha de actualización: {{ url.timestamp_actualizacion }}
+          Fecha de actualización: {{ url.timestamp_actualizacion }}<br/>          
+          {% if iframe %}
+            <div class="uk-inline">
+              <button class="uk-button uk-button-default" type="button">Iframe</button>
+              <div uk-dropdown="mode: click">
+                {% if url.sitio_info and url.sitio_info.archivo_es_texto %}
+                  <iframe width="800" height="600" src="{{ url.sitio_info.sitio.url }}">
+                    <p>Este navegador no soporta el iso de iframes</p>
+                  </iframe>
+                {% endif %}
+              </div>
+            </div>  
+          {% endif %}            
         </p>
       </div>
       {% if monitoreo %}
@@ -46,7 +58,7 @@
             Código: {{ url.codigo_anterior_str }}<br/>
           </p>
         </div>
-      {% endif %}
+      {% endif %}    
     </div>
   </header>
 </article>

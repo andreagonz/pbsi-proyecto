@@ -44,6 +44,7 @@ def crea_diccionario(dominio):
         'servidor': dominio.servidor_str,
         'dns': dominio.dns_mensaje_str,
         'entidades': ', '.join(entidades) if len(entidades) > 0 else 'No identificadas',
+        'responder_a': settings.CORREO_RESPONDER_A
     }
     return dicc
 

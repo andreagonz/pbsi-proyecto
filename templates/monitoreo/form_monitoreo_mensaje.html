@@ -30,7 +30,7 @@
   {% for url in form.fields.urls.queryset %}
     {% if not url.reportado and not url.ignorado %}
       <li>
-        {% include 'url_info.html' %}
+        {% include 'url_info.html' with iframe=True %}
       </li>
     {% endif %}
   {% endfor %}

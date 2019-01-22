@@ -51,3 +51,6 @@ def context_reporte(sitios):
         'redirecciones': redirecciones
     }
     return context
+
+def delta_horas(td):
+    return td.total_seconds() / 3600.0

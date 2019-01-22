@@ -1,9 +1,18 @@
 from phishing.forms import UrlsForm, ArchivoForm
 from django.shortcuts import render
-from phishing.aux import entrada, phishing
+from phishing.aux import entrada, phishing, log
 from phishing.models import Url
 from phishing.views import aux
+import magic
 
+def get_mime(archivo):
+    try:
+        f = magic.Magic(mime=True)
+        return f.from_buffer(archivo)
+    except Exception as e:
+        log.log("Error al leer archivo de entrada: %s" % str(e), "valida_urls.log")
+    return ''
+    
 def valida_urls(request):
     if request.method == 'POST':
         if request.POST.get("boton_urls"):
@@ -32,7 +41,13 @@ def valida_urls(request):
                 return render(request, 'valida_urls/reporte_validacion.html', context)
         elif request.POST.get("boton_archivo") and request.FILES.get('file', None):
             form = ArchivoForm(request.POST)
-            f = request.FILES['file'].read().decode('utf-8')
+            f = request.FILES['file'].read()
+            if not get_mime(f).startswith('text'):
+                archivo = request.FILES['file'].name
+                log.log("Ingresado archivo de entrada invalido: '%s'" % archivo, "valida_urls.log")
+                context = {'archivo': archivo}
+                return render(request, 'valida_urls/error_archivo.html', context)
+            f = f.decode('utf-8', errors='ignore')
             name = request.FILES['file'].name
             urls = []            
             if name.endswith('.json'):

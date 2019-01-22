@@ -62,7 +62,9 @@
           </div>
         {% endfor %}
       </ul>
-      <a href="{% url 'monitoreo' %}" class="uk-button uk-button-primary">Ir a monitoreo</a>
+      {% if user.is_authenticated %}
+        <a href="{% url 'monitoreo' %}" class="uk-button uk-button-primary">Ir a monitoreo</a>
+      {% endif %}
     {% endif %}
     <a href="{% url 'procesa-correo' %}" class="uk-button uk-button-primary">Analizar otro correo</a>
   </div>

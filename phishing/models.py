@@ -4,6 +4,7 @@ from django.contrib import admin
 from .storage import OverwriteStorage
 from django.utils.translation import ugettext_lazy as _
 from django.core.exceptions import ValidationError
+import magic
 
 class Clasificacion_entidad(models.Model):
 
@@ -355,7 +356,8 @@ class SitioInfo(models.Model):
     ignorado = models.BooleanField(default=False)
     redireccion = models.ForeignKey(Url, on_delete=models.SET_NULL, null=True,
                                     related_name='redirecciones')
-
+    identificador = models.CharField(max_length=32, unique=True)
+    
     @property
     def reportado_str(self):
         return "Sí" if self.ticket else "No"
@@ -406,7 +408,6 @@ class SitioActivoInfo(models.Model):
         ('I', 'Indefinido'),
         ('N', 'Sitio no malicioso'),
     )
-    identificador = models.CharField(max_length=32, unique=True)
     entidad_afectada = models.ForeignKey(Entidad, on_delete=models.SET_NULL, null=True)
     timestamp_deteccion = models.DateTimeField(null=True)
     captura = models.ImageField(storage=OverwriteStorage(),
@@ -449,6 +450,17 @@ class SitioActivoInfo(models.Model):
             return self.archivo.url
         return None
 
+    @property
+    def archivo_es_texto(self):
+        if self.archivo:
+            try:
+                magia = magic.Magic(mime=True, uncompress=True)
+                mime = magia.from_file(self.archivo.path)
+                return mime.startswith('text')
+            except Exception as e:
+                return False
+        return False
+        
     @property
     def ofuscaciones_str(self):
         if self.ofuscaciones.count() == 0:

@@ -19,6 +19,7 @@ import magic
 from phishing.aux import log
 import gzip
 import urllib.parse
+import random
 
 def md5(x):
     return hashlib.md5(x).hexdigest()
@@ -97,7 +98,7 @@ def recursos_externos(texto):
 
 def genera_id(url):
     ts = str(timezone.localtime(timezone.now()))
-    return md5((url + ts).encode('utf-8', 'backslashreplace'))
+    return md5((url + ts + random.choice("abcde012345")).encode('utf-8', 'backslashreplace'))
 
 def hacer_peticion(sitios, sesion, sitio, entidades, ofuscaciones,
                    dominios_inactivos, max_redir, existe=False, cron=False, monitoreo=False):
@@ -120,13 +121,13 @@ def hacer_peticion(sitios, sesion, sitio, entidades, ofuscaciones,
         if (not existe and codigo >= 200 and codigo < 400) or nuevo_sitio:
             s = None
             try:
-                s = SitioInfo(url=sitio)
+                s = SitioInfo(url=sitio, identificador=genera_id(sitio.url))
                 s.save()
             except Exception as e:
                 log.log("Error al crear sitio para url %s: %s" % (sitio.url, str(e)), "phishing.log")
             if s and codigo >= 200:
                 try:
-                    sa = SitioActivoInfo(sitio=s, identificador=genera_id(sitio.url))
+                    sa = SitioActivoInfo(sitio=s)
                     sa.save()
                 except Exception as e:
                     log.log("Error al crear sitio para sitio activo %s: %s" %
@@ -249,6 +250,8 @@ def desactiva_sitio(url):
     s = url.mas_reciente
     if s:
         s.timestamp_desactivado = timezone.localtime(timezone.now())
+        log.log("URL '%s' desactivada" % url.url, "phishing.log")
+    s.save()
         
 def verifica_url_aux(sitios, url, existe, entidades, ofuscaciones, dominios_inactivos,
                      sesion, max_redir, monitoreo=False, cron=False):
@@ -280,13 +283,13 @@ def verifica_url_aux(sitios, url, existe, entidades, ofuscaciones, dominios_inac
         mime = ''
         sitio_activo_info = sitio_info.sitioactivoinfo
         if url.activo and content and sitio_activo_info:
-            nombre = 'archivos/%s.gz' % sitio_activo_info.identificador
+            nombre = 'archivos/%s.gz' % sitio_activo_info.sitio.identificador
             archivo = guarda_archivo(content, nombre)
             if os.path.exists(archivo):
                 with open(archivo, 'rb') as f:
                     sitio_activo_info.archivo.save(os.path.basename(archivo), File(f), True)
                 sitio_activo_info.hash_archivo = md5_content(content)
-                magia = magic.Magic(mime=True)
+                magia = magic.Magic(mime=True, uncompress=True)
                 mime = magia.from_file(archivo)
         malicioso = False
         if not existe and url.activo and sitio_activo_info and sitio_activo_info.hash_archivo:
@@ -314,7 +317,7 @@ def verifica_url_aux(sitios, url, existe, entidades, ofuscaciones, dominios_inac
             dominios_inactivos[dominio] = 1
         if (monitoreo or not existe) and url.activo and sitio_activo_info:
             proxy = get_proxy(sesion)
-            nombre = 'capturas/%s.jpg' % sitio_activo_info.identificador
+            nombre = 'capturas/%s.jpg' % sitio_activo_info.sitio.identificador
             if sitio_activo_info.captura and os.path.exists(sitio_activo_info.captura.path):
                 with open(sitio_activo_info.captura.path, 'rb') as f:
                     sitio_activo_info.captura_anterior.save(
@@ -547,7 +550,7 @@ def verifica_urls(urls, proxy, cron=False):
     sitios = []
     for url in urls:
         if cron:
-            verifica_url_aux(sitios, sitio, existe, entidades, ofuscaciones, dominios_inactivos,
+            verifica_url_aux(sitios, url, True, entidades, ofuscaciones, dominios_inactivos,
                              sesion, settings.MAX_REDIRECCIONES, cron=True)
         else:
             verifica_url(sitios, url, entidades, ofuscaciones,

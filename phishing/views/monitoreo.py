@@ -46,7 +46,7 @@ def monitoreo_id(request, pk):
     }
     proxy_form = ProxyForm()
     hoy = timezone.localtime(timezone.now())
-    cadena_urls = ''.join([str(x) for x in urls])
+    cadena_urls = ''.join([x.mas_reciente.identificador for x in urls if x.mas_reciente])
     md = phishing.md5((dominio.dominio + cadena_urls).encode('utf-8', 'backslashreplace'))
     ticket = ('%d%02d%02d%s' % (hoy.year, hoy.month, hoy.day, md[:7])).upper()
     correos = []
@@ -58,7 +58,8 @@ def monitoreo_id(request, pk):
         'de': settings.CORREO_DE,
         'para': ', '.join(correos),
         'asunto': correo.obten_asunto(dominio, ticket),
-        'mensaje': correo.obten_mensaje(dominio, ticket)
+        'mensaje': correo.obten_mensaje(dominio, ticket),
+        'cco': settings.CORREO_CCO
     }
     mensaje_form = MensajeForm(initial=datos, urls=urls)
     if request.method == 'POST':
@@ -89,14 +90,16 @@ def monitoreo_id(request, pk):
                     if not proxies.https is None:
                         proxy['https'] = proxies.https
                 phishing.monitorea_dominio(dominio, urls, proxy)
-            cadena_urls = ''.join([str(x) for x in dominio.urls_monitoreo])
+            cadena_urls = ''.join([x.mas_reciente.identificador
+                                   for x in dominio.urls_monitoreo if x.mas_reciente])
             md = phishing.md5((dominio.dominio + cadena_urls).encode('utf-8', 'backslashreplace'))
             ticket = ('%d%02d%02d%s' % (hoy.year, hoy.month, hoy.day, md[:7])).upper()
             datos = {
                 'de': settings.CORREO_DE,
                 'para': ', '.join(correos),
                 'asunto': correo.obten_asunto(dominio, ticket),
-                'mensaje': correo.obten_mensaje(dominio, ticket)
+                'mensaje': correo.obten_mensaje(dominio, ticket),
+                'cco': settings.CORREO_CCO
             }
             mensaje_form = MensajeForm(initial=datos, urls=urls)
             context['monitoreo'] = True
