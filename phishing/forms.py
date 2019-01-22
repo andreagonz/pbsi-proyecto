@@ -105,7 +105,7 @@ class MensajeForm(forms.Form):
     def __init__(self, *args, **kwargs):
         urls = kwargs.pop('urls', Url.objects.none())
         super().__init__(*args, **kwargs)
-        self.fields['capturas'].queryset = SitioInfo.objects.filter(pk__in=
+        self.fields['capturas'].queryset = SitioActivoInfo.objects.filter(pk__in=
             [x.sitio_info.pk for x in urls if x.sitio_info and x.sitio_info.captura]).distinct()
         self.fields['urls'].queryset = urls
         self.fields['urls'].error_messages['required'] = 'Seleccionar al menos una dirección URL'
@@ -114,7 +114,7 @@ class MensajeForm(forms.Form):
         urls = [x.pk for x in self.fields['urls'].queryset]
         qs = Url.objects.filter(pk__in=urls)
         self.fields['urls'].queryset = qs
-        self.fields['capturas'].queryset = SitioInfo.objects.filter(pk__in=
+        self.fields['capturas'].queryset = SitioActivoInfo.objects.filter(pk__in=
             [x.sitio_info.pk for x in qs if x.sitio_info and x.sitio_info.captura]).distinct()
 
 class ActualizaURL(forms.Form):

@@ -131,7 +131,7 @@ def genera_mensaje(sitio, fromadd, toadd, cc, bcc, asunto, mensaje, capturas):
     mensaje = mensaje.replace('\n', '<br/>').replace(' ', '&nbsp;')
     msg.attach(MIMEText(mensaje, 'html'))
     for x in capturas:
-        if x.captura_url:
+        if x.captura:
             adjunta_imagen(msg, x)
     return msg.as_string()
 
