@@ -22,6 +22,9 @@
         <li>
           <a href="#">Reporte de URLs</a>
         </li>
+        <li>
+          <a href="#">Archivos adjuntos</a>
+        </li>
       </ul>
 
       
@@ -50,6 +53,16 @@
         </li>
 
         <li>{% include 'reporte_urls.html' %}</li>
+        
+        <li>
+          {% if archivos and archivos.nombre != 'Ninguno' %}
+            <strong>Nombre:</strong> {{ archivos.nombre}}<br/>
+            <strong>Referencia:</strong> <a href='{{ archivos.info}}'>{{ archivos.info}}</a><br/>
+            <strong>Es malicioso:</strong> {{ archivos.malicioso}}
+          {% else %}
+            No se encontró ningún archivo adjunto.
+          {% endif %}
+        </li>
       </ul>
       
       <h3>URLs analizadas</h3>

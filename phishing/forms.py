@@ -49,7 +49,7 @@ class CambiaUnamMensajeForm(forms.Form):
 
 class FrecuenciaForm(forms.Form):
     frecuencia = forms.IntegerField(required=True,
-                                    validators=[MinValueValidator(1), MaxValueValidator(23)])
+                                    validators=[MinValueValidator(1), MaxValueValidator(24)])
 
 class CorreoForm(forms.Form):
     correo = forms.CharField(label='Correo', widget=forms.Textarea, required=False)

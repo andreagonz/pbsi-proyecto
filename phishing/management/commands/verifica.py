@@ -9,7 +9,8 @@ class Command(BaseCommand):
             
     def handle(self, *args, **options):
         log.log('Comieza verificación de URLs', 'monitoreo.log')
-        urls = Url.objects.filter(codigo__lt=400, codigo__gte=200)
+        urls0 = Url.objects.filter(codigo__lt=400, codigo__gte=200)
+        urls = [u for u in urls0 if u.sitio_activo]
         sitios = phishing.verifica_urls(urls, None, True)
         for x in sitios:
             log.log("URL '%s' verificada" % str(x), 'monitoreo.log')

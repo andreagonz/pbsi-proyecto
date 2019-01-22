@@ -22,6 +22,7 @@ def procesa_correo(request):
                 context['urls'] = urls
                 context['headers'] = headers
                 context['archivos'] = archivos
+                print(archivos)
                 context['error'] = error
                 return render(request, 'procesa_correo/correo_resultados.html', context)
         elif request.POST.get("boton_archivo") and request.FILES.get('file', None):
@@ -40,6 +41,7 @@ def procesa_correo(request):
             context['urls'] = urls
             context['headers'] = headers
             context['archivos'] = archivos
+            print(archivos)
             context['error'] = error
             return render(request, 'procesa_correo/correo_resultados.html', context)
     form1 = CorreoForm()

@@ -245,14 +245,20 @@ def escanear_archivo(h):
         return resultado['results']['positives']
     except Exception as e:
         return -1
-
-def desactiva_sitio(url):
+    
+def desactiva_redirecciones(url, ts):
     s = url.mas_reciente
-    if s:
-        s.timestamp_desactivado = timezone.localtime(timezone.now())
-        log.log("URL '%s' desactivada" % url.url, "phishing.log")
+    if not s or s.timestamp_desactivado:
+        return
+    s.timestamp_desactivado = ts
     s.save()
-        
+    si = SitioInfo.objects.filter(redireccion__pk=url.pk)
+    for i in si:
+        i.timestamp_desactivado = ts
+        i.save()
+    for i in si:
+        desactiva_redirecciones(i.url, ts)
+    
 def verifica_url_aux(sitios, url, existe, entidades, ofuscaciones, dominios_inactivos,
                      sesion, max_redir, monitoreo=False, cron=False):
     texto = ''
@@ -266,7 +272,7 @@ def verifica_url_aux(sitios, url, existe, entidades, ofuscaciones, dominios_inac
         )
         if url.codigo_anterior >= 200 and url.codigo_anterior < 400 and \
            (url.codigo >= 400 or url.codigo < 200):
-            desactiva_sitio(url)
+            desactiva_redirecciones(url, timezone.localtime(timezone.now()))
         sitio_info = url.mas_reciente
         if not sitio_info:
             url.save()
@@ -330,7 +336,7 @@ def verifica_url_aux(sitios, url, existe, entidades, ofuscaciones, dominios_inac
         sitio_activo_info.save()
     else:
         url.codigo = -1
-        desactiva_sitio(url)
+        desactiva_redirecciones(url, timezone.localtime(timezone.now()))
     url.save()
     return True
 
@@ -561,10 +567,18 @@ def cambia_frecuencia(funcion, n):
     n = 1 if n < 1 or n > 24 else n
     comando = "/bin/bash -c 'source %s/bin/activate && python %s/manage.py %s'" % \
               (settings.DIR_ENV, settings.BASE_DIR, funcion)
-    process = Popen("crontab -l | egrep -v '%s'  | crontab -"
+    process = Popen('crontab -l | egrep -v "%s"  | crontab -'
                     % (comando), shell=True, stdout=PIPE, stderr=PIPE)
-    process.communicate()
+    out, err = process.communicate()
+    if err:
+        log.log("Error: %s" % err.decode('utf-8', errors='ignore'), "ajustes.log")
+    if out:
+        log.log(out.decode('utf-8', errors='ignore'), "ajustes.log")
     i = "*/%d" % n if n < 24 else '0'
     process = Popen('(crontab -l ; echo "0 %s * * * %s") | sort - | uniq - | crontab -'
                     % (i, comando), shell=True, stdout=PIPE, stderr=PIPE)
-    process.communicate()        
+    out, err = process.communicate()
+    if err:
+        log.log("Error: %s" % err.decode('utf-8', errors='ignore'), "ajustes.log")
+    if out:
+        log.log(out.decode('utf-8', errors='ignore'), "ajustes.log")
