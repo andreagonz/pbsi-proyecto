@@ -41,7 +41,12 @@ def lineas_md5(texto):
 def obten_entidad_afectada(entidades, texto):
     if not texto:
         return None
-    tree = html.fromstring(texto)
+    try:
+        texto = bytes(bytearray(texto, encoding='utf-8', errors='ignore'))
+        tree = html.fromstring(texto)
+    except Exception as e:
+        log.log("Error al buscar entidades en texto: %s" % str(e), "phishing.log")
+        return None
     texto = []
     for x in tree.xpath("//text()"):
         texto.append(x.lower())
@@ -520,7 +525,7 @@ def mi_ip(sesion):
     try:
         r = sesion.get('https://api.ipify.org')
         log.log("IP de salida: %s" % r.text, "ip.log")
-        print("\033[92mIP: %s\033[0m" % r.text)
+        # print("\033[92mIP: %s\033[0m" % r.text)
     except Exception as e:
         log.log("Error al obtener IP de salida: %s" % str(e), "phishing.log")
 

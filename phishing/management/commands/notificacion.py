@@ -20,15 +20,15 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         log.log("Inicia ejecucion de script de notificacion", "notificacion.log")
-        d = settings.DIR_CORREOS
-        log.log("Directorio base de correos: %s" % d, "notificacion.log")
-        p = os.path.join(d, "procesados")
+        dir_correos = settings.DIR_CORREOS
+        log.log("Directorio base de correos: %s" % dir_correos, "notificacion.log")
+        p = os.path.join(dir_correos, "procesados")
         if not os.path.exists(p):
             os.mkdir(p)
-        archivos = [f for f in os.listdir(d) if os.path.isfile(os.path.join(d, f))]
+        archivos = [f for f in os.listdir(dir_correos) if os.path.isfile(os.path.join(dir_correos, f))]
         for archivo in archivos:
             log.log("Leyendo archivo %s" % archivo, "notificacion.log")
-            a = os.path.join(d, archivo)
+            a = os.path.join(dir_correos, archivo)
             with open(a) as f:
                 headers, urls, _, _, _ = correo.parsecorreo(f.read())
                 sitios = phishing.verifica_urls(list(set(urls)), None, False)
