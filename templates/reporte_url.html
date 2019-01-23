@@ -70,7 +70,7 @@
           <a href={% url 'url-detalle' pk=url.redireccion.pk %}>
             {{ url.redireccion }}
           </a><br/>
-          {% ir url.redireccion_final %}
+          {% if url.redireccion_final %}
             <span class='uk-text-bold'>Redirección final:</span>
             <a href={% url 'url-detalle' pk=url.redireccion_final.pk %}>
               {{ url.redireccion_final }}
