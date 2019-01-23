@@ -70,10 +70,12 @@
           <a href={% url 'url-detalle' pk=url.redireccion.pk %}>
             {{ url.redireccion }}
           </a><br/>
-          <span class='uk-text-bold'>Redirección final:</span>
-          <a href={% url 'url-detalle' pk=url.redireccion_final.pk %}>
-            {{ url.redireccion_final }}
-          </a>
+          {% ir url.redireccion_final %}
+            <span class='uk-text-bold'>Redirección final:</span>
+            <a href={% url 'url-detalle' pk=url.redireccion_final.pk %}>
+              {{ url.redireccion_final }}
+            </a>
+          {% endif %}
         {% endif %}
         
         {% if url.mas_reciente.timestamp_desactivacion %}
