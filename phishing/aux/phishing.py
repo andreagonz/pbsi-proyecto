@@ -84,11 +84,10 @@ def encuentra_ofuscacion(ofuscaciones, texto):
 def lee_comentarios_html(texto):
     soup = BeautifulSoup(texto,'lxml')
     comments = [x.strip() for x in soup.findAll(text=lambda text:isinstance(text, Comment))]
-    match = re.findall('(?:^[\s]*//| //)(.+)', texto)
-    match += re.findall('/[*](.*\n?.*)[*]/', texto)
-    for m in match:
-        comments.append(m.strip())
     return comments
+
+def comentarios_sitio(sitio):
+    return lee_comentarios_html(archivo_texto(sitio))
 
 def recursos_externos(texto):    
     soup = BeautifulSoup(texto, 'lxml')
@@ -204,6 +203,9 @@ def guarda_captura(url, out, proxy=None):
     else:
         process = Popen("xvfb-run -a --server-args='-screen 0, 1280x1200x24' cutycapt --url='%s' --out='%s' --min-width=800 --min-height=600 --max-wait=25000" % (url, out), shell=True, stdout=PIPE, stderr=PIPE)
     stdout, stderr = process.communicate()
+    if stderr:
+        print("Error al tomar captura de url '%s': %s"
+              % (url, stdout.decode('utf-8', errors='ignore')), "phishing.log")
     return not stderr is None
 
 def genera_captura(url, nombre, proxy=None):
@@ -257,7 +259,7 @@ def desactiva_redirecciones(url, ts):
         return
     s.timestamp_desactivado = ts
     s.save()
-    si = SitioInfo.objects.filter(redireccion__pk=url.pk)
+    si = SitioInfo.objects.filter(redireccion__pk=url.pk, timestamp_desactivado__isnull=True)
     for i in si:
         i.timestamp_desactivado = ts
         i.save()

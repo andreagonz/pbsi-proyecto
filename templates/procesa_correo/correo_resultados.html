@@ -11,29 +11,29 @@
       <!-- <a class="uk-alert-close" uk-close></a> -->
       <p>El texto ingresado no corresponde a un correo o el archivo esta corrupto.</p>
     </div>
-    {% else %}
-      <ul uk-tab>
-        <li class="uk-active">
-          <a href="#">Cabeceras</a>
-        </li>
-        <li>
-          <a href="#">Raw</a>
-        </li>
-        <li>
-          <a href="#">Reporte de URLs</a>
-        </li>
-        <li>
-          <a href="#">Archivos adjuntos</a>
-        </li>
-      </ul>
+  {% else %}
+    <ul uk-tab>
+      <li class="uk-active">
+        <a href="#">Cabeceras</a>
+      </li>
+      <li>
+        <a href="#">Raw</a>
+      </li>
+      <li>
+        <a href="#">Reporte de URLs</a>
+      </li>
+      <li>
+        <a href="#">Archivos adjuntos</a>
+      </li>
+    </ul>
 
-      
-      <ul class="uk-switcher uk-margin">
-        <li>
-          <table class="uk-table uk-table-divider">
-            <thead>
-              <tr>
-                <th class="uk-width-medium">Campo</th>
+    
+    <ul class="uk-switcher uk-margin">
+      <li>
+        <table class="uk-table uk-table-divider">
+          <thead>
+            <tr>
+              <th class="uk-width-medium">Campo</th>
                 <th>Valor</th>
               </tr>
             </thead>
@@ -54,16 +54,26 @@
 
         <li>{% include 'reporte_urls.html' %}</li>
         
-        <li>
-          {% if archivos and archivos.nombre != 'Ninguno' %}
-            <strong>Nombre:</strong> {{ archivos.nombre}}<br/>
-            <strong>Referencia:</strong> <a href='{{ archivos.info}}'>{{ archivos.info}}</a><br/>
-            <strong>Es malicioso:</strong> {{ archivos.malicioso}}
-          {% else %}
+      <li>
+        <dl class="uk-description-list uk-description-list-divider">
+          {% for archivo in archivos %}
+            <dt></dt>
+            {% for k,v in archivo.items %}
+              <dd>
+                <strong>{{ k }}:</strong>
+                {% if k == 'Referencia' %}
+                  <a href="{{ v }}">{{ v }}</a>
+                {% else %}
+                  {{ v }}
+                {% endif %}
+              </dd>
+            {% endfor %}
+          {% empty %}
             No se encontró ningún archivo adjunto.
-          {% endif %}
-        </li>
-      </ul>
+          {% endfor %}
+        </dl>
+      </li>
+    </ul>
       
       <h3>URLs analizadas</h3>
       <ul class="uk-list">

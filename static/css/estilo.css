@@ -1,3 +1,24 @@
+@media only screen and (max-width: 1201px) {
+    .nav-desktop {
+        display: none;
+    }
+    .nav-movil {
+        margin-top: 0px !important;
+    }
+}
+
+@media only screen and (min-width: 1200px) {
+    .nav-movil {
+        display: none;
+    }
+}
+
+@media only screen and (max-width: 500px) {
+    .nav-mini {
+        display: none;
+    }
+}
+
 .logo {
     height : 60px;
     margin : 10px;

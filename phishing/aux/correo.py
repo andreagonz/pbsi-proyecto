@@ -16,6 +16,11 @@ from virus_total_apis import PublicApi as VirusTotalPublicApi
 import zipfile
 from django.utils import timezone
 from phishing.aux import log
+import gzip
+from email.message import EmailMessage
+import magic
+import humanize
+from bs4 import BeautifulSoup
 
 def obten_texto(mensaje, archivo):
     if not os.path.exists(archivo):
@@ -163,35 +168,16 @@ def manda_correo(para, cc, cco, msg):
             server.quit()
         return b
 
-
-"""
-===========================================
-"""
-def virustotal(HASH_sha256):    
-    vt = VirusTotalPublicApi(settings.VIRUSTOTAL_API_KEY)
-    response = vt.get_file_report(HASH_sha256)
-    #print(json.dumps(response, sort_keys=False, indent=4))
-    resultado = json.loads(json.dumps(response, sort_keys=False, indent=4))
-    #print(str(json))
+def es_malicioso(HASH_sha256):
     try:
-        if resultado['results']['positives']>0:
-            num= resultado['results']['positives']
-            return "Si"
-            #print(resultado['results']['positives'])
-	    ###### Condicion si es mayor a 0 que se guarde en el directorio, si no que no se guarde
-        return "No"
+        vt = VirusTotalPublicApi(settings.VIRUSTOTAL_API_KEY)
+        response = vt.get_file_report(HASH_sha256)
+        resultado = json.loads(json.dumps(response))
     except Exception as e:
         log.log('Error: %s' % str(e), "correo.log")
-        return "No encontro coincidencias"
-
-def erroremail(dicc, palabra, mensaje):
-    """
-    Imprime los campos de los headers de cada correo
-    """
-    if mensaje.get(palabra, None):        
-        dicc[palabra] = mensaje[palabra]
-        return True
-    return False
+        return False
+    resultados = resultado.get('results', None)
+    return resultados.get('positives', 0) > 0
 
 def sha256(fname):
     hash_sha256 = hashlib.sha256()
@@ -202,89 +188,138 @@ def mkdir(d):
     if not os.path.exists(d):
         os.makedirs(d)
 
-def analisisarchivos(attachment):
+def guarda_payload(payload, malicioso, archivo):
+    fecha = str(timezone.localtime(timezone.now()).date())
+    path = os.path.join(settings.MEDIA_ROOT, settings.DIR_ARCHIVOS_ADJUNTOS, fecha)
+    mkdir(path)
+    if malicioso:
+        path = os.path.join(path, 'maliciosos')
+    else:
+        path = os.path.join(path, 'indefinidos')
+    mkdir(path)
+    try:
+        with gzip.open(os.path.join(path, archivo), 'wb') as w:
+            w.write(payload)
+    except Exception as e:
+        log.log("Error al guardar archivo adjunto '%s': %s" % (archivo, str(e)), "correo.log")
+        return None
+    return os.path.join(path, archivo)
+        
+def analisis_archivo(attachment):
     """
     Esta funcion analiza los archivos contenidos en los correos
     """
+    datos = {}
     try:
-        tipo = attachment.get_content_type()
+        datos['Tipo'] = attachment.get_content_type()
         payload = attachment.get_payload(decode=True)
-        if not payload:
-            return "Ninguno", "Ninguno", "Ninguno"
-        nombre = sha256(payload)
-        noentidades=virustotal(nombre)
-        fecha = str(timezone.localtime(timezone.now()).date())
-        path = os.path.join(settings.MEDIA_ROOT, 'archivos', fecha)
-        mkdir(path)
-        if noentidades=='No':
-            open(os.path.join(path, nombre), 'wb').write(
-                attachment.get_payload(decode=True))
-        else:
-            if noentidades=='Si':
-                mkdir(os.path.join(path, 'maliciosos'))
-                open(os.path.join(path, 'maliciosos', nombre), 'wb').write(
-                    attachment.get_payload(decode=True))
-            else:
-                mkdir(os.path.join(path, 'no_clasificado'))
-                open(os.path.join(path, 'no_clasificado', nombre), 'wb').write(
-                    attachment.get_payload(decode=True))
+        if payload:
+            datos['Tipo'] = magic.from_buffer(payload, mime=True)
+            sha256_h = sha256(payload)
+            archivo = "%s.gz" % sha256_h
+            malicioso = es_malicioso(sha256_h)
+            guarda = guarda_payload(payload, malicioso, archivo)
+            if guarda:
+                datos['Archivo'] = archivo
+            datos['Tamaño'] = humanize.naturalsize(len(payload))
+            datos['Es malicioso'] = 'Sí' if malicioso else 'No'
+            datos['Referencia'] = "https://www.virustotal.com/#/search/%s" % sha256_h
+        content_disposition = attachment.get("Content-Disposition", None)
+        if content_disposition:
+            dispositions = content_disposition.strip().split(";")
+            for param in dispositions[1:]:
+                param = param.strip()
+                k, v = param.split("=")
+                k = k.lower()
+                if k == "filename":
+                    datos['Nombre'] = v
+                elif k == "create-date":
+                    datos['Fecha de creación'] = v
+                elif k == "modification-date":
+                    datos['Fecha de modificación'] = v
+                elif k == "read-date":
+                    datos['Fecha de lectura'] = v                
     except Exception as e:
         log.log('Error: %s' % str(e), "correo.log")
-        return "1", "1", "1"
-    return nombre, noentidades,tipo
+        return None
+    return datos
 
-def parsecorreo(texto):
-    """
-    Realiza el parseo del archivo email
-    """
-    resultados = {}
-    url = []
-    archivos = {}
-    mensaje = email.message_from_string(texto)
-    h = str(mensaje).split('\n\n')
-    headers = h[0] if len(h) > 0 else ''
-    if not erroremail(resultados, "To", mensaje):
-        return {}, url, headers, {}, True
-    else:        
-        lista = ['From','To','Cc','Bcc','Subject','X-Virus-Scanned','X-Spam-Flag',
-                 'X-Spam-Score','X-Spam-Status','X-Spam-Level','Received']
-        for head in lista:
-            erroremail(resultados, head, mensaje)
-        regex1 = re.compile(r"hxxp://")
-        regex2 = re.compile(r"hxxps://")
-        regex3 = re.compile(r" ?[(\[][.][)\]] ?")
-        regex4 = re.compile(r" ?[(\[]dot[)\]] ?")
-        if mensaje.is_multipart():
-            for part in mensaje.walk():
-                ctype = part.get_content_type()
-                cdispo = str(part.get('Content-Disposition'))            
-                if ctype == 'text/plain' and 'attachment' not in cdispo:
-                    body = part.get_payload(decode=True).decode('utf-8', errors='ignore')
-                    body = regex1.sub('http://', body)
-                    body = regex2.sub('https://', body)
-                    body = regex3.sub('.', body)
-                    body = regex3.sub('.', body)
-                    url = re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', body)
-                    break
-        else:
-            body = mensaje.get_payload(decode=True).decode('utf-8', errors='ignore')
-            body = regex1.sub('http://', body)
-            body = regex2.sub('https://', body)
-            body = regex3.sub('.', body)
-            body = regex3.sub('.', body)
-            url = re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',body)
+def obten_urls(body, html=False):
+    textos = [body]
+    if html:
+        try:
+            soup = BeautifulSoup(body, 'html.parser')
+            textos = []
+            for x in soup.findAll(text=True):
+                x = x.strip()
+                if x:
+                    textos.append(x)            
+            for link in soup.find_all('a'):
+                textos.append(link.get('href', ''))
+        except Exception as e:
+            log.log("Error al leer HTML: %s" % str(e), "correo.log")
+    regex1 = re.compile(r"hxxp://")
+    regex2 = re.compile(r"hxxps://")
+    regex3 = re.compile(r" ?[(\[][.][)\]] ?")
+    regex4 = re.compile(r" ?[(\[]dot[)\]] ?")
+    urls = []
+    for t in textos:
+        try:
+            t = regex1.sub('http://', t)
+            t = regex2.sub('https://', t)
+            t = regex3.sub('.', t)
+            t = regex3.sub('.', t)
+            urls += re.findall('http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', t)
+        except Exception as e:
+            log.log("Error al extraer urls de correo: %s" % str(e), "correo.log")
+    return urls
+
+def es_adjunto(parte):
+    content_disposition = parte.get("Content-Disposition", None)
+    if content_disposition:
+        dispositions = content_disposition.strip().split(";")
+        if content_disposition and dispositions[0].lower() == "attachment":
+            return True
+    return False
+
+def analiza_correo(mensaje, archivos, urls):
+    for parte in mensaje.walk():
+        if es_adjunto(parte):
+            analisis = analisis_archivo(parte)
+            if analisis:
+                archivos.append(analisis)
+                tipo = archivos[-1].get('Tipo', '')
+                if tipo == 'text/plain' or tipo.startswith('message'):
+                    payload = parte.get_payload(decode=True)
+                    if payload:
+                        payload = payload.decode('utf-8', errors='ignore')
+                        parsecorreo_aux(payload, archivos[-1].get('Nombre', '-'), archivos, urls)
+        elif parte.get_content_type().startswith('text'):
+            html = parte.get_content_type() == 'text/html'
+            urls += obten_urls(parte.get_payload(decode=True).decode('utf-8', errors='ignore'), html)
+            
+def parsecorreo_aux(texto, nombre, archivos, urls):
+    try:
         mensaje = email.message_from_string(texto)
-        tamanio = len(mensaje.get_payload())
-        if tamanio < 20:
-            for x in range(0,tamanio):
-                if(x!=0):
-                    attachment = mensaje.get_payload()[x]
-                    nombre, noentidades, tipo = analisisarchivos(attachment)
-                    if noentidades == "1":
-                       return {}, url, headers, {}, True
-                    else:
-                        archivos['tipo'] = tipo
-                        archivos['nombre'] = nombre
-                        archivos['malicioso'] = noentidades
-                        archivos['info'] = "https://www.virustotal.com/#/file/" + nombre
-    return resultados, url, headers, archivos, False
+    except Exception as e:
+        log.log("Error al leer correo %s: %s" % (nombre, str(e)), "correo.log")
+        return None
+    analiza_correo(mensaje, archivos, urls)
+    return mensaje    
+
+def parsecorreo(texto, nombre='-'):
+    urls = []
+    archivos = []
+    mensaje = parsecorreo_aux(texto, nombre, archivos, urls)
+    if not mensaje:
+        return {}, urls, '', archivos, True    
+    headers = str(mensaje).split('\n\n')
+    raw_headers = headers[0] if len(headers) > 0 else ''    
+    lista = [
+        'From','To','Cc','Bcc','Subject','X-Virus-Scanned','X-Spam-Flag', 'X-Spam-Score',
+        'X-Spam-Status','X-Spam-Level','Received', 'authentication-results', 'X-Received',
+        'Received-SPF', 'Date', 'Delivered-To', 'In-Reply-To', 'Return-Path', 'Content-Type',
+        'received-spf', 'x-originating-ip', 'Return-Path', 'Authentication-Results'
+    ]
+    cabeceras = {k.title(): mensaje.get(k) for k in lista if mensaje.get(k, None)}
+    return cabeceras, list(set(urls)), raw_headers, archivos, False

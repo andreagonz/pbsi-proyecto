@@ -15,8 +15,8 @@
     {% endblock %}
   </head>
   <body>
-    
-    <nav class="uk-navbar-container uk-margin" uk-navbar>
+
+    <nav class="nav-desktop uk-navbar-container uk-margin" uk-navbar>
       <div class="uk-navbar-left">
         <!-- <a class="uk-navbar-item uk-logo" href="{% url 'home' %}">SAAPM</a> -->
         <a href="{% url 'home' %}">
@@ -61,6 +61,62 @@
         </div>
       {% endif %}     
     </nav>
+
+    <nav class="nav-movil uk-navbar-container uk-margin" uk-navbar>
+      <div class="uk-navbar-left uk-navbar-item">
+        <button class=" uk-button-small uk-button uk-button-default uk-margin-small-right" type="button" uk-toggle="target: #offcanvas-nav-primary"><span uk-icon="menu"></span></button>
+      </div>
+      <div class="uk-navbar-item uk-navbar-right">
+        <form method="get" action="/buscar/">
+          <input name="q" class="uk-input uk-form-width-small" type="q" placeholder="Búsqueda" aria-label="Search">
+          <button class="uk-button uk-button-default" type="submit">
+            <span uk-icon="icon: search"></span>
+          </button>
+        </form>
+        <a class="nav-mini uk-navbar-item uk-logo uk-navbar-right" href="{% url 'home' %}">
+          <img class="logo" src="{% static 'logo.png' %}" alt="Logo UNAM-CERT" />
+        </a>
+      </div>
+    </nav>
+    
+    <div class="nav-movil" id="offcanvas-nav-primary" uk-offcanvas="overlay: true">
+      <div class="uk-offcanvas-bar">
+        <ul class="uk-nav uk-nav-default">
+          <li>
+            <a href="{% url 'home' %}"><span uk-icon="home"></span> Inicio</a>
+          </li>
+          {% if user.is_authenticated %}
+            <li>
+              <a href="{% url 'monitoreo' %}"><span uk-icon="desktop"></span> Monitoreo</a>
+            </li>
+          {% endif %}
+          <li>
+            <a href="{% url 'valida-urls' %}"><span uk-icon="world"></span> Valida URLs</a>
+          </li>
+          <li>
+            <a href="{% url 'procesa-correo' %}"><span uk-icon="mail"></span> Procesa Correo</a>
+          </li>
+          {% if user.is_authenticated %}
+            <li>
+              <a href="{% url 'historico' %}"><span uk-icon="calendar"></span> Histórico</a>
+            </li>            
+            <li>
+              <a href="{% url 'reporte' %}"><span uk-icon="file-text"></span> Reporte</a>
+            </li>
+            <li>
+              <a href="{% url 'ajustes' %}"><span uk-icon="settings"></span> Ajustes</a>
+            </li>
+            <li>
+            </li>
+            <li class="uk-nav-divider"></li>
+            <li>
+              <a href="{% url 'logout' %}"><span uk-icon="sign-out"></span> Cerrar Sesión</a>
+            </li>         
+          {% endif %}
+        </ul>
+      </div>
+    </div>
+    
     <!-- Termina Navbar -->
     
     <div class="uk-container" uk-height-viewport="expand: true">

@@ -13,9 +13,11 @@ from django.http import Http404
 def url_detalle(request, pk):
     url = get_object_or_404(Url, pk=pk)
     hashes = phishing.archivo_hashes(url)
+    comentarios = phishing.comentarios_sitio(url)
     context = {
         'url': url,
-        'hashes': hashes
+        'hashes': hashes,
+        'comentarios': comentarios
     }
     return render(request, 'detalle/url_detalle.html', context)
 

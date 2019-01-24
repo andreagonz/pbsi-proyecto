@@ -22,14 +22,13 @@ def procesa_correo(request):
                 context['urls'] = urls
                 context['headers'] = headers
                 context['archivos'] = archivos
-                print(archivos)
                 context['error'] = error
                 return render(request, 'procesa_correo/correo_resultados.html', context)
         elif request.POST.get("boton_archivo") and request.FILES.get('file', None):
             form = CorreoArchivoForm(request.POST)
             f = request.FILES['file'].read().decode('utf-8', 'ignore')
             name = request.FILES['file'].name
-            resultados, urls, headers, archivos, error = correo.parsecorreo(f)
+            resultados, urls, headers, archivos, error = correo.parsecorreo(f, name)
             sitios = Url.objects.none()
             urls_limpias = list(set(urls))
             if len(urls_limpias) > 0:                
@@ -41,7 +40,6 @@ def procesa_correo(request):
             context['urls'] = urls
             context['headers'] = headers
             context['archivos'] = archivos
-            print(archivos)
             context['error'] = error
             return render(request, 'procesa_correo/correo_resultados.html', context)
     form1 = CorreoForm()
