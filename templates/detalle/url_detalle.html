@@ -8,7 +8,6 @@
   <ul uk-tab>
     <li class="uk-active"><a href="#">Datos</a></li>
     <li><a href="#">Hashes</a></li>
-    <li><a href="#">Comentarios</a></li>
     <li><a href="#">Historial</a></li>
     <li><a href="#">Formularios de abuso</a></li>
   </ul>
@@ -30,14 +29,6 @@
       {% for x in hashes %}
         {{ x }}
       {% endfor %}
-    </li>
-    <li>
-      <dl class="uk-description-list uk-description-list-divider">
-        {% for x in comentarios %}
-          <dt></dt>
-          <dd>{{ x }}</dd>
-        {% endfor %}
-      </dl>
     </li>
     <li>
       <ul class="uk-list">
