@@ -1,4 +1,4 @@
-@media only screen and (max-width: 1201px) {
+@media only screen and (max-width: 1300px) {
     .nav-desktop {
         display: none;
     }
@@ -7,7 +7,7 @@
     }
 }
 
-@media only screen and (min-width: 1200px) {
+@media only screen and (min-width: 1300px) {
     .nav-movil {
         display: none;
     }

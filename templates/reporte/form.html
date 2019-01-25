@@ -1,0 +1,35 @@
+{% load filtros %}
+
+{{ form.non_field_errors }}
+
+{% for field in form %}  
+  {% if field.errors %}
+    {% for error in field.errors %}
+      <div class="uk-alert-danger" uk-alert>
+        <a class="uk-alert-close" uk-close></a>
+        <p>{{ error|escape }}</p>
+      </div>
+    {% endfor %}
+  {% endif %}
+
+   <div class="uk-margin">
+     <label class="uk-form-label" for="{{ field.name }}">{{ field.label }}</label>
+        <div class="uk-form-controls">
+          {% if field.errors and field|fieldtype != 'DateTimeInput' %}
+            {{ field|addclass:'uk-input uk-form-danger' }}
+          {% else %}
+            {% if field|fieldtype == 'CheckboxInput' %}
+              {{ field|addclass:'uk-checkbox' }}              
+            {% elif field|fieldtype == 'Textarea' %}
+              {{ field|addclass:'uk-textarea' }}
+              <hr/>
+            {% elif field|fieldtype == 'TextInput' %}
+              {{ field|addclass:'uk-input' }}
+            {% else %}
+              {{ field|addclass:'uk-input datetimepicker' }}
+            {% endif %}            
+          {% endif %}                
+        </div>
+    </div>
+  
+{% endfor %}

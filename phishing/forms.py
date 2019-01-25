@@ -62,8 +62,6 @@ class CorreoArchivoForm(forms.Form):
 
 class GraficasForm(forms.Form):
 
-    archivo = forms.CharField(label='Nombre de archivo', max_length=128)
-
     inicio = forms.DateTimeField(label='Fecha inicio',
                                  widget=forms.DateTimeInput(
                                      attrs={'class': 'datetimepicker'},
@@ -77,15 +75,127 @@ class GraficasForm(forms.Form):
                                   format="%Y-%m-%d %H:%M",
                               ),
                               initial=timezone.localtime(timezone.now()))
-    sitios = forms.BooleanField(label='Sitios de phishing', required=False)
-    top_sitios = forms.BooleanField(label='Top 5 sitios phishing vs tiempo de vida', required=False)
-    sectores = forms.BooleanField(label='Sectores afectados', required=False)
-    entidades = forms.BooleanField(label='Entidades afectadas', required=False)
-    detecciones = forms.BooleanField(label='Número de detecciones', required=False)
-    tiempo_reporte = forms.BooleanField(label='Tiempo promedio de reporte', required=False)
-    top_paises = forms.BooleanField(label='Top 10 países que hospedan phishing', required=False)
-    top_hosting = forms.BooleanField(label='Top 10 servicios de hosting', required=False)
-    urls = forms.BooleanField(label='Adjuntar información sobre URLs', required=False)
+    archivo = forms.CharField(label='Nombre de archivo', max_length=128)
+    
+    sitios = forms.BooleanField(
+        label='Gráfica "Sitios de phishing"',
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={'style':'float:left;margin-left:200px;margin-top:-22px;'}
+        )
+    )
+    sitios_info = forms.CharField(
+        label='Descripción',
+        required=False,
+        widget=forms.Textarea(attrs={'rows':2}),
+        initial='Número de sitios phishing detectados, activos y reportados'
+    )
+    
+    top_sitios = forms.BooleanField(
+        label='Gráfica "Top 5 sitios phishing vs tiempo de vida"',
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={'style':'float:left;margin-left:330px;margin-top:-22px;'}
+        )
+    )
+    top_sitios_info = forms.CharField(
+        label='Descripción',
+        required=False,
+        widget=forms.Textarea(attrs={'rows':2}),
+        initial='Top 5 sitios phishing con mayor tiempo de vida desde su registro en el sistema'
+    )
+        
+    sectores = forms.BooleanField(
+        label='Gráfica "Sectores afectados"',
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={'style':'float:left;margin-left:220px;margin-top:-22px;'}
+        )
+    )
+    sectores_info = forms.CharField(
+        label='Descripción',
+        required=False,
+        widget=forms.Textarea(attrs={'rows':2}),
+        initial='Sectores que han sido afectados por sitios phishing'
+    )
+    
+    entidades = forms.BooleanField(
+        label='Gráfica "Entidades afectadas"',
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={'style':'float:left;margin-left:230px;margin-top:-22px;'}
+        )
+    )
+    entidades_info = forms.CharField(
+        label='Descripción',
+        required=False,
+        widget=forms.Textarea(attrs={'rows':2}),
+        initial='Entidades que han sido afectadas por sitios phishing'
+    )
+    
+    detecciones = forms.BooleanField(
+        label='Gráfica "Número de detecciones"',
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={'style':'float:left;margin-left:245px;margin-top:-22px;'}
+        )
+    )
+    detecciones_info = forms.CharField(
+        label='Descripción',
+        required=False,
+        widget=forms.Textarea(attrs={'rows':2}),
+        initial='Número de detecciones de sitios phishing por día'
+    )
+    
+    tiempo_reporte = forms.BooleanField(
+        label='Gráfica "Tiempo promedio de reporte"',
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={'style':'float:left;margin-left:270px;margin-top:-22px;'}
+        )
+    )
+    tiempo_reporte_info = forms.CharField(
+        label='Descripción',
+        required=False,
+        widget=forms.Textarea(attrs={'rows':2}),
+        initial='Tiempo promedio por día de reporte de sitio phishing desde su registro y tiempo promedio por día de vida de sitios phishing después de ser reportados'
+    )
+    
+    top_paises = forms.BooleanField(
+        label='Gráfica "Top 10 países que hospedan phishing"',
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={'style':'float:left;margin-left:330px;margin-top:-22px;'}
+        )
+    )
+    top_paises_info = forms.CharField(
+        label='Descripción',
+        required=False,
+        widget=forms.Textarea(attrs={'rows':2}),
+        initial='Top 10 países que hospedan sitios phishing'
+    )
+    
+    top_hosting = forms.BooleanField(
+        label='Gráfica "Top 10 servicios de hosting"',
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={'style':'float:left;margin-left:260px;margin-top:-22px;'}
+        )
+    )
+    top_hosting_info = forms.CharField(
+        label='Descripción',
+        required=False,
+        widget=forms.Textarea(attrs={'rows':2}),
+        initial='Top 10 servicios de hosting que hospedan sitios phishing'
+    )
+    
+    urls = forms.BooleanField(
+        label='Adjuntar información sobre URLs',
+        required=False,
+        widget=forms.CheckboxInput(
+            attrs={'style':'float:left;margin-left:247px;margin-top:-22px;'}
+        )
+    )
 
 class MensajeForm(forms.Form):
     

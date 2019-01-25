@@ -43,7 +43,12 @@
             </li>
             <li>
               <a href="{% url 'ajustes' %}">Ajustes</a>
-            </li>          
+            </li>
+            {% if user.is_superuser %}
+              <li>
+                <a href="{% url 'archivos-adjuntos' %}">Archivos Adjuntos</a>
+              </li>
+            {% endif %}
             <li>
               <a href="{% url 'logout' %}">Cerrar Sesión</a>
             </li>         
@@ -108,6 +113,11 @@
             </li>
             <li>
             </li>
+            {% if user.is_superuser %}
+              <li>
+                <a href="{% url 'archivos-adjuntos' %}"><span uk-icon="link"></span> Archivos Adjuntos</a>
+              </li>
+            {% endif %}
             <li class="uk-nav-divider"></li>
             <li>
               <a href="{% url 'logout' %}"><span uk-icon="sign-out"></span> Cerrar Sesión</a>

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Archivos adjuntos{% endblock %}
+{% block head %}
+  <link rel="stylesheet" href='{% static "css/jquery-ui.min.css" %}' />
+  <link rel="stylesheet" href='{% static "css/jquery-ui.structure.min.css" %}' />
+  <link rel="stylesheet" href='{% static "css/jquery-ui.theme.min.css" %}' />
+  <link rel="stylesheet" href='{% static "css/jquery-ui-timepicker-addon.css" %}' />
+  <script src='{% static "js/jquery-ui.min.js" %}'></script>  
+  <script src='{% static "js/jquery-ui-timepicker-addon.js" %}'></script>  
+{% endblock %}
+
+{% block contenido %}
+  <h1 class="uk-heading-primary uk-text-center"><span>Archivos adjuntos</span></h1>
+
+  <h4 class="uk-heading-bullet">{{ inicio }} - {{ fin }}</h4>
+  <form action="" method="post">
+    {% csrf_token %}
+    {% include 'form.html' with form=form %}
+    <input class="uk-button uk-button-primary" type="submit" value="Aceptar" />
+  </form>
+  
+  <dl class="uk-description-list uk-description-list-divider">
+    {% for archivo in archivos %}
+      <dt></dt>
+      {% if archivo.archivo_url %}
+        <dd><strong>Fecha de creación:</strong> {{ archivo.timestamp }}</dd>
+        <dd><strong>Nombre:</strong> <a href='{% url "archivo-adjunto" pk=archivo.pk %}'>{{ archivo.filename }}</a></dd>
+      {% endif %}
+    {% empty %}
+      <div class="uk-alert-warning" uk-alert>
+        <p>No hay ningún archivo por mostrar</p>
+      </div>
+    {% endfor %}    
+  </dd>
+
+  <script type="text/javascript">
+    $('.datetimepicker').datetimepicker({
+      dateFormat: 'yy-mm-dd'
+    });
+  </script>
+{% endblock %}

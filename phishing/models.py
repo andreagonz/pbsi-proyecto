@@ -5,6 +5,8 @@ from .storage import OverwriteStorage
 from django.utils.translation import ugettext_lazy as _
 from django.core.exceptions import ValidationError
 import magic
+from django.utils import timezone
+import os
 
 class Clasificacion_entidad(models.Model):
 
@@ -483,3 +485,30 @@ class Proxy(models.Model):
         s.append('' if self.http is None else '%s' % self.http)
         s.append('' if self.https is None else '%s' % self.https)
         return ', '.join(s)
+
+def archivo_adjunto_path(instance, filename):
+    fecha = timezone.localtime(timezone.now()).date()
+    if instance.malicioso:
+        return 'archivos_adjuntos/%s/maliciosos/%s' % (fecha, filename)
+    else:
+        return 'archivos_adjuntos/%s/indefinidos/%s' % (fecha, filename)
+
+class ArchivoAdjunto(models.Model):
+
+    malicioso = models.BooleanField(default=False)
+    timestamp = models.DateTimeField(auto_now_add=True)
+    archivo = models.FileField(storage=OverwriteStorage(),
+                               upload_to=archivo_adjunto_path,
+                               max_length=1024,
+                               unique=True
+    )
+
+    @property
+    def archivo_url(self):
+        if self.archivo and hasattr(self.archivo, 'url'):
+            return self.archivo.url
+        return None
+
+    @property
+    def filename(self):
+        return os.path.basename(self.archivo.name)

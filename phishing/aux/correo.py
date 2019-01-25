@@ -21,6 +21,9 @@ from email.message import EmailMessage
 import magic
 import humanize
 from bs4 import BeautifulSoup
+from django.core.files.base import ContentFile
+from phishing.models import ArchivoAdjunto
+from django.db import IntegrityError
 
 def obten_texto(mensaje, archivo):
     if not os.path.exists(archivo):
@@ -188,24 +191,26 @@ def mkdir(d):
     if not os.path.exists(d):
         os.makedirs(d)
 
-def guarda_payload(payload, malicioso, archivo):
-    fecha = str(timezone.localtime(timezone.now()).date())
-    path = os.path.join(settings.MEDIA_ROOT, settings.DIR_ARCHIVOS_ADJUNTOS, fecha)
-    mkdir(path)
-    if malicioso:
-        path = os.path.join(path, 'maliciosos')
-    else:
-        path = os.path.join(path, 'indefinidos')
-    mkdir(path)
+def guarda_payload(nombre, payload, malicioso):
+    adjunto = None
     try:
-        with gzip.open(os.path.join(path, archivo), 'wb') as w:
-            w.write(payload)
+        adjunto = ArchivoAdjunto(malicioso=malicioso)
+        z_payload = gzip.compress(payload)
+        adjunto.archivo.save(nombre, ContentFile(z_payload))
+        adjunto.save()
+    except IntegrityError:
+        hoy = timezone.localtime(timezone.now())
+        adjuntos = ArchivoAdjunto.objects.filter(timestamp__date=hoy.date())
+        for archivo in adjuntos:
+            if archivo.filename == nombre:
+                return archivo
+        return None
     except Exception as e:
         log.log("Error al guardar archivo adjunto '%s': %s" % (archivo, str(e)), "correo.log")
         return None
-    return os.path.join(path, archivo)
+    return adjunto
         
-def analisis_archivo(attachment):
+def analisis_archivo(attachment, usuario_autenticado):
     """
     Esta funcion analiza los archivos contenidos en los correos
     """
@@ -213,14 +218,15 @@ def analisis_archivo(attachment):
     try:
         datos['Tipo'] = attachment.get_content_type()
         payload = attachment.get_payload(decode=True)
+        datos['Tamaño'] = humanize.naturalsize(0)
         if payload:
             datos['Tipo'] = magic.from_buffer(payload, mime=True)
             sha256_h = sha256(payload)
             archivo = "%s.gz" % sha256_h
             malicioso = es_malicioso(sha256_h)
-            guarda = guarda_payload(payload, malicioso, archivo)
-            if guarda:
-                datos['Archivo'] = archivo
+            guarda = guarda_payload(archivo, payload, malicioso)
+            if guarda and usuario_autenticado:
+                datos['Archivo'] = guarda
             datos['Tamaño'] = humanize.naturalsize(len(payload))
             datos['Es malicioso'] = 'Sí' if malicioso else 'No'
             datos['Referencia'] = "https://www.virustotal.com/#/search/%s" % sha256_h
@@ -238,7 +244,7 @@ def analisis_archivo(attachment):
                 elif k == "modification-date":
                     datos['Fecha de modificación'] = v
                 elif k == "read-date":
-                    datos['Fecha de lectura'] = v                
+                    datos['Fecha de lectura'] = v
     except Exception as e:
         log.log('Error: %s' % str(e), "correo.log")
         return None
@@ -282,10 +288,10 @@ def es_adjunto(parte):
             return True
     return False
 
-def analiza_correo(mensaje, archivos, urls):
+def analiza_correo(mensaje, archivos, urls, usuario_autenticado):
     for parte in mensaje.walk():
         if es_adjunto(parte):
-            analisis = analisis_archivo(parte)
+            analisis = analisis_archivo(parte, usuario_autenticado)
             if analisis:
                 archivos.append(analisis)
                 tipo = archivos[-1].get('Tipo', '')
@@ -293,24 +299,25 @@ def analiza_correo(mensaje, archivos, urls):
                     payload = parte.get_payload(decode=True)
                     if payload:
                         payload = payload.decode('utf-8', errors='ignore')
-                        parsecorreo_aux(payload, archivos[-1].get('Nombre', '-'), archivos, urls)
+                        parsecorreo_aux(payload, archivos[-1].get('Nombre', '-'),
+                                        archivos, urls, usuario_autenticado)
         elif parte.get_content_type().startswith('text'):
             html = parte.get_content_type() == 'text/html'
             urls += obten_urls(parte.get_payload(decode=True).decode('utf-8', errors='ignore'), html)
             
-def parsecorreo_aux(texto, nombre, archivos, urls):
+def parsecorreo_aux(texto, nombre, archivos, urls, usuario_autenticado):
     try:
         mensaje = email.message_from_string(texto)
     except Exception as e:
         log.log("Error al leer correo %s: %s" % (nombre, str(e)), "correo.log")
         return None
-    analiza_correo(mensaje, archivos, urls)
+    analiza_correo(mensaje, archivos, urls, usuario_autenticado)
     return mensaje    
 
-def parsecorreo(texto, nombre='-'):
+def parsecorreo(texto, nombre, usuario_autenticado):
     urls = []
     archivos = []
-    mensaje = parsecorreo_aux(texto, nombre, archivos, urls)
+    mensaje = parsecorreo_aux(texto, nombre, archivos, urls, usuario_autenticado)
     if not mensaje:
         return {}, urls, '', archivos, True    
     headers = str(mensaje).split('\n\n')

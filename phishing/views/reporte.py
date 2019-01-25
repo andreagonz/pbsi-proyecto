@@ -10,6 +10,7 @@ from phishing.models import Url, SitioInfo, ASN
 import randomcolor
 from docx import Document
 from docx.shared import Inches
+from docx.enum.text import WD_BREAK, WD_ALIGN_PARAGRAPH
 import numpy as np
 import matplotlib.pyplot as plt
 from django.db.models import Count, Q, F, Avg
@@ -24,13 +25,20 @@ class DocumentView(LoginRequiredMixin, View):
     def get(self,request, *args, **kwargs):
             return render(request,'reporte/reporte.html', {'form': GraficasForm()})
 
-def agrega_imagen(fig, documento):
+def agrega_imagen(fig, documento, titulo, descripcion):
     try:
         a = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(8))
         path = '/tmp/%s.png' % a
         fig.savefig(path)
         plt.clf()
+        q = documento.add_paragraph()
+        q.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        q.add_run(titulo.upper()).bold = True
+        q.add_run("\n%s" % descripcion)
         documento.add_picture(path)
+        q = documento.add_paragraph()
+        run = q.add_run()
+        run.add_break(WD_BREAK.PAGE)
         os.remove(path)
     except Exception as e:
         log.log('Error: %s' % str(e), 'reportes.log')
@@ -83,7 +91,18 @@ def crear_doc(request):
             tiempo_reporte = form.cleaned_data['tiempo_reporte']
             top_paises = form.cleaned_data['top_paises']
             top_hosting = form.cleaned_data['top_hosting']
+
+            sitios_info = form.cleaned_data['sitios_info']
+            top_sitios_info = form.cleaned_data['top_sitios_info']
+            sectores_info = form.cleaned_data['sectores_info']
+            entidades_info = form.cleaned_data['entidades_info']
+            detecciones_info = form.cleaned_data['detecciones_info']
+            tiempo_reporte_info = form.cleaned_data['tiempo_reporte_info']
+            top_paises_info = form.cleaned_data['top_paises_info']
+            top_hosting_info = form.cleaned_data['top_hosting_info']
+            
             urls_info = form.cleaned_data['urls']
+            
             graficas = []
             rand_color = randomcolor.RandomColor()
             document = Document()
@@ -127,8 +146,8 @@ def crear_doc(request):
                 ax.set_ylabel('Número de sitios')
                 ax.bar(y_pos, y, align='center', alpha=0.5)
                 plt.xticks(y_pos, x)
-                ax.set_title('Estados de sitios phishing')
-                agrega_imagen(fig, document)
+                titulo = 'Estados de sitios phishing'
+                agrega_imagen(fig, document, titulo, sitios_info)
 
             if top_sitios:
                 top_sitios = sitios.filter(
@@ -142,8 +161,8 @@ def crear_doc(request):
                 ax.set_xlabel('T (Horas)')
                 ax.barh(y_pos, x, align='center', alpha=0.5)
                 plt.yticks(y_pos, y)
-                ax.set_title('Top 5 – Sitios phishing vs Tiempo de vida')
-                agrega_imagen(fig, document)
+                titulo = 'Top 5 – Sitios phishing vs Tiempo de vida'
+                agrega_imagen(fig, document, titulo, top_sitios_info)
                 
             if sectores:
                 sectores = urls.values('sitios__sitioactivoinfo__entidad_afectada__clasificacion__nombre').annotate(
@@ -156,9 +175,9 @@ def crear_doc(request):
                 colores = rand_color.generate(count=len(x))
                 fig, ax = plt.subplots()
                 ax.pie(y, labels=x, colors=colores, autopct='%1.1f%%', startangle=90)
-                ax.set_title('Sectores afectados')
+                titulo = 'Sectores afectados'
                 ax.axis('equal')
-                agrega_imagen(fig, document)
+                agrega_imagen(fig, document, titulo, sectores_info)
                 
             if entidades:
                 entidades = urls.values('sitios__sitioactivoinfo__entidad_afectada__nombre').annotate(
@@ -170,9 +189,9 @@ def crear_doc(request):
                 colores = rand_color.generate(count=len(x))
                 fig, ax = plt.subplots()
                 ax.pie(y, labels=x, colors=colores, autopct='%1.1f%%', startangle=90)
-                ax.set_title('Entidad afectada')
+                titulo = 'Entidades afectadas'
                 ax.axis('equal')
-                agrega_imagen(fig, document)
+                agrega_imagen(fig, document, titulo, entidades_info)
 
             if detecciones:
                 ndias = (fin - inicio).days
@@ -187,8 +206,8 @@ def crear_doc(request):
                 ax.set_ylabel('Número de detecciones')
                 ax.bar(y_pos, y, align='center', alpha=0.5)
                 plt.xticks(y_pos, x, rotation=45)
-                ax.set_title('Número de detecciones por fecha')
-                agrega_imagen(fig, document)
+                titulo = 'Número de detecciones por fecha'
+                agrega_imagen(fig, document, titulo, detecciones_info)
 
             if tiempo_reporte:
                 ndias = (fin - inicio).days
@@ -216,9 +235,9 @@ def crear_doc(request):
                                  label='Tiempo promedio de vida postreporte')
                 plt.xticks(rotation=45)
                 ax.set_ylabel('T (Horas)')
-                ax.set_title('Tiempo promedio de reporte vs tiempo promedio de vida postreporte')
+                titulo = 'Tiempo promedio de reporte vs tiempo promedio de vida postreporte'
                 ax.legend(loc='best')
-                agrega_imagen(fig, document)
+                agrega_imagen(fig, document, titulo, tiempo_reporte_info)
 
             if top_paises:                
                 paises = urls.exclude(dominio__pais__isnull=True).values(
@@ -231,8 +250,8 @@ def crear_doc(request):
                 y_pos = np.arange(len(x))
                 ax.bar(y_pos, y, align='center', alpha=0.5)
                 plt.xticks(y_pos, x)
-                ax.set_title('Top 10 países que hospedan phishing')
-                agrega_imagen(fig, document)
+                titulo = 'Top 10 países que hospedan phishing'
+                agrega_imagen(fig, document, titulo, top_paises_info)
                 
             if top_hosting:
                 hosting = urls.exclude(dominio__asn__isnull=True).values(
@@ -252,8 +271,8 @@ def crear_doc(request):
                 y_pos = np.arange(len(x))
                 ax.bar(y_pos, y, align='center', alpha=0.5)
                 plt.xticks(y_pos, x, rotation=70)
-                ax.set_title('Top 10 servicios de hosting que hospedan phishing')
-                agrega_imagen(fig, document)
+                titulo = 'Top 10 servicios de hosting que hospedan phishing'
+                agrega_imagen(fig, document, titulo, top_hosting_info)
                 
             if urls_info:
                 q = document.add_paragraph('')
