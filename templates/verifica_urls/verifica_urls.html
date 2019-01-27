@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Valida URLs{% endblock %}
+{% block title %}Verifica URLs{% endblock %}
 
 {% block contenido %}
-  <h1 class="uk-heading-primary uk-text-center"><span>Valida URLs</span></h1>
+  <h1 class="uk-heading-primary uk-text-center"><span>Verifica URLs</span></h1>
   
-  {% include 'valida_urls/descripcion_valida_urls.html' %}
+  {% include 'verifica_urls/descripcion_verifica_urls.html' %}
   
   <form action="" method="post">
     {% csrf_token %}

@@ -12,77 +12,93 @@
 
       <div class="uk-width-expand">
         <h4 class="uk-comment-title uk-margin-remove">
-          <a class="uk-link-reset" href="{% url 'url-detalle' url.pk %}">{{ url }}</a>
+          {% if user.is_authenticated %}
+            <a class="uk-link-reset" href="{% url 'url-detalle' url.pk %}">{{ url }}</a>
+          {% else %}
+            {{ url }}
+          {% endif %}          
         </h4>
-        <p class="uk-comment-meta uk-margin-remove-top"><a class="uk-link-reset" href="#">Fecha de actualización: {{ url.timestamp_actualizacion }}</a></p>
+        <p class="uk-comment-meta uk-margin-remove-top">Fecha de actualización: {{ url.timestamp_actualizacion }}</p>
       </div>
     </div>
   </header>
   <div class="uk-comment-body">
     <p>
-      <span class='uk-text-bold'>Dominio:</span> <a href='{% url "dominio" pk=url.dominio.pk %}'>{{ url.dominio }}</a><br/>
+      <span class='uk-text-bold'>Dominio:</span>
+      {% if user.is_authenticated %}
+        <a href='{% url "dominio" pk=url.dominio.pk %}'>{{ url.dominio }}</a><br/>
+      {% else %}
+        {{ url.dominio }}<br/>
+      {% endif %}
       <span class='uk-text-bold'>IP:</span> {{ url.dominio.ip_str }}<br/>
       <span class='uk-text-bold'>Código:</span> {{ url.codigo_str }}<br/>      
       <span class='uk-text-bold'>Estado:</span> {{ url.estado }} <br/>
       <span class='uk-text-bold'>Correos:</span> {{ url.dominio.correos_str }}<br/>
       <span class='uk-text-bold'>ISP:</span> {{ url.dominio.isp_str }}<br/>
       <span class='uk-text-bold'>País:</span> {{ url.dominio.pais_str }}<br/>
-      {% if url.dominio.asn %}<span class='uk-text-bold'>ASN:</span> <a href='{% url "asn" pk=url.dominio.asn.pk %}'>{{ url.dominio.asn_str }}</a><br/>{% endif %}
+      <span class='uk-text-bold'>ASN:</span>
+      {% if url.dominio.asn %}
+        {% if user.is_authenticated %}
+          <a href='{% url "asn" pk=url.dominio.asn.pk %}'>{{ url.dominio.asn_str }}</a><br/>
+        {% else %}
+          {{ url.dominio.asn_str }}<br/>
+        {% endif %}
+      {% endif %}
       <span class='uk-text-bold'>Servidor:</span> {{ url.dominio.servidor_str }}<br/>
       <span class='uk-text-bold'>RIR:</span> {{ url.dominio.rir_str }}<br/>
-      <span class='uk-text-bold'>Servidores DNS:</span> {{ url.dominio.dns_str }}
-      {% if url.mas_reciente %}
-        <br/><span class='uk-text-bold'>Fecha de creación:</span> {{ url.mas_reciente.timestamp_creacion }}
-      {% else %}
-        <br/><span class='uk-text-bold'>Fecha de creación:</span> {{ url.timestamp_creacion }}
+      <span class='uk-text-bold'>Servidores DNS:</span> {{ url.dominio.dns_str }}<br/>
+      <span class='uk-text-bold'>Fecha de creación:</span> {{ url.timestamp_creacion }}
+      {% if url.timestamp_desactivado %}
+        <br/><span class='uk-text-bold'>Fecha de desactivación:</span> {{ url.timestamp_desactivado }}
       {% endif %}
-      
-      {% if url.mas_reciente %}        
-        <br/><span class='uk-text-bold'>Detección:</span> {{ url.deteccion }}
-        <br/><span class='uk-text-bold'>Reportado:</span> {% if url.reportado %}Sí{% else %}No{% endif %}
-        {% if url.reportado %}
-          <br/><span class='uk-text-bold'>Fecha de reporte:</span> {{ url.timestamp_reportado }}
-        {% endif %}
-        <br/><span class='uk-text-bold'>Ignorado:</span> {% if url.ignorado %}Sí{% else %}No{% endif %}
-        {% if url.sitio_info %}
-          {% with url.sitio_info as info %}
-            <br/><span class='uk-text-bold'>Título:</span> {{ info.titulo_str }}
-            <br/><span class='uk-text-bold'>Entidad afectada:</span> {{ info.entidad_afectada_str }}
-            <br/><span class='uk-text-bold'>Archivo:</span> <a href='{{ info.archivo_url }}'>Descarga</a>
-            <br/><span class='uk-text-bold'>Ofuscación:</span> {{ info.ofuscaciones_str }}
-            {% if info.hash_archivo %}
-              <br/><span class='uk-text-bold'>Hash MD5 de archivo:</span> {{ info.hash_archivo }}
+      <br/><span class='uk-text-bold'>Ignorado:</span> {% if url.ignorado %}Sí{% else %}No{% endif %}
+      <br/><span class='uk-text-bold'>Reportado:</span> {% if url.reportado %}Sí{% else %}No{% endif %}      
+      {% if url.reportado %}
+        <br/><span class='uk-text-bold'>Fecha de reporte:</span> {{ url.timestamp_reportado }}
+      {% endif %}
+      {% if url.es_redireccion or url.codigo >= 200 and url.codigo < 300 %}
+        <br/><span class='uk-text-bold'>Detección:</span> {{ url.deteccion_str }}
+        <br/><span class='uk-text-bold'>Entidad afectada:</span> {{ url.entidad_afectada_str }}        
+        {% if url.obten_info_activa %}
+          {% with url.obten_info_activa as ua %}
+            <br/><span class='uk-text-bold'>Título:</span> {{ ua.titulo_str }}
+            <br/><span class='uk-text-bold'>Ofuscación:</span> {{ ua.ofuscaciones_str }}
+            {% if user.is_authenticated %}
+              <br/><span class='uk-text-bold'>Archivo:</span> <a href='{{ ua.archivo_url }}'>Descarga</a>
+              <br/><span class='uk-text-bold'>Hash MD5 de archivo:</span> {{ ua.hash_archivo_str }}
             {% endif %}
           {% endwith %}
         {% endif %}
         
-        {% if url.tickets %}
-          <br/><span class='uk-text-bold'>Tickets:</span>
-          {% for t in url.tickets %}
-            <a href="{% url 'ticket' pk=t.pk %}">{{ t }}</a>
-            {% if not forloop.last %}
-              ,
+        {% if url.es_redireccion and url.obten_info_redireccion %}
+          {% with url.obten_info_redireccion as red %}
+            {% if red.redireccion %}
+              <br/><span class='uk-text-bold'>Redirección:</span>
+              {% if user.is_authenticated %}
+                <a href={% url 'url-detalle' pk=red.redireccion.pk %}>
+                  {{ red.redireccion }}
+                </a>
+              {% else %}
+                {{ red.redireccion }}
+              {% endif %}
             {% endif %}
-          {% endfor %}
+            {% if red.redireccion_final %}
+              <br/><span class='uk-text-bold'>Redirección final:</span>
+              {% if user.is_authenticated %}
+                <a href={% url 'url-detalle' pk=red.redireccion_final.pk %}>
+                  {{ red.redireccion_final }}
+                </a>
+              {% else %}
+                {{ red.redireccion_final }}
+              {% endif %}
+            {% endif %}
+          {% endwith %}
         {% endif %}
-        
-        {% if url.es_redireccion %}<br/><span class='uk-text-bold'>Redirección:</span>
-          <a href={% url 'url-detalle' pk=url.redireccion.pk %}>
-            {{ url.redireccion }}
-          </a><br/>
-          {% if url.redireccion_final %}
-            <span class='uk-text-bold'>Redirección final:</span>
-            <a href={% url 'url-detalle' pk=url.redireccion_final.pk %}>
-              {{ url.redireccion_final }}
-            </a>
-          {% endif %}
-        {% endif %}
-        
-        {% if url.mas_reciente.timestamp_desactivacion %}
-          <br/><span class='uk-text-bold'>Fecha de desactivación:</span> {{ url.sitio_info.timestamp_desactivacion }}
-        {% endif %}
-        
-      {% endif %}      
+      {% endif %}
+      {% if url.ticket and user.is_authenticated %}
+        <br/><span class='uk-text-bold'>Ticket:</span>
+        <a href="{% url 'ticket' pk=url.ticket.pk %}">{{ url.ticket }}</a>
+      {% endif %}
     </p>
   </div>
 </article>

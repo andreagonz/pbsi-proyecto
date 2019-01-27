@@ -12,7 +12,7 @@
         <li>
           {% include 'dominio_info.html' with reportar=True %}
           <ul>
-            {% for url in dominio.urls_monitoreo %}
+            {% for url in dominio.urls_activas %}
               <li>
                 {% include 'url_info.html' %}
               </li>

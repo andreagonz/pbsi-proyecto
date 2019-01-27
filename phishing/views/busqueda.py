@@ -14,8 +14,7 @@ def busqueda(request):
         q = request.GET['q'].strip()
         try:
             n = int(q)
-            resultados = Url.objects.filter(Q(codigo=n)|Q(dominio__asn__asn=n))
-            print(resultados)
+            resultados = Url.objects.filter(Q(codigo=n)|Q(dominio__asn__asn=n)).order_by('url', '-timestamp_creacion').distinct('url')
             return render(request, 'busqueda.html',
                   {'resultados': resultados,
                    'query': q
@@ -28,13 +27,14 @@ def busqueda(request):
             SearchVector('dominio__ip') + SearchVector('dominio__pais') +
             SearchVector('dominio__asn__nombre') + SearchVector('dominio__correos__correo') +
             SearchVector('dominio__isp') + SearchVector('dominio__servidor') +
-            SearchVector('sitios__sitioactivoinfo__titulo') +
-            SearchVector('sitios__sitioactivoinfo__entidad_afectada__nombre') +
-            SearchVector('sitios__sitioactivoinfo__ofuscaciones__nombre') +
-            SearchVector('sitios__sitioactivoinfo__hash_archivo') +
-            SearchVector('sitios__redireccion__url') + SearchVector('sitios__ticket__ticket')
-        ).filter(search=SearchQuery(q)).distinct('url')
-        
+            SearchVector('urlactiva__titulo') +
+            SearchVector('urlactiva__entidad_afectada__nombre') +
+            SearchVector('urlactiva__entidad_afectada__clasificacion__nombre') +
+            SearchVector('urlactiva__ofuscaciones__nombre') +
+            SearchVector('urlactiva__hash_archivo') +
+            SearchVector('urlredireccion__redireccion__url') + SearchVector('ticket__ticket') +
+            SearchVector('urlredireccion__redireccion_final__url')
+        ).filter(search=SearchQuery(q)).order_by('url', '-timestamp_creacion').distinct('url')
     return render(request, 'busqueda.html',
                   {'resultados': resultados,
                    'query': q

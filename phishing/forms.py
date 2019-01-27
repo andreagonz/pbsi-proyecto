@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.forms import ModelForm
 from django.utils.translation import ugettext_lazy as _
 from django.core.validators import MaxValueValidator, MinValueValidator
+from django.conf import settings
 
 class UrlsForm(forms.Form):
     urls = forms.CharField(label='URLs', widget=forms.Textarea)
@@ -15,6 +16,7 @@ class ProxyForm(forms.Form):
     tor = forms.BooleanField(label='Tor', required=False)
     proxy = forms.ModelChoiceField(label='Proxies', queryset=Proxy.objects.all(),
                                    empty_label="Ninguno", required=False)
+    user_agent = forms.CharField(max_length=256,required=True, initial=settings.USER_AGENT)
     
 class Search(forms.Form):
     search = forms.CharField(max_length=500,required=True)
@@ -215,8 +217,8 @@ class MensajeForm(forms.Form):
     def __init__(self, *args, **kwargs):
         urls = kwargs.pop('urls', Url.objects.none())
         super().__init__(*args, **kwargs)
-        self.fields['capturas'].queryset = SitioActivoInfo.objects.filter(pk__in=
-            [x.sitio_info.pk for x in urls if x.sitio_info and x.sitio_info.captura]).distinct()
+        self.fields['capturas'].queryset = UrlActiva.objects.filter(
+            pk__in=[x.obten_info.pk for x in urls if x.obten_info and x.obten_info.captura]).distinct()
         self.fields['urls'].queryset = urls
         self.fields['urls'].error_messages['required'] = 'Seleccionar al menos una dirección URL'
 
@@ -224,8 +226,8 @@ class MensajeForm(forms.Form):
         urls = [x.pk for x in self.fields['urls'].queryset]
         qs = Url.objects.filter(pk__in=urls)
         self.fields['urls'].queryset = qs
-        self.fields['capturas'].queryset = SitioActivoInfo.objects.filter(pk__in=
-            [x.sitio_info.pk for x in qs if x.sitio_info and x.sitio_info.captura]).distinct()
+        self.fields['capturas'].queryset = UrlActiva.objects.filter(
+            pk__in=[x.obten_info.pk for x in qs if x.obten_info and x.obten_info.captura]).distinct()
 
 class ActualizaURL(forms.Form):
 

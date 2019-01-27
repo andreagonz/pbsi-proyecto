@@ -6,15 +6,13 @@ from phishing.aux import phishing, correo, log
 from phishing.models import *
 
 def url_reporta(url, ticket):
-    s = url.mas_reciente
-    if s:
-        s.ticket = ticket
-        s.save()
-        i = url.sitio_info
-        if i and (i.deteccion != 'P' or i.deteccion != 'M'):
-            i.deteccion = 'P'
-            i.timestamp_deteccion = ticket.timestamp
-            i.save()
+    url.ticket = ticket
+    url.save()
+    i = url.obten_info
+    if i and (i.deteccion != 'P' or i.deteccion != 'M'):
+        i.deteccion = 'P'
+        i.timestamp_deteccion = ticket.timestamp
+        i.save()
 
 class Command(BaseCommand):
 
@@ -30,8 +28,9 @@ class Command(BaseCommand):
             log.log("Leyendo archivo %s" % archivo, "notificacion.log")
             a = os.path.join(dir_correos, archivo)
             with open(a) as f:
-                headers, urls, _, _, _ = correo.parsecorreo(f.read())
-                sitios = phishing.verifica_urls(list(set(urls)), None, False)
+                headers, urls, _, _, error = correo.parsecorreo(f.read(), archivo, False)
+                urls = list(set(urls))
+                sitios = phishing.verifica_urls(urls, "notificacion.log")
                 for u in urls:
                     log.log("Verificada URL %s" % u, "notificacion.log")
                 if headers.get('Subject', '') == 'Reporte Phishing - TSU':
@@ -40,12 +39,12 @@ class Command(BaseCommand):
                         dominios.append(s.dominio)
                     dominios = list(set(dominios))
                     for d in dominios:
-                        urls0 = d.urls_monitoreo
+                        urls0 = d.urls_activas
                         urls = []
                         sitios = []
                         for u in urls0:
-                            i = u.sitio_info
-                            if i and (i.deteccion == 'P' or i.deteccion == 'P') and \
+                            i = u.obten_info
+                            if i and (i.deteccion == 'P' or i.deteccion == 'M') and \
                                i.entidad_afectada:
                                 sitios.append(i)
                                 urls.append(u)
@@ -53,8 +52,7 @@ class Command(BaseCommand):
                             continue
                         sitios = list(set(sitios))
                         hoy = timezone.localtime(timezone.now())
-                        cadena_urls = ''.join([x.mas_reciente.identificador
-                                               for x in urls if x.mas_reciente])
+                        cadena_urls = ''.join([x.identificador for x in urls])
                         md = phishing.md5((d.dominio + cadena_urls).encode('utf-8', 'backslashreplace'))
                         ticket = ('%d%02d%02d%s' % (hoy.year, hoy.month, hoy.day, md[:7])).upper()
                         de = settings.CORREO_DE

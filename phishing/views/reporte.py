@@ -6,7 +6,7 @@ from django.shortcuts import render
 from phishing.aux import log
 from phishing.forms import GraficasForm
 from phishing.views import aux
-from phishing.models import Url, SitioInfo, ASN
+from phishing.models import Url, ASN
 import randomcolor
 from docx import Document
 from docx.shared import Inches
@@ -44,18 +44,17 @@ def agrega_imagen(fig, documento, titulo, descripcion):
         log.log('Error: %s' % str(e), 'reportes.log')
 
 def url_info(u, q, d):
-    i = u.sitio_info
-    if i:
-        if i.captura and hasattr(i.captura, 'file'):
-            d.add_picture(i.captura.file, width=Inches(4.0))
-            q = d.add_paragraph("")
+    i = u.obten_info
+    if i and i.captura and hasattr(i.captura, 'file'):
+        d.add_picture(i.captura.file, width=Inches(4.0))
+        q = d.add_paragraph("")
     q.add_run("URL: %s\n" % u.url)
     q.add_run("IP: %s\n" % u.dominio.ip_str)
     q.add_run("Código: %s\n" % u.codigo_str)
     q.add_run("Fecha de creación: %s\n" % u.timestamp_creacion)    
-    q.add_run("Detección: %s\n" % u.deteccion)
+    q.add_run("Detección: %s\n" % u.deteccion_str)
     q.add_run("Estado: %s\n" % u.estado)
-    q.add_run("Entidad: %s\n" % u.entidad_afectada)
+    q.add_run("Entidad: %s\n" % u.entidad_afectada_str)
     q.add_run("Correos: %s\n" % u.dominio.correos_str)
     q.add_run("ISP: %s\n" % u.dominio.isp_str)
     q.add_run("País: %s\n" % u.dominio.pais_str)
@@ -66,16 +65,15 @@ def url_info(u, q, d):
     if i:
         q.add_run("Título: %s\n" % i.titulo_str)
         q.add_run("Ofuscacion: %s\n" % i.ofuscaciones_str)
-        if i.timestamp_deteccion:
-            q.add_run("Fecha de detección: %s\n" % i.timestamp_deteccion)
         if i.hash_archivo:
-            q.add_run("Hash MD5 de archivo: %s\n" % i.hash_archivo)            
-    if u.codigo >= 300 and u.codigo < 400:
-        m = u.mas_reciente
-        q.add_run("Redirección: %s\n" % m.redireccion)
-        r = m.redireccion_final
-        if r:
-            q.add_run("Redirección final: %s\n" % r.url)
+            q.add_run("Hash MD5 de archivo: %s\n" % i.hash_archivo)
+    if u.es_redireccion:
+        red = u.obten_info_redireccion
+        if red:
+            if red.redireccion:
+                q.add_run("Redirección: %s\n" % red.redireccion.url)
+            if red.redireccion_final:
+                q.add_run("Redirección final: %s\n" % red.redireccion_final.url)
                      
 @login_required(login_url=reverse_lazy('login'))
 def crear_doc(request):
@@ -102,7 +100,7 @@ def crear_doc(request):
             top_hosting_info = form.cleaned_data['top_hosting_info']
             
             urls_info = form.cleaned_data['urls']
-            
+
             graficas = []
             rand_color = randomcolor.RandomColor()
             document = Document()
@@ -112,22 +110,13 @@ def crear_doc(request):
             inicio = form.cleaned_data['inicio']
             fin = form.cleaned_data['fin']
             
-            urls0 = Url.objects.all()
-            l = []
+            urls0 = Url.objects.filter(timestamp_creacion__lte=fin, timestamp_creacion__gte=inicio)
+            lst = []
             for u in urls0:
-                d = u.deteccion
-                if d == 'Sitio phishing' or d == 'Sitio malicioso' and \
-                   u.timestamp_creacion <= fin and u.timestamp_creacion >= inicio:
-                    l.append(u.pk)
-            urls = Url.objects.filter(pk__in=l)
-
-            sitios0 = []
-            for u in urls:
-                s = SitioInfo.objects.filter(url__pk=u.pk, timestamp_creacion__gte=inicio,
-                                             timestamp_creacion__lte=fin)
-                if s.count() > 0:
-                    sitios0.append(s.latest().pk)
-            sitios = SitioInfo.objects.filter(pk__in=sitios0).distinct()
+                d = u.obten_info
+                if d and (d.deteccion == 'P' or d.deteccion == 'I'):
+                    lst.append(u.pk)
+            urls = Url.objects.filter(pk__in=lst)
                 
             document.add_heading('Periodo',level=1)
             q = document.add_paragraph('De: ')
@@ -137,8 +126,8 @@ def crear_doc(request):
             q.add_run(str(fin)).bold = True
 
             if sitios:
-                sitios_activos = urls.filter(codigo__gte=200, codigo__lt=400)
-                sitios_reportados = SitioInfo.objects.filter(ticket__isnull=False)
+                sitios_activos = urls.filter(timestamp_desactivado__lt=fin)
+                sitios_reportados = urls.filter(ticket__timestamp__lt=fin)
                 x = ['Activos', 'Reportados', 'Detectados']
                 y = [sitios_activos.count(), sitios_reportados.count(), urls.count()]
                 y_pos = np.arange(len(x))
@@ -150,10 +139,10 @@ def crear_doc(request):
                 agrega_imagen(fig, document, titulo, sitios_info)
 
             if top_sitios:
-                top_sitios = sitios.filter(
-                    Q(timestamp_desactivado__lt=fin)|Q(timestamp_desactivado__isnull=True)
+                top_sitios = urls.filter(
+                    Q(timestamp_desactivado__isnull=True) | Q(timestamp_desactivado__lt=fin)
                 ).annotate(tiempo_vida=(fin - F('timestamp_creacion'))).order_by('-tiempo_vida')[:5]
-                y = [x.url.url for x in top_sitios]
+                y = [x.url for x in top_sitios]
                 x = [aux.delta_horas(x.tiempo_vida) for x in top_sitios]                
                 y_pos = np.arange(len(x))
                 fig, ax = plt.subplots()
@@ -165,13 +154,13 @@ def crear_doc(request):
                 agrega_imagen(fig, document, titulo, top_sitios_info)
                 
             if sectores:
-                sectores = urls.values('sitios__sitioactivoinfo__entidad_afectada__clasificacion__nombre').annotate(
-                    cuenta=Count('sitios__sitioactivoinfo__entidad_afectada__clasificacion__nombre'))
-                x = [x['sitios__sitioactivoinfo__entidad_afectada__clasificacion__nombre']
+                sectores = urls.values('urlactiva__entidad_afectada__clasificacion__nombre').annotate(
+                    cuenta=Count('urlactiva__entidad_afectada__clasificacion__nombre'))
+                x = [x['urlactiva__entidad_afectada__clasificacion__nombre']
                      for x in sectores
-                     if x['sitios__sitioactivoinfo__entidad_afectada__clasificacion__nombre']]
+                     if x['urlactiva__entidad_afectada__clasificacion__nombre']]
                 y = [x['cuenta'] for x in sectores
-                     if x['sitios__sitioactivoinfo__entidad_afectada__clasificacion__nombre']]
+                     if x['urlactiva__entidad_afectada__clasificacion__nombre']]
                 colores = rand_color.generate(count=len(x))
                 fig, ax = plt.subplots()
                 ax.pie(y, labels=x, colors=colores, autopct='%1.1f%%', startangle=90)
@@ -180,12 +169,12 @@ def crear_doc(request):
                 agrega_imagen(fig, document, titulo, sectores_info)
                 
             if entidades:
-                entidades = urls.values('sitios__sitioactivoinfo__entidad_afectada__nombre').annotate(
-                    cuenta=Count('sitios__sitioactivoinfo__entidad_afectada__nombre'))
-                x = [x['sitios__sitioactivoinfo__entidad_afectada__nombre'] for x in entidades
-                        if x['sitios__sitioactivoinfo__entidad_afectada__nombre']]
+                entidades = urls.values('urlactiva__entidad_afectada__nombre').annotate(
+                    cuenta=Count('urlactiva__entidad_afectada__nombre'))
+                x = [x['urlactiva__entidad_afectada__nombre'] for x in entidades
+                        if x['urlactiva__entidad_afectada__nombre']]
                 y = [x['cuenta'] for x in entidades
-                        if x['sitios__sitioactivoinfo__entidad_afectada__nombre']]
+                        if x['urlactiva__entidad_afectada__nombre']]
                 colores = rand_color.generate(count=len(x))
                 fig, ax = plt.subplots()
                 ax.pie(y, labels=x, colors=colores, autopct='%1.1f%%', startangle=90)
@@ -198,7 +187,7 @@ def crear_doc(request):
                 fechas = [inicio + datetime.timedelta(days=i) for i in range(ndias + 1)]
                 y = []
                 for d in fechas:
-                    y.append(sitios.filter(timestamp_creacion__date=d.date()).count())
+                    y.append(urls.filter(timestamp_creacion__date=d.date()).count())
                 x = [str(f) for f in fechas]
                 y_pos = np.arange(len(x))
                 fig, ax = plt.subplots()
@@ -217,12 +206,14 @@ def crear_doc(request):
                 tiempo_promedio_reporte = []
                 tiempo_promedio_postreporte = []
                 for d in fechas:
-                    sitiosA = SitioInfo.objects.filter(ticket__timestamp__date=d.date())
-                    tiempo_promedio_reporte.append(sitiosA.annotate(
+                    sitios = urls.filter(
+                        timestamp_creacion__date=d
+                    ).exclude(ticket__isnull=True)
+                    tiempo_promedio_reporte.append(sitios.annotate(
                         tiempo_reportado=F('ticket__timestamp') - F('timestamp_creacion')).aggregate(
                             Avg('tiempo_reportado')).get('tiempo_reportado__avg', 0))
-                    tiempo_promedio_postreporte.append(sitiosA.filter(
-                        timestamp_desactivado__isnull=False).annotate(
+                    tiempo_promedio_postreporte.append(sitios.filter(
+                        timestamp_desactivado__lte=fin).annotate(
                             tiempo_reportado=F('timestamp_desactivado') - F('ticket__timestamp')
                         ).aggregate(Avg('tiempo_reportado')).get('tiempo_reportado__avg', 0))
                 y1 = [aux.delta_horas(x) if x else 0 for x in tiempo_promedio_reporte]
@@ -279,7 +270,7 @@ def crear_doc(request):
                 q.add_run("INFORMACIÓN SOBRE URLS:\n").bold = True
                 for u in urls:
                     url_info(u, q, document)
-                    
+
             response = HttpResponse(
                 content_type='application/vnd.openxmlformats-officedocument.wordprocessingml.document'
             )

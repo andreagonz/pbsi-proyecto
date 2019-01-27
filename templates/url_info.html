@@ -3,7 +3,7 @@
     <div class="uk-grid-medium uk-flex-middle" uk-grid>
       <div class="uk-width-auto">
         <div uk-lightbox>
-          {% if activo and url.sitio_activo %}
+          {% if activo and url.activa and not url.limpia %}
             <input type="checkbox" class="uk-checkbox" name="urls" value="{{ url.id }}" checked />&nbsp;&nbsp;
           {% endif %}
           <a href='{{ url.captura_url }}'><img src='{{ url.captura_url }}' class="uk-comment-avatar" style="object-fit: cover;width: 80px;height: 80px;" /></a>
@@ -16,26 +16,37 @@
         <p class="uk-comment-meta uk-margin-remove-top">
           Código: {{ url.codigo_str }}<br/>
           Estado: {{ url.estado }} <br/>
-          Detección: {{ url.deteccion }}<br/>
-          Entidad afectada: {{ url.sitio_info.entidad_afectada_str }}<br/>
-          Ofuscación: {{ url.sitio_info.ofuscaciones_str }}<br/>
-          {% if url.es_redireccion %}
-            Redirección:
-            <a href={% url 'url-detalle' pk=url.redireccion.pk %}>
-              {{ url.redireccion }}<br/>
-            </a>
-            Redirección final:
-            <a href={% url 'url-detalle' pk=url.redireccion_final.pk %}>
-              {{ url.redireccion_final }}<br/>
-            </a>
+          Detección: {{ url.deteccion_str }}<br/>
+          Entidad afectada: {{ url.entidad_afectada_str }}<br/>
+          {% if url.obten_info_activa %}
+            Ofuscación: {{ url.obten_info_activa.ofuscaciones_str }}<br/>
           {% endif %}
-          Fecha de actualización: {{ url.timestamp_actualizacion }}<br/>          
+          {% if url.obten_info_redireccion %}
+            {% with url.obten_info_redireccion as red %}
+              {% if red.redireccion %}
+                Redirección:
+                <a href={% url 'url-detalle' pk=red.redireccion.pk %}>
+                  {{ red.redireccion }}<br/>
+                </a>
+              {% endif %}
+              {% if red.redireccion_final %}
+                Redirección final:
+                <a href={% url 'url-detalle' pk=red.redireccion_final.pk %}>
+                  {{ red.redireccion_final }}<br/>
+                </a>
+              {% endif %}
+            {% endwith %}
+          {% endif %}
+          Fecha de actualización: {{ url.timestamp_actualizacion }}
+          {% if url.timestamp_desactivado %}
+            <br/>Fecha de desactivación: {{ url.timestamp_desactivado }}
+          {% endif %}
           {% if iframe %}
             <div class="uk-inline">
               <button class="uk-button uk-button-default" type="button">Iframe</button>
               <div uk-dropdown="mode: click">
-                {% if url.sitio_info and url.sitio_info.archivo_es_texto %}
-                  <iframe width="800" height="600" src="{{ url.sitio_info.sitio.url }}">
+                {% if url.obten_info and url.obten_info.archivo_es_texto %}
+                  <iframe width="800" height="600" src="{{ url.obten_info.url }}">
                     <p>Este navegador no soporta el iso de iframes</p>
                   </iframe>
                 {% endif %}

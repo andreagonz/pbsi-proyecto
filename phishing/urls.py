@@ -1,12 +1,12 @@
 from django.urls import path
 from phishing.views import (
-    monitoreo, valida_urls, detalle, historico, ajustes, reporte, procesa_correo, detalle
+    monitoreo, verifica_urls, detalle, historico, ajustes, reporte, procesa_correo, detalle
 )
 
 urlpatterns = [
     path('monitoreo', monitoreo.monitoreo, name='monitoreo'),
     path('monitoreo/<int:pk>', monitoreo.monitoreo_id, name='monitoreo-id'),
-    path('valida-urls', valida_urls.valida_urls, name='valida-urls'),
+    path('verifica-urls', verifica_urls.verifica_urls, name='verifica-urls'),
     path('url/<int:pk>', detalle.url_detalle, name='url-detalle'),
     path('historico', historico.historico, name='historico'),
     path('ajustes', ajustes.ajustes, name='ajustes'),

@@ -16,12 +16,13 @@ import os
 @login_required(login_url=reverse_lazy('login'))
 def url_detalle(request, pk):
     url = get_object_or_404(Url, pk=pk)
+    url = Url.objects.filter(url=url.url).latest()
     hashes = phishing.archivo_hashes(url)
-    #comentarios = phishing.comentarios_sitio(url)
+    sitios = Url.objects.filter(url=url.url).order_by('-timestamp_creacion')
     context = {
         'url': url,
-        'hashes': hashes
-        #'comentarios': comentarios
+        'hashes': hashes,
+        'sitios': sitios
     }
     return render(request, 'detalle/url_detalle.html', context)
 
@@ -40,10 +41,15 @@ class DominioView(LoginRequiredMixin, DetailView):
     model = Dominio
     template_name = 'detalle/dominio.html'
 
+    def get_context_data(self, **kwargs):
+        context = super(DominioView, self).get_context_data(**kwargs)
+        context['urls'] = context['dominio'].urls.order_by('url', '-timestamp_creacion').distinct('url')
+        return context
+
 @login_required(login_url=reverse_lazy('login'))
 def actualiza_url(request, pk):
     url = get_object_or_404(Url, pk=pk)
-    info = url.sitio_info
+    info = url.obten_info
     if not info:
         raise Http404()
     context = {

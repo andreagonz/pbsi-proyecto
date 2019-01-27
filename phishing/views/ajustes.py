@@ -8,8 +8,31 @@ from phishing.forms import(
     CambiaAsuntoForm, CambiaMensajeForm, CambiaUnamAsuntoForm, CambiaUnamMensajeForm, FrecuenciaForm
 )
 from phishing.models import Proxy, Ofuscacion, Entidad, Clasificacion_entidad, ASN
-from phishing.aux import phishing
+from phishing.aux import phishing, log
 from django.forms import Textarea
+from subprocess import Popen, PIPE
+from django.conf import settings
+from django import forms
+
+def cambia_frecuencia(funcion, n):
+    n = 1 if n < 1 or n > 24 else n
+    comando = "/bin/bash -c 'source %s/bin/activate && python %s/manage.py %s'" % \
+              (settings.DIR_ENV, settings.BASE_DIR, funcion)
+    process = Popen('crontab -l | egrep -v "%s"  | crontab -'
+                    % (comando), shell=True, stdout=PIPE, stderr=PIPE)
+    out, err = process.communicate()
+    if err:
+        log.log("Error: %s" % err.decode('utf-8', errors='ignore'), "ajustes.log")
+    if out:
+        log.log(out.decode('utf-8', errors='ignore'), "ajustes.log")
+    i = "*/%d" % n if n < 24 else '0'
+    process = Popen('(crontab -l ; echo "0 %s * * * %s") | sort - | uniq - | crontab -'
+                    % (i, comando), shell=True, stdout=PIPE, stderr=PIPE)
+    out, err = process.communicate()
+    if err:
+        log.log("Error: %s" % err.decode('utf-8', errors='ignore'), "ajustes.log")
+    if out:
+        log.log(out.decode('utf-8', errors='ignore'), "ajustes.log")
 
 @login_required(login_url=reverse_lazy('login'))
 def ajustes(request):
@@ -45,7 +68,7 @@ def ajustes(request):
             verificacion_form = FrecuenciaForm(request.POST)
             if verificacion_form.is_valid():
                 verificacion = verificacion_form.cleaned_data['frecuencia']
-                phishing.cambia_frecuencia('verifica', verificacion)
+                cambia_frecuencia('verifica', verificacion)
     context = {
         'proxies': proxies,
         'asunto_form': asunto_form,
@@ -119,22 +142,26 @@ class ActualizaEntidad(LoginRequiredMixin, UpdateView):
     model = Entidad
     template_name = 'ajustes/actualiza_entidad.html'
     success_url = reverse_lazy('entidades')
-    fields = ('nombre', 'clasificacion',)
+    fields = ('nombre', 'clasificacion', 'lista_blanca')
 
     def get_form(self, form_class=None):
         form = super(ActualizaEntidad, self).get_form(form_class)
         form.fields['clasificacion'].required = False
+        form.fields['lista_blanca'].widget = forms.Textarea()
+        form.fields['lista_blanca'].label = 'Lista blanca de dominios (separados por salto de línea)'
         return form
     
 class NuevaEntidad(LoginRequiredMixin, CreateView):
     model = Entidad
     template_name = 'ajustes/nueva_entidad.html'
     success_url = reverse_lazy('entidades')
-    fields = ('nombre', 'clasificacion',)
+    fields = ('nombre', 'clasificacion', 'lista_blanca')
 
     def get_form(self, form_class=None):
         form = super(NuevaEntidad, self).get_form(form_class)
         form.fields['clasificacion'].required = False
+        form.fields['lista_blanca'].widget = forms.Textarea()
+        form.fields['lista_blanca'].label = 'Lista blanca de dominios (separados por salto de línea)'
         return form
 
 @login_required(login_url=reverse_lazy('login'))

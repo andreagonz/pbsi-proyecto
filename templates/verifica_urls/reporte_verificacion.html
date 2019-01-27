@@ -1,11 +1,11 @@
 {% extends "base.html" %}
 
-{% block title %}Valida URLs Reporte{% endblock %}
+{% block title %}Verifica URLs Reporte{% endblock %}
 
 {% block contenido %}
-  <h1 class="uk-heading-primary uk-text-center"><span>Valida URLs Reporte</span></h1>
+  <h1 class="uk-heading-primary uk-text-center"><span>Verifica URLs Reporte</span></h1>
   
-  {% if no_reportados and user.is_authenticated %}
+  {% if user.is_authenticated %}
     <a class="uk-button uk-button-primary" href='{% url 'monitoreo' %}'>Ir a monitoreo</a></br>
   {% endif %}
   
@@ -13,6 +13,6 @@
   
   <a class="uk-button uk-button-primary" href='{% url 'home' %}'>Inicio</a>
   
-  <a class="uk-button uk-button-primary" href='{% url 'valida-urls' %}'>Volver</a></br>
+  <a class="uk-button uk-button-primary" href='{% url 'verifica-urls' %}'>Volver</a></br>
   
 {% endblock %}

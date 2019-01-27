@@ -1,51 +1,51 @@
 from django.db.models import Count, Q, Count, When, Case, CharField
 
-def cuenta_urls(sitios):
-    return sitios.count()
+def cuenta_urls(urls):
+    return urls.count()
 
-def urls_activas(sitios):
-    return sitios.filter(codigo__gte=200, codigo__lt=300)
+def urls_activas(urls):
+    return urls.filter(codigo__gte=200, codigo__lt=300, timestamp_desactivado__isnull=True)
 
-def urls_inactivas(sitios):
-    return sitios.filter(Q(codigo__lt=200)|Q(codigo__gte=400))
+def urls_inactivas(urls):
+    return urls.filter(timestamp_desactivado__isnull=False)
 
-def urls_redirecciones(sitios):
-    return sitios.filter(codigo__gte=300, codigo__lt=400)
+def urls_redirecciones(urls):
+    return urls.filter(codigo__gte=300, codigo__lt=400, timestamp_desactivado__isnull=True)
 
-def urls_entidades(sitios):
-    return [(x['sitios__sitioactivoinfo__entidad_afectada__nombre'], x['cuenta'])
-            for x in sitios.values('sitios__sitioactivoinfo__entidad_afectada__nombre').annotate(
-                    cuenta=Count('sitios__sitioactivoinfo__entidad_afectada__nombre'))
-            if x['sitios__sitioactivoinfo__entidad_afectada__nombre']]
-        
-def urls_titulos(sitios):
-    return [(x['sitios__sitioactivoinfo__titulo'], x['cuenta'])
-            for x in sitios.values('sitios__sitioactivoinfo__titulo').annotate(
-                    cuenta=Count('sitios__sitioactivoinfo__titulo'))
-            if x['sitios__sitioactivoinfo__titulo']]
+def urls_entidades(urls):
+    return [(x['urlactiva__entidad_afectada__nombre'], x['cuenta'])
+            for x in urls.filter(urlactiva__entidad_afectada__isnull=False).values(
+                    'urlactiva__entidad_afectada__nombre').annotate(
+                        cuenta=Count('urlactiva__entidad_afectada__nombre'))]
 
-def urls_dominios(sitios):
+def urls_titulos(urls):
+    return [(x['urlactiva__titulo'], x['cuenta'])
+            for x in urls.filter(urlactiva__titulo__isnull=False).values(
+                    'urlactiva__titulo').annotate(
+                        cuenta=Count('urlactiva__titulo'))]
+
+def urls_dominios(urls):
     return [(x['dominio__dominio'], x['cuenta'])
-            for x in sitios.values('dominio__dominio').annotate(cuenta=Count('dominio__dominio'))]
+            for x in urls.values('dominio__dominio').annotate(cuenta=Count('dominio__dominio'))]
 
-def urls_paises(sitios):
+def urls_paises(urls):
     return [(x['dominio__pais'], x['cuenta'])
-            for x in sitios.values('dominio__pais').annotate(cuenta=Count('dominio__pais'))
+            for x in urls.values('dominio__pais').annotate(cuenta=Count('dominio__pais'))
             if x['dominio__pais']]
 
-def context_reporte(sitios):
-    activas = urls_activas(sitios)
-    inactivas = urls_inactivas(sitios)
-    redirecciones = urls_redirecciones(sitios)
+def context_reporte(urls):
+    activas = urls_activas(urls)
+    inactivas = urls_inactivas(urls)
+    redirecciones = urls_redirecciones(urls)
     context = {
-        'urls_total': cuenta_urls(sitios),
+        'urls_total': cuenta_urls(urls),
         'num_urls_activas': len(set([x.url for x in activas])),
         'num_urls_inactivas': len(set([x.url for x in inactivas])),
         'num_urls_redirecciones': len(set([x.url for x in redirecciones])),
-        'entidades': urls_entidades(sitios),
-        'titulos': urls_titulos(sitios),
-        'dominios': urls_dominios(sitios),
-        'paises': urls_paises(sitios),
+        'entidades': urls_entidades(urls),
+        'titulos': urls_titulos(urls),
+        'dominios': urls_dominios(urls),
+        'paises': urls_paises(urls),
         'activas': activas,
         'inactivas': inactivas,
         'redirecciones': redirecciones

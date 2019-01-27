@@ -35,12 +35,12 @@ def obten_texto(mensaje, archivo):
             return f.readline()
     
 def crea_diccionario(dominio):
-    urls = dominio.urls_monitoreo
-    entidades = [x['sitios__sitioactivoinfo__entidad_afectada__nombre'] for x in urls.exclude(
-        sitios__sitioactivoinfo__entidad_afectada__isnull=True).values(
-            'sitios__sitioactivoinfo__entidad_afectada__nombre'
+    urls = dominio.urls_activas
+    entidades = [x['urlactiva__entidad_afectada__nombre'] for x in urls.exclude(
+        urlactiva__entidad_afectada__isnull=True).values(
+            'urlactiva__entidad_afectada__nombre'
         ).distinct()]
-    regex = re.compile(r'^htt')    
+    regex = re.compile(r'^htt')
     dicc = {
         'urls': '\n'.join([regex.sub('hxx', str(x)).replace('.', '[.]', 1) for x in urls]),
         'ip': dominio.ip_str,
@@ -51,8 +51,7 @@ def crea_diccionario(dominio):
         'rir': dominio.rir_str,
         'servidor': dominio.servidor_str,
         'dns': dominio.dns_mensaje_str,
-        'entidades': ', '.join(entidades) if len(entidades) > 0 else 'No identificadas',
-        'responder_a': settings.CORREO_RESPONDER_A
+        'entidades': ', '.join(entidades) if len(entidades) > 0 else 'No identificadas'
     }
     return dicc
 
@@ -136,6 +135,7 @@ def genera_mensaje(sitio, fromadd, toadd, cc, bcc, asunto, mensaje, capturas):
     msg['To'] = ', '.join(toadd)
     msg['Cc'] = ', '.join(cc)
     msg['Bcc'] = ', '.join(bcc)
+    msg['Reply-To'] = settings.CORREO_RESPONDER_A
     mensaje = mensaje.replace('\n', '<br/>').replace(' ', '&nbsp;')
     msg.attach(MIMEText(mensaje, 'html'))
     for x in capturas:
@@ -172,6 +172,7 @@ def manda_correo(para, cc, cco, msg):
         return b
 
 def es_malicioso(HASH_sha256):
+    resultado = None
     try:
         vt = VirusTotalPublicApi(settings.VIRUSTOTAL_API_KEY)
         response = vt.get_file_report(HASH_sha256)
@@ -179,8 +180,8 @@ def es_malicioso(HASH_sha256):
     except Exception as e:
         log.log('Error: %s' % str(e), "correo.log")
         return False
-    resultados = resultado.get('results', None)
-    return resultados.get('positives', 0) > 0
+    resultados = resultado.get('results', None) if resultado else None
+    return resultados and resultados.get('positives', 0) > 0
 
 def sha256(fname):
     hash_sha256 = hashlib.sha256()

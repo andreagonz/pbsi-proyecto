@@ -2,7 +2,7 @@ from django.views.generic import TemplateView, View
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import render
-from phishing.models import Url, SitioInfo, ASN
+from phishing.models import Url, ASN
 import randomcolor
 from django.db.models import Count, Q, F, Avg
 from django.utils import timezone
@@ -27,13 +27,13 @@ class ChartData(APIView):
         rand_color = randomcolor.RandomColor()
         
         urls0 = Url.objects.all()
-        l = []
+        lst = []
         for u in urls0:
-            d = u.deteccion
-            if d == 'Sitio phishing' or d == 'Sitio malicioso':
-                l.append(u.pk)
-        urls = Url.objects.filter(pk__in=l)
-        
+            d = u.obten_info
+            if d and (d.deteccion == 'P' or d.deteccion == 'I'):
+                lst.append(u.pk)
+        urls = Url.objects.filter(pk__in=lst)
+
         paises = urls.exclude(dominio__pais__isnull=True).values(
             'dominio__pais').annotate(
                 cuenta=Count('dominio__pais')).order_by('-cuenta')[:5]
@@ -56,34 +56,27 @@ class ChartData(APIView):
             "default": [a[1] for a in l]
         }        
 
-        sitios_activos = urls.filter(codigo__gte=200, codigo__lt=400)
-        sitios_reportados = SitioInfo.objects.filter(ticket__isnull=False)
+        sitios_activos = urls.exclude(timestamp_desactivado__isnull=False)
+        sitios_reportados = urls.filter(ticket__isnull=False)
         sitios_data = {
             'labels': ['Activos', 'Reportados', 'Detectados'],
             'default': [sitios_activos.count(), sitios_reportados.count(), urls.count()]
         }
 
         hoy_tiempo = timezone.localtime(timezone.now())
-
-        sitios0 = []
-        for u in urls:
-            s = u.mas_reciente
-            if s:
-                sitios0.append(s.pk)
-        sitios = SitioInfo.objects.filter(pk__in=sitios0)
         
-        top_sitios = sitios.filter(url__codigo__gte=200, url__codigo__lt=400).annotate(
+        top_sitios = sitios_activos.annotate(
             tiempo_vida=(hoy_tiempo - F('timestamp_creacion'))).order_by('-tiempo_vida')[:5]
         top_sitios_data = {
-            'labels': [x.url.url for x in top_sitios],
+            'labels': [x.url for x in top_sitios],
             'default': [aux.delta_horas(x.tiempo_vida) for x in top_sitios]
         }
 
-        sectores = urls.values('sitios__sitioactivoinfo__entidad_afectada__clasificacion__nombre').annotate(
-                    cuenta=Count('sitios__sitioactivoinfo__entidad_afectada__clasificacion__nombre'))        
+        sectores = urls.values('urlactiva__entidad_afectada__clasificacion__nombre').annotate(
+                    cuenta=Count('urlactiva__entidad_afectada__clasificacion__nombre'))        
         sectores_data = {
-            "labels":  [x['sitios__sitioactivoinfo__entidad_afectada__clasificacion__nombre'] for x in sectores if x['sitios__sitioactivoinfo__entidad_afectada__clasificacion__nombre']],
-            "default": [x['cuenta'] for x in sectores if x['sitios__sitioactivoinfo__entidad_afectada__clasificacion__nombre']],
+            "labels":  [x['urlactiva__entidad_afectada__clasificacion__nombre'] for x in sectores if x['urlactiva__entidad_afectada__clasificacion__nombre']],
+            "default": [x['cuenta'] for x in sectores if x['urlactiva__entidad_afectada__clasificacion__nombre']],
             "colores": rand_color.generate(count=len(sectores))
         }
 
@@ -92,34 +85,33 @@ class ChartData(APIView):
         hoy = hoy_tiempo.date()
         for x in range(6, -1, -1):
             num_detecciones.append(
-                (sitios.filter(timestamp_creacion__date=hoy - datetime.timedelta(days=x))|
-                 SitioInfo.objects.filter(ticket__isnull=False, timestamp_creacion__date=hoy - datetime.timedelta(days=x))).distinct().count()
+                urls.filter(timestamp_creacion__date=hoy - datetime.timedelta(days=x)).count()
             )
         detecciones_data = {
             'labels': dias,
             'default': num_detecciones
         }
 
-        entidades = urls.values('sitios__sitioactivoinfo__entidad_afectada__nombre').annotate(
-                    cuenta=Count('sitios__sitioactivoinfo__entidad_afectada__nombre'))
+        entidades = urls.values('urlactiva__entidad_afectada__nombre').annotate(
+                    cuenta=Count('urlactiva__entidad_afectada__nombre'))
         entidades_data = {
-            "labels":  [x['sitios__sitioactivoinfo__entidad_afectada__nombre'] for x in entidades
-                        if x['sitios__sitioactivoinfo__entidad_afectada__nombre']],
+            "labels":  [x['urlactiva__entidad_afectada__nombre'] for x in entidades
+                        if x['urlactiva__entidad_afectada__nombre']],
             "default": [x['cuenta'] for x in entidades
-                        if x['sitios__sitioactivoinfo__entidad_afectada__nombre']],
+                        if x['urlactiva__entidad_afectada__nombre']],
             "colores": rand_color.generate(count=len(entidades))
         }
         
         tiempo_promedio_reporte = []
         tiempo_promedio_postreporte = []
         for x in range(6, -1, -1):
-            sitiosA = SitioInfo.objects.filter(
-                timestamp_creacion__date=hoy - datetime.timedelta(days=x)).exclude(
-                    ticket__isnull=True)
-            tiempo_promedio_reporte.append(sitiosA.annotate(
+            sitios = urls.filter(
+                timestamp_creacion__date=hoy - datetime.timedelta(days=x)
+            ).exclude(ticket__isnull=True)
+            tiempo_promedio_reporte.append(sitios.annotate(
                 tiempo_reportado=F('ticket__timestamp') - F('timestamp_creacion')).aggregate(
                     Avg('tiempo_reportado')).get('tiempo_reportado__avg', 0))
-            tiempo_promedio_postreporte.append(sitiosA.filter(
+            tiempo_promedio_postreporte.append(sitios.filter(
                 timestamp_desactivado__isnull=False).annotate(
                     tiempo_reportado=F('timestamp_desactivado') - F('ticket__timestamp')).aggregate(
                         Avg('tiempo_reportado')).get('tiempo_reportado__avg', 0))

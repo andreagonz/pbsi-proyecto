@@ -15,7 +15,7 @@
   <ul class="uk-switcher uk-margin">
     <li>
       {% include 'reporte_url.html' %}
-      {% if url.sitio_info %}
+      {% if url.obten_info %}
         <a class="uk-button uk-button-primary uk-button-small" href='{% url "actualiza-url" pk=url.pk %}'>Actualiza datos</a>
       {% endif %}
       <h4>Captura de dominio</h4>
@@ -32,7 +32,7 @@
     </li>
     <li>
       <ul class="uk-list">
-        {% for sitio in url.sitios.all %}
+        {% for sitio in sitios %}
           <li>
             {% include 'reporte_sitio.html' with historial=True %}
           </li>

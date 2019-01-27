@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Verifica URLs{% endblock %}
+
+{% block contenido %}
+
+  <h1 class="uk-heading-primary uk-text-center"><span>Verifica URLs</span></h1>
+
+  <div class="uk-alert-danger" uk-alert>
+    <p>El archivo '{{ archivo }}' no tiene un formato válido</p>
+  </div>
+
+  <a href='{% url 'verifica-urls' %}' class="uk-button uk-button-primary">Regresar<a/>
+    
+{% endblock %}

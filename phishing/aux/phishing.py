@@ -24,11 +24,6 @@ import random
 def md5(x):
     return hashlib.md5(x).hexdigest()
 
-def md5_content(c):
-    h = hashlib.md5()
-    h.update(c)
-    return h.hexdigest()
-
 def lineas_md5(texto):
     hashes = []
     for x in texto.split('\n'):
@@ -63,9 +58,10 @@ def obten_entidad_afectada(entidades, texto):
 
 def archivo_texto(sitio):
     try:
-        if sitio.archivo is None:
+        ua = sitio.obten_info_activa
+        if ua and ua.archivo is None:
             return ''
-        with gzip.open(sitio.archivo.path, "rb") as f:
+        with gzip.open(ua.archivo.path, "rb") as f:
             return f.read().decode(encoding="utf-8", errors="ignore")
     except Exception as e:
         log.log('Error: %s' % str(e), "phishing.log")
@@ -102,63 +98,55 @@ def recursos_externos(texto):
 
 def genera_id(url):
     ts = str(timezone.localtime(timezone.now()))
-    return md5((url + ts + random.choice("abcde012345")).encode('utf-8', 'backslashreplace'))
+    rand = ''.join([random.choice("abcde012345") for x in range(5)])
+    return md5((url + ts + rand).encode('utf-8', 'backslashreplace'))
 
-def hacer_peticion(sitios, sesion, sitio, entidades, ofuscaciones,
-                   dominios_inactivos, max_redir, existe=False, cron=False, monitoreo=False):
+def valida_url(url):
+    if not re.match("^https?://.+", url):
+        url = 'http://%s' % url
+    return url
+
+def hacer_peticion(url, lista_info, entidades, ofuscaciones, dominios_inactivos, sesion,
+                   max_redir, info_completa, seguir_redirecciones, bitacora, user_agent):
     """
     Se hace una peticion a la url y se obtiene el codigo de respuesta junto con
     el titulo de la pagina
     """
     codigo = -1
-    texto = ''
+    texto = None
     content = None
+    titulo = None
     redireccion = None
     try:
-        headers = {'User-Agent': settings.USER_AGENT}
-        req = sesion.get(sitio.url, headers=headers, allow_redirects=False)
+        headers = {'User-Agent': user_agent}
+        req = sesion.get(url, headers=headers, allow_redirects=False)
         codigo = req.status_code
-        nuevo_sitio = False
-        if existe and (sitio.codigo_anterior >= 400 or sitio.codigo_anterior < 200) and \
-           (codigo >= 200 or codigo < 400):
-            nuevo_sitio = True
-        if (not existe and codigo >= 200 and codigo < 400) or nuevo_sitio:
-            s = None
-            try:
-                s = SitioInfo(url=sitio, identificador=genera_id(sitio.url))
-                s.save()
-            except Exception as e:
-                log.log("Error al crear sitio para url %s: %s" % (sitio.url, str(e)), "phishing.log")
-            if s and codigo >= 200:
-                try:
-                    sa = SitioActivoInfo(sitio=s)
-                    sa.save()
-                except Exception as e:
-                    log.log("Error al crear sitio para sitio activo %s: %s" %
-                            (sitio.url, str(e)), "phishing.log")
         if codigo < 400 and codigo >= 300:
-            redireccion = urljoin(sitio.url, req.headers['location'])
-            if (not cron and redireccion != sitio.url and max_redir > 0) or \
-               (cron and redireccion != sitio.url and max_redir > 0 and \
-                sitio.redireccion and redireccion != sitio.redireccion.url):
-                redireccion = redireccion[:-1] if redireccion.endswith('#') else redireccion
-                verifica_url(sitios, redireccion, entidades, ofuscaciones, dominios_inactivos,
-                             sesion, max_redir - 1, monitoreo=monitoreo)
+            redireccion = urljoin(url, req.headers['location'])
+            redireccion = redireccion[:-1] if redireccion.endswith('#') else redireccion
+            redireccion = valida_url(redireccion)
+            if seguir_redirecciones and redireccion != url and max_redir > 0:
+                if not info_completa:
+                    urls_orig = Url.objects.filter(url=url)
+                    if urls_orig.count() > 0:
+                        url_orig = urls_orig.latest()
+                        if url_orig.es_redireccion:
+                            url_orig_r = url_orig.obten_info_redireccion
+                            url_redir = url_orig_r.redireccion
+                            if url_redir and url_redir.url != redireccion:
+                                info_completa = True
+                obten_info_sitio(redireccion, lista_info, entidades, ofuscaciones, dominios_inactivos,
+                                 sesion, max_redir - 1, info_completa, True, bitacora, user_agent)
         elif codigo < 300 and codigo >= 200:
             texto = req.text
             tree = html.fromstring(req.text)
             t = tree.xpath("//title")
-            titulo = t[0].text if len(t) > 0 else ''
+            titulo = t[0].text.strip().replace('\n', ' ') if len(t) > 0 else None
             content = req.content
-            i = sitio.mas_reciente
-            a = i.sitioactivoinfo if i else None
-            if a:
-                a.titulo = None if titulo is None else titulo.strip().replace('\n', ' ')
-                a.save()
     except Exception as e:
-        log.log('Error: %s' % str(e), "phishing.log")
+        log.log('Error: %s' % str(e), bitacora)
     finally:
-        return codigo, texto, content, existe, redireccion
+        return codigo, texto, content, titulo, redireccion
 
 def get_correo(correo):
     try:
@@ -187,7 +175,7 @@ def obten_sesion(proxy):
     sesion.proxies = proxy
     return sesion
 
-def guarda_captura(url, out, proxy=None):
+def guarda_captura(url, out, proxy, bitacora):
     """
     Se genera la captura de pantalla de la url especificada,
     se guarda el resultado en out
@@ -204,19 +192,26 @@ def guarda_captura(url, out, proxy=None):
         process = Popen("xvfb-run -a --server-args='-screen 0, 1280x1200x24' cutycapt --url='%s' --out='%s' --min-width=800 --min-height=600 --max-wait=25000" % (url, out), shell=True, stdout=PIPE, stderr=PIPE)
     stdout, stderr = process.communicate()
     if stderr:
-        print("Error al tomar captura de url '%s': %s"
-              % (url, stdout.decode('utf-8', errors='ignore')), "phishing.log")
+        log.log("Error al tomar captura de url '%s': %s"
+              % (url, stderr.decode('utf-8', errors='ignore')), bitacora)
     return not stderr is None
 
-def genera_captura(url, nombre, proxy=None):
-    captura = os.path.join(settings.MEDIA_ROOT, nombre)
-    guarda_captura(url, captura, proxy)
-    return captura
+def genera_captura(url, nombre, proxy, bitacora):
+    captura = os.path.join(settings.MEDIA_ROOT, "capturas", nombre)
+    try:
+        guarda_captura(url, captura, proxy, bitacora)
+    except Exception as e:
+        log.log("Error al tomar captura de url '%s': %s" % (url, str(e)), bitacora)
+    return captura if os.path.exists(captura) else None
 
-def guarda_archivo(content, nombre):
-    archivo = os.path.join(settings.MEDIA_ROOT, nombre)
-    with gzip.open(archivo, 'wb') as w:
-        w.write(content)
+def guarda_archivo(content, nombre, bitacora):
+    archivo = os.path.join(settings.MEDIA_ROOT, "archivos", nombre)
+    try:
+        with gzip.open(archivo, 'wb') as w:
+            w.write(content)
+    except Exception as e:
+        log.log("Error al guardar archivo: %s" % str(e), bitacora)
+        return None
     return archivo
     
 def get_proxy(sesion):
@@ -241,7 +236,7 @@ def es_phishing(url):
             return True
         return False
     except Exception as e:
-        log_phishing('Error: %s' % str(e))
+        log.log('Error: %s' % str(e), "phishing.log")
         return False
 
 def escanear_archivo(h):        
@@ -252,100 +247,65 @@ def escanear_archivo(h):
         return resultado['results']['positives']
     except Exception as e:
         return -1
-    
-def desactiva_redirecciones(url, ts):
-    s = url.mas_reciente
-    if not s or s.timestamp_desactivado:
-        return
-    s.timestamp_desactivado = ts
-    s.save()
-    si = SitioInfo.objects.filter(redireccion__pk=url.pk, timestamp_desactivado__isnull=True)
-    for i in si:
-        i.timestamp_desactivado = ts
-        i.save()
-    for i in si:
-        desactiva_redirecciones(i.url, ts)
-    
-def verifica_url_aux(sitios, url, existe, entidades, ofuscaciones, dominios_inactivos,
-                     sesion, max_redir, monitoreo=False, cron=False):
-    texto = ''
-    dominio = url.dominio.dominio
-    url.codigo_anterior = url.codigo
-    url.timestamp_actualizacion = timezone.localtime(timezone.now())
-    if dominios_inactivos.get(dominio, None) is None:
-        url.codigo, texto, content, existe, redireccion = hacer_peticion(
-            sitios, sesion, url, entidades, ofuscaciones, dominios_inactivos,
-            max_redir, existe, monitoreo=monitoreo
+
+def obten_sitio_dicc(url):
+    return {
+        'url': None,
+        'entidad': None,
+        'captura': None,
+        'deteccion': 'I',
+        'titulo': None,
+        'ofuscaciones': [],
+        'hash_archivo': None,
+        'archivo': None,
+        'codigo': -1,
+        'redireccion': None
+    }
+
+def deteccion_url(url, hash_archivo, content):
+    mime = ''
+    deteccion = 'I'
+    if hash_archivo and escanear_archivo(hash_archivo) > 0:
+        deteccion = 'M'
+        mime = magic.from_buffer(content, mime=True)
+    if not (deteccion == 'M' and not mime.startswith('text')):
+        if es_phishing(url):
+            deteccion = 'P'
+    return deteccion
+            
+def obten_info_sitio(url, lista_info, entidades, ofuscaciones, dominios_inactivos, sesion,
+                     max_redir, info_completa, seguir_redirecciones, bitacora, user_agent):
+    u = urlparse(url)
+    dominio_s = u.netloc
+    sitio_dicc = obten_sitio_dicc(url)
+    sitio_dicc['url'] = url
+    if not dominios_inactivos.get(dominio_s, False):
+        codigo, texto, content, titulo, redireccion = hacer_peticion(
+            url, lista_info, entidades, ofuscaciones, dominios_inactivos,
+            sesion, max_redir, info_completa, seguir_redirecciones, bitacora, user_agent
         )
-        if url.codigo_anterior >= 200 and url.codigo_anterior < 400 and \
-           (url.codigo >= 400 or url.codigo < 200):
-            desactiva_redirecciones(url, timezone.localtime(timezone.now()))
-        sitio_info = url.mas_reciente
-        if not sitio_info:
-            url.save()
-            log.log("Error al crear sitio para url '%s'" % url.url, "phishing.log")
-            return False
-        if redireccion:
-            try:
-                u = Url.objects.get(url=redireccion)                
-                sitio_info.redireccion = u
-                sitio_info.save()
-            except Exception as e:
-                log.log("Error al asignar redireccion %s a url %s: %s"
-                        % (redireccion, url.url, str(e)), "phishing.log")
-        mime = ''
-        sitio_activo_info = sitio_info.sitioactivoinfo
-        if url.activo and content and sitio_activo_info:
-            nombre = 'archivos/%s.gz' % sitio_activo_info.sitio.identificador
-            archivo = guarda_archivo(content, nombre)
-            if os.path.exists(archivo):
-                with open(archivo, 'rb') as f:
-                    sitio_activo_info.archivo.save(os.path.basename(archivo), File(f), True)
-                sitio_activo_info.hash_archivo = md5_content(content)
-                magia = magic.Magic(mime=True, uncompress=True)
-                mime = magia.from_file(archivo)
-        malicioso = False
-        if not existe and url.activo and sitio_activo_info and sitio_activo_info.hash_archivo:
-            if escanear_archivo(sitio_activo_info.hash_archivo) > 0:
-                sitio_activo_info.deteccion = 'M'
-                sitio_activo_info.timestamp_deteccion = timezone.localtime(timezone.now())
-                malicioso = True
-        if (sitio_activo_info.deteccion == 'I' or malicioso) and url.activo and not \
-           (malicioso and not mime.startswith('text')):
-            if es_phishing(url.url):
-                sitio_activo_info.deteccion = 'P'
-                sitio_activo_info.timestamp_deteccion = timezone.localtime(timezone.now())
-        if url.activo:
-            if not sitio_activo_info.entidad_afectada:
-                entidad = obten_entidad_afectada(entidades, texto)
-                if entidad:
-                    sitio_activo_info.entidad_afectada = entidad
-            if sitio_activo_info.ofuscaciones.count() == 0:
-                ofuscaciones = encuentra_ofuscacion(ofuscaciones, texto)
-                for o in ofuscaciones:
-                    sitio_activo_info.ofuscaciones.add(o)
-        # if sitio.activo and sitio.deteccion == 'I':
-        # heuristica_phishing(sitio)
-        if url.codigo < 0:
-            dominios_inactivos[dominio] = 1
-        if (monitoreo or not existe) and url.activo and sitio_activo_info:
-            proxy = get_proxy(sesion)
-            nombre = 'capturas/%s.jpg' % sitio_activo_info.sitio.identificador
-            if sitio_activo_info.captura and os.path.exists(sitio_activo_info.captura.path):
-                with open(sitio_activo_info.captura.path, 'rb') as f:
-                    sitio_activo_info.captura_anterior.save(
-                        os.path.basename(sitio_activo_info.captura.path), File(f), True
-                    )
-            captura = genera_captura(url.url, nombre, proxy)
-            if os.path.exists(captura):
-                with open(captura, 'rb') as f:
-                    sitio_activo_info.captura.save(os.path.basename(captura), File(f), True)
-        sitio_activo_info.save()
+        sitio_dicc['codigo'] = codigo
+        sitio_dicc['redireccion'] = redireccion
+        if codigo < 0:
+            dominios_inactivos[dominio_s] = True
+        else:
+            sitio_dicc['titulo'] = titulo
+            if codigo >= 200 and codigo < 300:
+                identificador = genera_id(url)
+                arc_nombre = '%s.gz' % identificador
+                sitio_dicc['archivo'] = guarda_archivo(content, arc_nombre, bitacora)
+                sitio_dicc['hash_archivo'] = md5(content)
+                sitio_dicc['titulo'] = titulo
+                if info_completa:
+                    sitio_dicc['entidad'] = obten_entidad_afectada(entidades, texto)
+                    img_proxy = get_proxy(sesion)
+                    img_nombre = '%s.jpg' % identificador
+                    sitio_dicc['captura'] = genera_captura(url, img_nombre, img_proxy, bitacora)
+                    sitio_dicc['ofuscaciones'] = encuentra_ofuscacion(ofuscaciones, texto)
+                    sitio_dicc['deteccion'] = deteccion_url(url, sitio_dicc['hash_archivo'], content)
     else:
-        url.codigo = -1
-        desactiva_redirecciones(url, timezone.localtime(timezone.now()))
-    url.save()
-    return True
+        sitio_dicc['codigo'] = -1
+    lista_info.append(sitio_dicc)
 
 def correos_whois(w):
     correos = []
@@ -455,7 +415,7 @@ def get_info(dominio, sesion):
                         dominio.asn = asnO
         dominio.save()
         
-def actualiza_dominio(dominio, scheme, sesion):
+def actualiza_dominio(dominio, scheme, sesion, bitacora):
     get_info(dominio, sesion)
     get_dns(dominio)
     if dominio.ip:
@@ -465,127 +425,255 @@ def actualiza_dominio(dominio, scheme, sesion):
             correos = correos_whois(w)
             for x in correos:                
                 dominio.correos.add(get_correo(x))
-    nombre = 'capturas/%s.jpg' % genera_id(dominio.dominio)
+    nombre = '%s.jpg' % genera_id(dominio.dominio)
     proxy = get_proxy(sesion)
-    captura = genera_captura(dominio.dominio, nombre, proxy)
-    if os.path.exists(captura):
+    captura = genera_captura(dominio.dominio, nombre, proxy, bitacora)
+    if captura:
         with open(captura, 'rb') as f:
             dominio.captura.save(os.path.basename(captura), File(f), True)
     dominio.save()    
 
-def obten_dominio(dominio, scheme, sesion, monitoreo=False, proxy=None):
+def obten_dominio(dominio, scheme, sesion, bitacora, proxy):
     d = None
     try:
         d = Dominio.objects.get(dominio=dominio)
     except:
-        log.log("No se encontró dominio '%s' en base de datos" % dominio, "phishing.log")
+        log.log("No se encontró dominio '%s' en base de datos" % dominio, bitacora)
     if not d:
         try:
             d = Dominio(dominio=dominio)
             d.save()
-            monitoreo = True
+            actualiza_dominio(d, scheme, sesion, bitacora)
         except Exception as e:
-            log.log("Error al crear dominio '%s': %s" % (dominio, str(e)), "phishing.log")
-            return None
-    if monitoreo:
-        actualiza_dominio(d, scheme, sesion)
+            log.log("Error al crear dominio '%s': %s" % (dominio, str(e)), bitacora)
+            return None        
     return d
 
-def obten_sitio(url, sesion, proxy=None, dominio=None):
+def crea_url(url, codigo, sesion, bitacora, proxy=None):
     u = urlparse(url)
-    dom = u.netloc
-    existe = False
-    sitio = None
+    dominio_s = u.netloc
+    dominio = obten_dominio(dominio_s, u.scheme, sesion, bitacora, proxy)
+    if not dominio:
+        return None
     try:
-        sitio = Url.objects.get(url=url)
-        existe = True
-    except:
-        log.log("No se encontró la url '%s' en la base de datos" % url, "phishing.log")
-    if not existe:
-        d = dominio 
-        if not dominio:
-            d = obten_dominio(dom, u.scheme, sesion, proxy=proxy, monitoreo=False)
-        if d:
-            try:
-                sitio = Url(url=url, dominio=d)
-                sitio.save()            
-            except Exception as e:
-                log.log("Error al crear sitio para url '%s': %s" % (url, str(e)), "phishing.log")
-    return sitio, existe
+        identificador = genera_id(url)
+        if codigo >= 200 and codigo < 300:
+            nuevo = UrlActiva(url=url, dominio=dominio, codigo=codigo, identificador=identificador)
+        elif codigo >= 300 and codigo < 400:
+            nuevo = UrlRedireccion(url=url, dominio=dominio, codigo=codigo, identificador=identificador)
+        else:
+            nuevo = Url(url=url, dominio=dominio, codigo=codigo, identificador=identificador)
+        nuevo.save()
+        return nuevo
+    except Exception as e:
+        log.log("Error al crear la url '%s': %s" % (url, str(e)), bitacora)
+    return None
 
-def verifica_url(sitios, url, entidades, ofuscaciones, dominios_inactivos,
-                 sesion, max_redir, monitoreo=False):
-    if not re.match("^https?://.+", url):
-        url = 'http://' + url
-    sitio, existe = obten_sitio(url, sesion)
-    if sitio:
-        verifica_url_aux(sitios, sitio, existe, entidades, Ofuscacion.objects.all(),
-                         dominios_inactivos, sesion, max_redir, monitoreo=monitoreo)
-        sitios.append(sitio)
+def obten_url(url):
+    sitios = Url.objects.filter(url=url)
+    if sitios.count() > 0:
+        return sitios.latest()
+    return None
 
 def mi_ip(sesion):
     try:
         r = sesion.get('https://api.ipify.org')
-        log.log("IP de salida: %s" % r.text, "ip.log")
-        # print("\033[92mIP: %s\033[0m" % r.text)
+        log.log("IP de salida: %s" % r.text, "monitoreo.log")
     except Exception as e:
-        log.log("Error al obtener IP de salida: %s" % str(e), "phishing.log")
+        log.log("Error al obtener IP de salida: %s" % str(e), "monitoreo.log")
 
-def monitorea_dominio(dominio, urls, proxy):
+def dicc_entidades():
+    entidades = {}
+    for x in Entidad.objects.all():
+        entidades[x.nombre.lower()] = x
+    return entidades
+
+def url_300_a_200(codigo, url_anterior):
+    return (url_anterior.codigo >= 300 and url_anterior.codigo < 400) and \
+        (codigo >= 200 and codigo < 300)
+
+def url_vivo_a_muerto(codigo, url_anterior):
+    if url_anterior.timestamp_desactivado:
+        return False
+    return (url_anterior.codigo >= 200 and url_anterior.codigo < 400) and \
+        (codigo < 200 or codigo >= 400)
+
+def url_200_a_300(codigo, url_anterior):
+    return (url_anterior.codigo >= 200 and url_anterior.codigo < 300) and \
+        (codigo >= 300 and codigo < 400)
+
+def url_muerto_a_vivo(codigo, url_anterior):
+    return (url_anterior.codigo < 200 or url_anterior.codigo >= 400 or \
+            url_anterior.timestamp_desactivado) and \
+            (codigo >= 200 and codigo < 400)
+
+def url_cambio_redireccion(url, redireccion):
+    if not url.es_redireccion:
+        return False
+    red = url.obten_info_redireccion
+    red_r = red.redireccion if red else None
+    return red_r and red_r.url != redireccion
+
+def desactiva_sitio(url):
+    ts = timezone.localtime(timezone.now())
+    url.timestamp_desactivado = ts
+    url.timestamp_actualizacion = ts
+    url.save()
+    
+def actualiza_redirecciones(url, url_anterior, ts):
+    for r in url_anterior.redirecciones.all():
+        r.redireccion = url
+        r.timestamp_actualizacion = ts
+        r.save()
+    for r in url_anterior.redirecciones_final.all():
+        r.redireccion_final = url
+        r.timestamp_actualizacion = ts
+        r.save()
+            
+def detecta_desactivacion_sitio(url, codigo, redireccion, sesion, bitacora, proxy):
+    url.codigo_anterior = url.codigo
+    url.save()
+    if url_300_a_200(codigo, url) or url_200_a_300(codigo, url) or \
+       url_vivo_a_muerto(codigo, url) or url_cambio_redireccion(url, redireccion):
+        if url_vivo_a_muerto(codigo, url):
+            url.codigo = codigo
+            url.save()
+        desactiva_sitio(url)
+    if url_300_a_200(codigo, url) or url_200_a_300(codigo, url) or \
+       url_muerto_a_vivo(codigo, url) or url_cambio_redireccion(url, redireccion):
+        url_anterior = url
+        url = crea_url(url.url, codigo, sesion, bitacora, proxy)
+        if url:
+            url.codigo_anterior = url_anterior.codigo
+            url.save()
+            actualiza_redirecciones(url, url_anterior, timezone.localtime(timezone.now()))
+    return url
+
+def actualiza_sitio(url, info, existe, sesion, bitacora, proxy):
+    codigo = info['codigo']
+    if not existe:
+        url.codigo_anterior = codigo
+        url.codigo = codigo
+        if codigo < 200 or codigo >= 400:
+            url.timestamp_desactivado = url.timestamp_creacion
+        url.save()
+    else:
+        url.timestamp_actualizacion = timezone.localtime(timezone.now())
+        url.save()
+        url = detecta_desactivacion_sitio(url, codigo, info['redireccion'], sesion, bitacora, proxy)
+    if not url:
+        return None
+    if url.codigo >= 200 and url.codigo < 300:
+        ua = url.obten_info_activa
+        if ua:
+            ua.titulo = info['titulo']
+            for o in info['ofuscaciones']:
+                ua.ofuscaciones.add(o)            
+            ua.hash_archivo = info['hash_archivo']
+            if not ua.entidad_afectada:
+                ua.entidad_afectada = info['entidad']
+            if ua.deteccion == 'I':
+                ua.deteccion = info['deteccion']
+            if ua.entidad_afectada:
+                for dominio in ua.entidad_afectada.lista_blanca_lst:
+                    if dominio == url.dominio.dominio:
+                        ua.deteccion = 'N'
+            if info['captura']:
+                if ua.captura and os.path.exists(ua.captura.path):
+                    with open(ua.captura.path, 'rb') as f:
+                        ua.captura_anterior.save(
+                            os.path.basename(ua.captura.path), File(f), True
+                        )
+                if os.path.exists(info['captura']):
+                     with open(info['captura'], 'rb') as f:
+                         ua.captura.save(os.path.basename(info['captura']), File(f), True)
+            if info['archivo'] and os.path.exists(info['archivo']):
+                    with open(info['archivo'], 'rb') as f:
+                        ua.archivo.save(os.path.basename(info['archivo']), File(f), True)
+            ua.save()
+    return url
+    
+def actualiza_lista_info(url, lista_info, sesion, bitacora, proxy):
+    urls = []
+    lista = lista_info[:-1] if url else lista_info
+    for info in lista:
+        url_o = obten_url(info['url'])
+        existe = True
+        if not url_o:
+            existe = False
+            url_o = crea_url(info['url'], info['codigo'], sesion, bitacora, proxy)
+        if url_o:
+            url_o = actualiza_sitio(url_o, info, existe, sesion, bitacora, proxy)
+        urls.append(url_o)
+    if url:
+        url = actualiza_sitio(url, lista_info[-1], True, sesion, bitacora, proxy)
+        urls.append(url)
+    urls = urls[::-1]
+    for x in range(len(urls)):
+        if x < len(urls) - 1 and urls[x]:
+            red = urls[x].obten_info_redireccion
+            if red:
+                red.redireccion = urls[x + 1]
+                red.redireccion_final = urls[-1]
+                red.save()
+    return [u for u in urls if u]
+
+def verifica_urls(urls, bitacora):
+    mkdir(os.path.join(settings.MEDIA_ROOT, 'capturas'))
+    mkdir(os.path.join(settings.MEDIA_ROOT, 'archivos'))
+    sesion = obten_sesion(None)
+    entidades = dicc_entidades()
+    ofuscaciones = Ofuscacion.objects.all()
+    dominios_inactivos = {}
+    sitios = []
+    for url in urls:
+        url = valida_url(url)
+        urls_obj = Url.objects.filter(url=url)
+        no_existe = True
+        if urls_obj.count() > 0:
+            no_existe = False
+        lista_info = []
+        obten_info_sitio(
+            url, lista_info, entidades, ofuscaciones, dominios_inactivos, sesion,
+            settings.MAX_REDIRECCIONES, no_existe, True, bitacora, settings.USER_AGENT
+        )
+        sitios += actualiza_lista_info(None, lista_info, sesion, bitacora, None)
+    return [x for x in sitios if x]
+        
+def verifica_urls_cron(urls):
+    sesion = obten_sesion(None)
+    entidades = dicc_entidades()
+    ofuscaciones = Ofuscacion.objects.all()
+    dominios_inactivos = {}
+    sitios = []
+    for url in urls:
+        lista_info = []
+        obten_info_sitio(
+            url.url, lista_info, entidades, ofuscaciones, dominios_inactivos, sesion,
+            settings.MAX_REDIRECCIONES, False, False, "monitoreo.log", settings.USER_AGENT
+        )
+        sitios += actualiza_lista_info(url, lista_info, sesion, "monitoreo.log", None)
+    return [x for x in sitios if x]
+    
+def monitoreo(dominio, urls, proxy, user_agent):
     scheme = 'http'
     for u in urls:
         url = urlparse(u.url)
         if url.scheme == 'https':
             scheme = 'https'
+    entidades = dicc_entidades()
     sesion = obten_sesion(proxy)
-    if settings.DEBUG:
-        mi_ip(sesion)
-    actualiza_dominio(dominio, scheme, sesion)
-    entidades = {}
-    dominios_inactivos = {}
-    for x in Entidad.objects.all():
-        entidades[x.nombre.lower()] = x    
-    for u in urls:
-        verifica_url_aux([], u, True, entidades, Ofuscacion.objects.all(),
-                         dominios_inactivos, sesion, settings.MAX_REDIRECCIONES, monitoreo=True)
-    
-def verifica_urls(urls, proxy, cron=False):
-    sesion = obten_sesion(proxy)
-    if settings.DEBUG:
-        mi_ip(sesion)
-    mkdir(os.path.join(settings.MEDIA_ROOT, 'capturas'))
-    mkdir(os.path.join(settings.MEDIA_ROOT, 'archivos'))
-    entidades = {}
-    for x in Entidad.objects.all():
-        entidades[x.nombre.lower()] = x
     ofuscaciones = Ofuscacion.objects.all()
     dominios_inactivos = {}
     sitios = []
+    if settings.DEBUG:
+        mi_ip(sesion)
+    actualiza_dominio(dominio, scheme, sesion, "monitoreo.log")
     for url in urls:
-        if cron:
-            verifica_url_aux(sitios, url, True, entidades, ofuscaciones, dominios_inactivos,
-                             sesion, settings.MAX_REDIRECCIONES, cron=True)
-        else:
-            verifica_url(sitios, url, entidades, ofuscaciones,
-                         dominios_inactivos, sesion, settings.MAX_REDIRECCIONES)
-    return sitios
-
-def cambia_frecuencia(funcion, n):
-    n = 1 if n < 1 or n > 24 else n
-    comando = "/bin/bash -c 'source %s/bin/activate && python %s/manage.py %s'" % \
-              (settings.DIR_ENV, settings.BASE_DIR, funcion)
-    process = Popen('crontab -l | egrep -v "%s"  | crontab -'
-                    % (comando), shell=True, stdout=PIPE, stderr=PIPE)
-    out, err = process.communicate()
-    if err:
-        log.log("Error: %s" % err.decode('utf-8', errors='ignore'), "ajustes.log")
-    if out:
-        log.log(out.decode('utf-8', errors='ignore'), "ajustes.log")
-    i = "*/%d" % n if n < 24 else '0'
-    process = Popen('(crontab -l ; echo "0 %s * * * %s") | sort - | uniq - | crontab -'
-                    % (i, comando), shell=True, stdout=PIPE, stderr=PIPE)
-    out, err = process.communicate()
-    if err:
-        log.log("Error: %s" % err.decode('utf-8', errors='ignore'), "ajustes.log")
-    if out:
-        log.log(out.decode('utf-8', errors='ignore'), "ajustes.log")
+        lista_info = []
+        obten_info_sitio(
+            url.url, lista_info, entidades, ofuscaciones, dominios_inactivos, sesion,
+            settings.MAX_REDIRECCIONES, True, True, "monitoreo.log", user_agent
+        )
+        sitios += actualiza_lista_info(url, lista_info, sesion, "monitoreo.log", proxy)
+    return [x for x in sitios if x]

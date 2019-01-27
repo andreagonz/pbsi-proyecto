@@ -6,9 +6,8 @@ from phishing.models import Url
 
 def analiza_correo(mensaje, nombre, usuario_autenticado):
     resultados, urls, headers, archivos, error = correo.parsecorreo(mensaje, nombre, usuario_autenticado)
-    sitios = phishing.verifica_urls(urls, None, False)
+    sitios = phishing.verifica_urls(urls, "correo.log")
     urls = Url.objects.filter(pk__in=[x.pk for x in sitios]).distinct()
-    urls = urls.prefetch_related('sitios__sitioactivoinfo')
     context = aux.context_reporte(urls)
     context['resultados'] = resultados
     context['urls'] = urls

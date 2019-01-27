@@ -10,10 +10,10 @@ def get_mime(archivo):
         f = magic.Magic(mime=True)
         return f.from_buffer(archivo)
     except Exception as e:
-        log.log("Error al leer archivo de entrada: %s" % str(e), "valida_urls.log")
+        log.log("Error al leer archivo de entrada: %s" % str(e), "verifica_urls.log")
     return ''
     
-def valida_urls(request):
+def verifica_urls(request):
     if request.method == 'POST':
         if request.POST.get("boton_urls"):
             form = UrlsForm(request.POST) 
@@ -29,27 +29,21 @@ def valida_urls(request):
                                 if z:
                                     urls_limpias.append(z)
                 urls_limpias = list(set(urls_limpias))
-                sitios = phishing.verifica_urls(urls_limpias, None, False)
-                no_reportados = False
-                for x in sitios:
-                    if not x.reportado:
-                        no_reportados = True
-                        break
+                sitios = phishing.verifica_urls(urls_limpias, "verifica_urls.log")
                 urls = Url.objects.filter(pk__in=[x.pk for x in sitios]).distinct()
                 context = aux.context_reporte(urls)
-                context['no_reportados'] = no_reportados
-                return render(request, 'valida_urls/reporte_validacion.html', context)
+                return render(request, 'verifica_urls/reporte_verificacion.html', context)
         elif request.POST.get("boton_archivo") and request.FILES.get('file', None):
             form = ArchivoForm(request.POST)
             f = request.FILES['file'].read()
             if not get_mime(f).startswith('text'):
                 archivo = request.FILES['file'].name
-                log.log("Ingresado archivo de entrada invalido: '%s'" % archivo, "valida_urls.log")
+                log.log("Ingresado archivo de entrada invalido: '%s'" % archivo, "verifica_urls.log")
                 context = {'archivo': archivo}
-                return render(request, 'valida_urls/error_archivo.html', context)
+                return render(request, 'verifica_urls/error_archivo.html', context)
             f = f.decode('utf-8', errors='ignore')
             name = request.FILES['file'].name
-            urls = []            
+            urls = []
             if name.endswith('.json'):
                 urls = entrada.lee_json(f)
             elif name.endswith('.csv'):
@@ -57,16 +51,10 @@ def valida_urls(request):
             else:
                 urls = entrada.lee_txt(f)
             urls = list(set(urls))
-            sitios = phishing.verifica_urls(urls, None, False)
-            no_reportados = False
-            for x in sitios:
-                if not x.reportado:
-                    no_reportados = True
-                    break
+            sitios = phishing.verifica_urls(urls, "verifica_urls.log")
             urls = Url.objects.filter(pk__in=[x.pk for x in sitios]).distinct()
             context = aux.context_reporte(urls)
-            context['no_reportados'] = no_reportados
-            return render(request, 'valida_urls/reporte_validacion.html', context)
+            return render(request, 'verifica_urls/reporte_verificacion.html', context)
     form1 = UrlsForm()
     form2 = ArchivoForm()
-    return render(request, 'valida_urls/valida_urls.html', {'form1': form1, 'form2': form2})
+    return render(request, 'verifica_urls/verifica_urls.html', {'form1': form1, 'form2': form2})
