@@ -68,10 +68,13 @@ class ChartData(APIView):
         top_sitios = sitios_activos.annotate(
             tiempo_vida=(hoy_tiempo - F('timestamp_creacion'))).order_by('-tiempo_vida')[:5]
         top_sitios_data = {
-            'labels': [x.url for x in top_sitios],
-            'default': [aux.delta_horas(x.tiempo_vida) for x in top_sitios]
+            'autenticado': request.user.is_authenticated,
+            'labels': list(range(1, len(top_sitios) + 1)),
+            'urls': [x.url for x in top_sitios],
+            'pks': [x.pk for x in top_sitios],
+            'valores': [aux.delta_horas(x.tiempo_vida) for x in top_sitios]
         }
-
+        
         sectores = urls.values('urlactiva__entidad_afectada__clasificacion__nombre').annotate(
                     cuenta=Count('urlactiva__entidad_afectada__clasificacion__nombre'))        
         sectores_data = {

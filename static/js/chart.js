@@ -177,16 +177,18 @@ $.ajax({
 	    }
 	});
         
-        var urls = graphs[3].labels
-	var tiempo_vida = graphs[3].default
+        var tiempo_vida_urls = graphs[3].urls
+        var tiempo_vida_labels = graphs[3].labels
+	var tiempo_vida_pks = graphs[3].pks
+        var tiempo_vida_valores = graphs[3].valores        
 	var sitios_canvas = document.getElementById("top5-sitios");
 	var tiempo_vida = new Chart(sitios_canvas, {
 	    type: 'horizontalBar',
 	    data: {
-		labels: urls,
+		labels: tiempo_vida_labels,
 		datasets: [{
 		    label: '',
-		    data: tiempo_vida,
+		    data: tiempo_vida_valores,
 		    backgroundColor: [
 			'rgba(255, 99, 132, 0.2)',
 			'rgba(54, 162, 235, 0.2)',
@@ -241,6 +243,25 @@ $.ajax({
                 }
 	    }
 	});
+
+        var autenticado = graphs[3].autenticado
+        var top5_etiquetas = $("#top5-sitios-etiquetas");
+        var top5_sitios = $("#grafica-top5-sitios");
+        top5_sitios.css("margin-bottom", (parseInt(tiempo_vida_urls.length*25) + "px" ));
+        
+        for(var i = 0; i < tiempo_vida_urls.length; i++) {
+            var newdiv = $(document.createElement("div"));
+            newdiv.addClass("top5-sitios-url");
+            newdiv.attr("uk-tooltip", "title: " + tiempo_vida_urls[i]);
+            top5_etiquetas.append(newdiv);
+            var link = $(document.createElement("a"));
+            if (autenticado)
+                link.attr("href", "/seccion/url/" + tiempo_vida_pks[i]);
+            link.addClass("uk-link-muted");
+            newdiv.append(link);
+            var newContent = document.createTextNode((i+1) + ") " + tiempo_vida_urls[i]); 
+            link.append(newContent);
+        }
         
         var sectores = graphs[4].labels
 	var cuenta_sectores = graphs[4].default

@@ -11,7 +11,9 @@
 
 {% block contenido %}
 
-  <h1 class="uk-text-center"><span>Sistema de Análisis Automatizado de Phishing y Sitios Maliciosos</span></h1>
+  <h1 class="uk-text-center">
+    <span>Sistema de Análisis Automatizado de Phishing y Sitios Maliciosos</span>
+  </h1>
 
   <div class="uk-child-width-1-1@s uk-child-width-1-3@m" uk-grid>
     <div class="grafica">
@@ -26,8 +28,9 @@
   </div>
   
   <div class="uk-auto">
-    <div class="grafica">
+    <div class="grafica" id="grafica-top5-sitios">
       <canvas id="top5-sitios"></canvas>
+      <div id="top5-sitios-etiquetas"></div>
     </div>
   </div>
   

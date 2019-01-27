@@ -36,10 +36,10 @@ def obten_texto(mensaje, archivo):
     
 def crea_diccionario(dominio):
     urls = dominio.urls_activas
-    entidades = [x['urlactiva__entidad_afectada__nombre'] for x in urls.exclude(
+    entidades = list(set([x['urlactiva__entidad_afectada__nombre'] for x in urls.exclude(
         urlactiva__entidad_afectada__isnull=True).values(
             'urlactiva__entidad_afectada__nombre'
-        ).distinct()]
+        )]))
     regex = re.compile(r'^htt')
     dicc = {
         'urls': '\n'.join([regex.sub('hxx', str(x)).replace('.', '[.]', 1) for x in urls]),

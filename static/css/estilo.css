@@ -33,3 +33,14 @@
 .no-margen {
     margin-top: 0px;
 }
+
+.top5-sitios-url {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#top5-sitios-etiquetas {
+    padding: 5px 15px;
+    border: 1px dashed #e5e5e5
+}
