@@ -44,10 +44,11 @@ def crea_diccionario(dominio):
     pais = 'País' if es_unam else 'Country'
     servidor = 'Servidor Web' if es_unam else 'Web Server'
     dns = 'Servidores DNS' if es_unam else 'DNS Servers'
+    urlss = 'URLs: \n' if urls.count() > 1 else 'URL: '
     dom = 'Dominio' if es_unam else 'Domain'
     regex = re.compile(r'^htt')
     dicc = {
-        'urls': '\n'.join([regex.sub('hxx', str(x)).replace('.', '[.]', 1) for x in urls]),
+        'urls': '%s%s\n' % (urlss, '\n'.join([regex.sub('hxx', str(x)).replace('.', '[.]', 1) for x in urls])),
         'ip': ('IP: %s\n' % dominio.ip_str) if dominio.ip else '',
         'pais': ('%s: %s\n' % (pais, dominio.pais.code)) if dominio.pais else '',
         'dominio': '%s: %s\n' % (dom, dominio.dominio.replace('.', '[.]', 1)),
