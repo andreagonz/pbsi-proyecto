@@ -57,7 +57,7 @@ class ChartData(APIView):
         }        
 
         sitios_activos = urls.exclude(timestamp_desactivado__isnull=False)
-        sitios_reportados = urls.filter(ticket__isnull=False)
+        sitios_reportados = Url.objects.filter(ticket__isnull=False)
         sitios_data = {
             'labels': ['Activos', 'Reportados', 'Detectados'],
             'default': [sitios_activos.count(), sitios_reportados.count(), urls.count()]

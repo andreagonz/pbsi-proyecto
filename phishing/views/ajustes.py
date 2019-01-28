@@ -147,6 +147,7 @@ class ActualizaEntidad(LoginRequiredMixin, UpdateView):
     def get_form(self, form_class=None):
         form = super(ActualizaEntidad, self).get_form(form_class)
         form.fields['clasificacion'].required = False
+        form.fields['lista_blanca'].required = False
         form.fields['lista_blanca'].widget = forms.Textarea()
         form.fields['lista_blanca'].label = 'Lista blanca de dominios (separados por salto de línea)'
         return form
@@ -160,6 +161,7 @@ class NuevaEntidad(LoginRequiredMixin, CreateView):
     def get_form(self, form_class=None):
         form = super(NuevaEntidad, self).get_form(form_class)
         form.fields['clasificacion'].required = False
+        form.fields['lista_blanca'].required = False
         form.fields['lista_blanca'].widget = forms.Textarea()
         form.fields['lista_blanca'].label = 'Lista blanca de dominios (separados por salto de línea)'
         return form

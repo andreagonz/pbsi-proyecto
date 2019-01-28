@@ -36,22 +36,27 @@ def obten_texto(mensaje, archivo):
     
 def crea_diccionario(dominio):
     urls = dominio.urls_activas
+    es_unam = dominio.dominio.endswith('unam.mx')
     entidades = list(set([x['urlactiva__entidad_afectada__nombre'] for x in urls.exclude(
         urlactiva__entidad_afectada__isnull=True).values(
             'urlactiva__entidad_afectada__nombre'
         )]))
+    pais = 'País: ' if es_unam else 'Country: '
+    servidor = 'Servidor Web: ' if es_unam else 'Web Server: '
+    dns = 'Servidores DNS: ' if es_unam else 'DNS Servers: '
+    dom = 'Dominio: ' if es_unam else 'Domain: '
     regex = re.compile(r'^htt')
     dicc = {
         'urls': '\n'.join([regex.sub('hxx', str(x)).replace('.', '[.]', 1) for x in urls]),
-        'ip': dominio.ip_str,
-        'pais': dominio.pais_str,
-        'dominio': dominio.dominio.replace('.', '[.]', 1),
-        'asn': dominio.asn_str,
-        'isp': dominio.isp_str,
-        'rir': dominio.rir_str,
-        'servidor': dominio.servidor_str,
-        'dns': dominio.dns_mensaje_str,
-        'entidades': ', '.join(entidades) if len(entidades) > 0 else 'No identificadas'
+        'ip': ('IP: %s\n' % dominio.ip_str) if dominio.ip else '',
+        'pais': ('%s: %s\n' % (pais, dominio.pais.code)) if dominio.pais else '',
+        'dominio': '%s: %s\n' % (dom, dominio.dominio.replace('.', '[.]', 1)),
+        'asn': ('ASN: %s\n' % dominio.asn_str) if dominio.asn else '',
+        'isp': ('ISP: %s\n' % dominio.isp_str) if dominio.isp else '',
+        'rir': ('RIR: %s\n' % dominio.rir_str) if dominio.rir else '',
+        'servidor': ('%s: %s\n' % (servidor, dominio.servidor_str)) if dominio.servidor else '',
+        'dns': ('%s: %s\n' % (dns, dominio.dns_mensaje_str)) if dominio.dns.count() > 0 else '',
+        'entidades': ', '.join(entidades) if len(entidades) > 0 else '?'
     }
     return dicc
 
