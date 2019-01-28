@@ -41,10 +41,10 @@ def crea_diccionario(dominio):
         urlactiva__entidad_afectada__isnull=True).values(
             'urlactiva__entidad_afectada__nombre'
         )]))
-    pais = 'País: ' if es_unam else 'Country: '
-    servidor = 'Servidor Web: ' if es_unam else 'Web Server: '
-    dns = 'Servidores DNS: ' if es_unam else 'DNS Servers: '
-    dom = 'Dominio: ' if es_unam else 'Domain: '
+    pais = 'País' if es_unam else 'Country'
+    servidor = 'Servidor Web' if es_unam else 'Web Server'
+    dns = 'Servidores DNS' if es_unam else 'DNS Servers'
+    dom = 'Dominio' if es_unam else 'Domain'
     regex = re.compile(r'^htt')
     dicc = {
         'urls': '\n'.join([regex.sub('hxx', str(x)).replace('.', '[.]', 1) for x in urls]),
