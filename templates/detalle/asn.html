@@ -15,7 +15,7 @@
 
   <h4>Dominios</h4>
   <ul>
-    {% for dominio in asn.dominio_set.all %}
+    {% for dominio in asn.dominios.all %}
       <li>
         <a href='{% url "dominio" pk=dominio.pk %}'>{{ dominio }}</a>
       </li>
