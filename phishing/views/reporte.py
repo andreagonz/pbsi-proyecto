@@ -268,7 +268,7 @@ def crear_doc(request):
             if urls_info:
                 q = document.add_paragraph('')
                 q.add_run("INFORMACIÓN SOBRE URLS:\n").bold = True
-                for u in urls:
+                for u in urls0:
                     url_info(u, q, document)
 
             response = HttpResponse(
