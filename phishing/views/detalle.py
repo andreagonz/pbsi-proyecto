@@ -100,6 +100,7 @@ def archivo_adjunto(request, pk):
     response = HttpResponse(wrapper, content_type='application/force-download')
     response['Content-Disposition'] = 'attachment; filename=%s' % archivo.filename
     response['Content-Length'] = archivo.archivo.size
+    response['X-Sendfile'] = archivo.archivo.path
     return response
 
 @login_required(login_url=reverse_lazy('login'))
@@ -113,4 +114,5 @@ def archivo_url(request, pk):
     response = HttpResponse(wrapper, content_type='application/force-download')
     response['Content-Disposition'] = 'attachment; filename=%s' % ua.filename
     response['Content-Length'] = ua.archivo.size
+    response['X-Sendfile'] = ua.archivo.path
     return response
