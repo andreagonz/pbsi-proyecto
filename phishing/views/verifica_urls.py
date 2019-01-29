@@ -50,7 +50,7 @@ def verifica_urls(request):
                 urls = entrada.lee_csv(f)
             else:
                 urls = entrada.lee_txt(f)
-            urls = list(set(urls))
+            urls = [x for x in list(set(urls)) if x]
             sitios = phishing.verifica_urls(urls, "verifica_urls.log")
             urls = Url.objects.filter(pk__in=[x.pk for x in sitios]).distinct()
             context = aux.context_reporte(urls)

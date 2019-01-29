@@ -518,7 +518,6 @@ def url_cambio_redireccion(url, redireccion):
 def desactiva_redirecciones(url, ts):
     if url.timestamp_desactivado:
         return 
-    ts = timezone.localtime(timezone.now())
     url.timestamp_desactivado = ts
     url.timestamp_actualizacion = ts
     url.save()
@@ -543,7 +542,8 @@ def detecta_desactivacion_sitio(url, codigo, redireccion, sesion, bitacora, prox
         if url_vivo_a_muerto(codigo, url):
             url.codigo = codigo
             url.save()
-        desactiva_redirecciones(url)
+        ts = timezone.localtime(timezone.now())
+        desactiva_redirecciones(url, ts)
     if url_300_a_200(codigo, url) or url_200_a_300(codigo, url) or \
        url_muerto_a_vivo(codigo, url) or url_cambio_redireccion(url, redireccion):
         url_anterior = url
@@ -621,7 +621,7 @@ def actualiza_lista_info(url, lista_info, sesion, bitacora, proxy, user_agent):
                 red.redireccion_final = urls[-1]
                 red.save()
     uf = urls[-1] if len(urls) > 0 else None
-    if uf.timestamp_desactivado:
+    if uf and uf.timestamp_desactivado:
         for u in urls[:-1]:
             if u and not u.timestamp_desactivado:
                 u.timestamp_desactivado = uf.timestamp_desactivado        
