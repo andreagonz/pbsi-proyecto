@@ -3,7 +3,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic.detail import DetailView
 from django.views.generic.edit import UpdateView
-from phishing.models import Url, Ticket, ASN, Dominio, ArchivoAdjunto
+from phishing.models import Url, Ticket, ASN, Dominio, ArchivoAdjunto, UrlActiva
 from django.urls import reverse_lazy
 from phishing.aux import phishing
 from phishing.forms import ActualizaURL, HistoricoForm
@@ -86,18 +86,3 @@ def archivos_adjuntos(request):
         'archivos': archivos
     }
     return render(request, 'detalle/archivos_adjuntos.html', context)
-
-@login_required(login_url=reverse_lazy('login'))
-def archivo_adjunto(request, pk):
-    if not request.user.is_superuser:
-        raise Http404()
-    archivo = get_object_or_404(ArchivoAdjunto, pk=pk)
-    if not archivo.archivo_url:
-        raise Http404()
-    if not os.path.exists(archivo.archivo.path) or not os.path.isfile(archivo.archivo.path):
-        raise Http404()
-    wrapper = FileWrapper(archivo.archivo)
-    response = HttpResponse(wrapper, content_type='application/force-download')
-    response['Content-Disposition'] = 'attachment; filename=%s' % archivo.filename
-    response['Content-Length'] = archivo.archivo.size
-    return response

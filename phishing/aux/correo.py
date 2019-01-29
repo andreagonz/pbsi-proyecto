@@ -34,8 +34,7 @@ def obten_texto(mensaje, archivo):
         else:
             return f.readline()
     
-def crea_diccionario(dominio):
-    urls = dominio.urls_activas
+def crea_diccionario(dominio, urls):
     es_unam = dominio.dominio.endswith('unam.mx')
     entidades = list(set([x['urlactiva__entidad_afectada__nombre'] for x in urls.exclude(
         urlactiva__entidad_afectada__isnull=True).values(
@@ -61,15 +60,15 @@ def crea_diccionario(dominio):
     }
     return dicc
 
-def obten_plantilla(mensaje, sitio, ticket=''):
-    dicc = crea_diccionario(sitio)
+def obten_plantilla(mensaje, dominio, urls, ticket=''):
+    dicc = crea_diccionario(dominio, urls)
     dicc['ticket'] = ticket
     try:
         plantilla = settings.PLANTILLA_CORREO_ASUNTO
         if mensaje:
             plantilla = settings.PLANTILLA_CORREO_MENSAJE
-        if (sitio.ip and (sitio.ip.startswith('132.248') or sitio.ip.startswith('132.247'))) \
-           or sitio.dominio.endswith('unam.mx'):
+        if (dominio.ip and (dominio.ip.startswith('132.248') or dominio.ip.startswith('132.247'))) \
+           or dominio.dominio.endswith('unam.mx'):
             plantilla = settings.PLANTILLA_UNAM_ASUNTO
             if mensaje:
                 plantilla = settings.PLANTILLA_UNAM_MENSAJE
@@ -79,11 +78,11 @@ def obten_plantilla(mensaje, sitio, ticket=''):
         log.log('Error: %s' % str(e), "correo.log")
         return 'Error en formato de texto'
 
-def obten_mensaje(sitio, ticket=''):
-    return obten_plantilla(True, sitio)
+def obten_mensaje(dominio, urls, ticket=''):
+    return obten_plantilla(True, dominio, urls)
 
-def obten_asunto(sitio, ticket=''):
-    return obten_plantilla(False, sitio, ticket=ticket)
+def obten_asunto(dominio, urls, ticket=''):
+    return obten_plantilla(False, dominio, urls, ticket=ticket)
 
 def lee_archivo(archivo):
     with open(archivo) as f:
@@ -130,11 +129,10 @@ def adjunta_imagen(msg, sitio):
     except Exception as e:
         log.log('Error: %s' % str(e), "correo.log")
         
-def genera_mensaje(sitio, fromadd, toadd, cc, bcc, asunto, mensaje, capturas):
+def genera_mensaje(fromadd, toadd, cc, bcc, asunto, mensaje, capturas):
     """
     Se genera el mensaje destinado para la cuenta de abuso
     """
-    dicc = crea_diccionario(sitio)
     msg = MIMEMultipart()
     msg['Subject'] = asunto
     msg['From'] = fromadd

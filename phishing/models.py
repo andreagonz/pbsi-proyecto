@@ -31,7 +31,7 @@ class Entidad(models.Model):
 
     @property
     def lista_blanca_lst(self):
-        return [x.strip() for x in self.lista_blanca.split() if x.strip()]
+        return [x.strip() for x in self.lista_blanca.split() if x.strip()] if self.lista_blanca else []
     
     def clean(self):
         super(Entidad, self).clean()
@@ -104,7 +104,7 @@ class Dominio(models.Model):
     pais = CountryField(null=True)
     correos = models.ManyToManyField(Correo)
     servidor = models.CharField(max_length=128, null=True)
-    asn = models.ForeignKey(ASN, on_delete=models.SET_NULL, null=True)
+    asn = models.ForeignKey(ASN, on_delete=models.SET_NULL, null=True, related_name='dominios')
     isp = models.CharField(max_length=128, null=True)
     dns = models.ManyToManyField(DNS)
     rir = models.ForeignKey(RIR, on_delete=models.SET_NULL, null=True)
@@ -375,7 +375,11 @@ class UrlActiva(Url):
             except Exception as e:
                 return False
         return False
-        
+
+    @property
+    def filename(self):
+        return os.path.basename(self.archivo.name)
+
     @property
     def ofuscaciones_str(self):
         if self.ofuscaciones.count() == 0:

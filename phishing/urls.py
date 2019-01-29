@@ -31,9 +31,9 @@ urlpatterns = [
     path('asns', ajustes.asn_view, name='asns'),
     path('crea-asn', ajustes.NuevoASN.as_view(), name='crea-asn'),
     path('actualiza-asn/<int:pk>', ajustes.ActualizaASN.as_view(), name='actualiza-asn'),
+    path('elimina-asn/<int:pk>', ajustes.elimina_asn, name='elimina-asn'),
     path('asn/<int:pk>', detalle.ASNView.as_view(), name='asn'),
     path('dominio/<int:pk>', detalle.DominioView.as_view(), name='dominio'),
     path('actualiza-url/<int:pk>', detalle.actualiza_url, name='actualiza-url'),
     path('archivos-adjuntos', detalle.archivos_adjuntos, name='archivos-adjuntos'),
-    path('archivo-adjunto/<int:pk>', detalle.archivo_adjunto, name='archivo-adjunto'),
 ]

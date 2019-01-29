@@ -9,9 +9,22 @@
   <a class="uk-button uk-button-primary" href='{% url 'crea-entidad' %}'>Nueva Entidad</a>
   
   <dl class="uk-description-list uk-description-list-divider">
-  {% for o in entidades %}
-      <dt><span class="uk-text-bold">Nombre: {{ o.nombre }}</span></dt>
-      <dd><span class="uk-text-bold">Clasificación:</span> {{ o.clasificacion_str }}</dd>
+    {% for o in entidades %}
+      <dt>
+        <span class="uk-text-bold">Nombre: {{ o.nombre }}</span>
+      </dt>
+    <dd><span class="uk-text-bold">Clasificación:</span> {{ o.clasificacion_str }}</dd>
+    <dd><span class="uk-text-bold">Lista blanca:</span>
+      {% if o.lista_blanca_lst %}
+        <ul style="margin-bottom:10px;margin-top:0px">
+          {% for d in o.lista_blanca_lst %}
+            <li>{{ d }}</li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        Vacía
+      {% endif %}
+    </dd>
       <dd>
         <a class="uk-button uk-button-default uk-button-small" href='{% url "actualiza-entidad" pk=o.pk %}'><span uk-icon="pencil"></span></a>
         <a class="uk-button uk-button-danger uk-button-small" href='{% url "elimina-entidad" pk=o.pk %}'><span uk-icon="close"></span></a>

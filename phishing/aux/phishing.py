@@ -47,10 +47,10 @@ def obten_entidad_afectada(entidades, texto):
         texto.append(x.lower())
     t = '\n'.join(texto)
     ent = {}
-    for x in t.split():
-        e = entidades.get(x, None)
-        if e:
-            ent[e] = 1 if not ent.get(e, None) else ent[e] + 1
+    for k, v in entidades.items():
+        cuenta = t.count(k)
+        if cuenta > 0:
+            ent[v] = cuenta
     if len(ent) > 0:
         k, _ = max(ent.items(), key=lambda x: x[1])
         return k
@@ -175,31 +175,32 @@ def obten_sesion(proxy):
     sesion.proxies = proxy
     return sesion
 
-def guarda_captura(url, out, proxy, bitacora):
+def guarda_captura(url, out, proxy, user_agent, bitacora):
     """
     Se genera la captura de pantalla de la url especificada,
     se guarda el resultado en out
     """
+    user_agent = re.sub('[^a-zA-Z0-9/(.;)_ ]', '', user_agent)
     url = urllib.parse.quote_plus(url, safe=';/?:@&=+$,_-')
     if proxy and proxy.startswith('socks5://'):
-        process = Popen("proxychains xvfb-run -a --server-args='-screen 0, 1280x1200x24' cutycapt --url='%s' --out='%s' --min-width=800 --min-height=600 --max-wait=25000" % (url, out), shell=True, stdout=PIPE, stderr=PIPE)
+        process = Popen("proxychains xvfb-run -a --server-args='-screen 0, 1280x1200x24' cutycapt --url='%s' --out='%s' --min-width=800 --min-height=600 --max-wait=25000 --user-agent='%s'" % (url, out, user_agent), shell=True, stdout=PIPE, stderr=PIPE)
     elif proxy:
         o = urlparse(proxy)
         proxy = "%s://%s" % (o.scheme, o.netloc) if o.scheme and o.netloc else ''
         proxy = urllib.parse.quote_plus(proxy, safe='/:')
-        process = Popen("xvfb-run -a --server-args='-screen 0, 1280x1200x24' cutycapt --url='%s' --out='%s' --min-width=800 --min-height=600 --max-wait=25000 --http-proxy='%s'" % (url, out, proxy), shell=True, stdout=PIPE, stderr=PIPE)
+        process = Popen("xvfb-run -a --server-args='-screen 0, 1280x1200x24' cutycapt --url='%s' --out='%s' --min-width=800 --min-height=600 --max-wait=25000 --http-proxy='%s' --user-agent='%s'" % (url, out, proxy, user_agent), shell=True, stdout=PIPE, stderr=PIPE)
     else:
-        process = Popen("xvfb-run -a --server-args='-screen 0, 1280x1200x24' cutycapt --url='%s' --out='%s' --min-width=800 --min-height=600 --max-wait=25000" % (url, out), shell=True, stdout=PIPE, stderr=PIPE)
+        process = Popen("xvfb-run -a --server-args='-screen 0, 1280x1200x24' cutycapt --url='%s' --out='%s' --min-width=800 --min-height=600 --max-wait=25000 --user-agent='%s'" % (url, out, user_agent), shell=True, stdout=PIPE, stderr=PIPE)
     stdout, stderr = process.communicate()
     if stderr:
         log.log("Error al tomar captura de url '%s': %s"
               % (url, stderr.decode('utf-8', errors='ignore')), bitacora)
     return not stderr is None
 
-def genera_captura(url, nombre, proxy, bitacora):
+def genera_captura(url, nombre, proxy, user_agent, bitacora):
     captura = os.path.join(settings.MEDIA_ROOT, "capturas", nombre)
     try:
-        guarda_captura(url, captura, proxy, bitacora)
+        guarda_captura(url, captura, proxy, user_agent, bitacora)
     except Exception as e:
         log.log("Error al tomar captura de url '%s': %s" % (url, str(e)), bitacora)
     return captura if os.path.exists(captura) else None
@@ -300,7 +301,7 @@ def obten_info_sitio(url, lista_info, entidades, ofuscaciones, dominios_inactivo
                     sitio_dicc['entidad'] = obten_entidad_afectada(entidades, texto)
                     img_proxy = get_proxy(sesion)
                     img_nombre = '%s.jpg' % identificador
-                    sitio_dicc['captura'] = genera_captura(url, img_nombre, img_proxy, bitacora)
+                    sitio_dicc['captura'] = genera_captura(url, img_nombre, img_proxy, user_agent, bitacora)
                     sitio_dicc['ofuscaciones'] = encuentra_ofuscacion(ofuscaciones, texto)
                     sitio_dicc['deteccion'] = deteccion_url(url, sitio_dicc['hash_archivo'], content)
     else:
@@ -415,7 +416,7 @@ def get_info(dominio, sesion):
                         dominio.asn = asnO
         dominio.save()
         
-def actualiza_dominio(dominio, scheme, sesion, bitacora):
+def actualiza_dominio(dominio, scheme, sesion, user_agent, bitacora):
     get_info(dominio, sesion)
     get_dns(dominio)
     if dominio.ip:
@@ -427,13 +428,13 @@ def actualiza_dominio(dominio, scheme, sesion, bitacora):
                 dominio.correos.add(get_correo(x))
     nombre = '%s.jpg' % genera_id(dominio.dominio)
     proxy = get_proxy(sesion)
-    captura = genera_captura(dominio.dominio, nombre, proxy, bitacora)
+    captura = genera_captura(dominio.dominio, nombre, proxy, user_agent, bitacora)
     if captura:
         with open(captura, 'rb') as f:
             dominio.captura.save(os.path.basename(captura), File(f), True)
     dominio.save()    
 
-def obten_dominio(dominio, scheme, sesion, bitacora, proxy):
+def obten_dominio(dominio, scheme, sesion, bitacora, proxy, user_agent):
     d = None
     try:
         d = Dominio.objects.get(dominio=dominio)
@@ -443,16 +444,16 @@ def obten_dominio(dominio, scheme, sesion, bitacora, proxy):
         try:
             d = Dominio(dominio=dominio)
             d.save()
-            actualiza_dominio(d, scheme, sesion, bitacora)
+            actualiza_dominio(d, scheme, sesion, user_agent, bitacora)
         except Exception as e:
             log.log("Error al crear dominio '%s': %s" % (dominio, str(e)), bitacora)
             return None        
     return d
 
-def crea_url(url, codigo, sesion, bitacora, proxy=None):
+def crea_url(url, codigo, sesion, bitacora, proxy, user_agent):
     u = urlparse(url)
     dominio_s = u.netloc
-    dominio = obten_dominio(dominio_s, u.scheme, sesion, bitacora, proxy)
+    dominio = obten_dominio(dominio_s, u.scheme, sesion, bitacora, proxy, user_agent)
     if not dominio:
         return None
     try:
@@ -514,11 +515,15 @@ def url_cambio_redireccion(url, redireccion):
     red_r = red.redireccion if red else None
     return red_r and red_r.url != redireccion
 
-def desactiva_sitio(url):
+def desactiva_redirecciones(url, ts):
+    if url.timestamp_desactivado:
+        return 
     ts = timezone.localtime(timezone.now())
     url.timestamp_desactivado = ts
     url.timestamp_actualizacion = ts
     url.save()
+    for u in url.redirecciones.all():
+        desactiva_redirecciones(u, ts)
     
 def actualiza_redirecciones(url, url_anterior, ts):
     for r in url_anterior.redirecciones.all():
@@ -530,7 +535,7 @@ def actualiza_redirecciones(url, url_anterior, ts):
         r.timestamp_actualizacion = ts
         r.save()
             
-def detecta_desactivacion_sitio(url, codigo, redireccion, sesion, bitacora, proxy):
+def detecta_desactivacion_sitio(url, codigo, redireccion, sesion, bitacora, proxy, user_agent):
     url.codigo_anterior = url.codigo
     url.save()
     if url_300_a_200(codigo, url) or url_200_a_300(codigo, url) or \
@@ -538,18 +543,18 @@ def detecta_desactivacion_sitio(url, codigo, redireccion, sesion, bitacora, prox
         if url_vivo_a_muerto(codigo, url):
             url.codigo = codigo
             url.save()
-        desactiva_sitio(url)
+        desactiva_redirecciones(url)
     if url_300_a_200(codigo, url) or url_200_a_300(codigo, url) or \
        url_muerto_a_vivo(codigo, url) or url_cambio_redireccion(url, redireccion):
         url_anterior = url
-        url = crea_url(url.url, codigo, sesion, bitacora, proxy)
+        url = crea_url(url.url, codigo, sesion, bitacora, proxy, user_agent)
         if url:
             url.codigo_anterior = url_anterior.codigo
             url.save()
             actualiza_redirecciones(url, url_anterior, timezone.localtime(timezone.now()))
     return url
 
-def actualiza_sitio(url, info, existe, sesion, bitacora, proxy):
+def actualiza_sitio(url, info, existe, sesion, bitacora, proxy, user_agent):
     codigo = info['codigo']
     if not existe:
         url.codigo_anterior = codigo
@@ -560,7 +565,7 @@ def actualiza_sitio(url, info, existe, sesion, bitacora, proxy):
     else:
         url.timestamp_actualizacion = timezone.localtime(timezone.now())
         url.save()
-        url = detecta_desactivacion_sitio(url, codigo, info['redireccion'], sesion, bitacora, proxy)
+        url = detecta_desactivacion_sitio(url, codigo, info['redireccion'], sesion, bitacora, proxy, user_agent)
     if not url:
         return None
     if url.codigo >= 200 and url.codigo < 300:
@@ -593,22 +598,21 @@ def actualiza_sitio(url, info, existe, sesion, bitacora, proxy):
             ua.save()
     return url
     
-def actualiza_lista_info(url, lista_info, sesion, bitacora, proxy):
+def actualiza_lista_info(url, lista_info, sesion, bitacora, proxy, user_agent):
     urls = []
-    lista = lista_info[:-1] if url else lista_info
+    lista = lista_info[::-1][1:] if url else lista_info[::-1]
+    if url:
+        url = actualiza_sitio(url, lista_info[-1], True, sesion, bitacora, proxy, user_agent)
+        urls.append(url)
     for info in lista:
         url_o = obten_url(info['url'])
         existe = True
         if not url_o:
             existe = False
-            url_o = crea_url(info['url'], info['codigo'], sesion, bitacora, proxy)
+            url_o = crea_url(info['url'], info['codigo'], sesion, bitacora, proxy, user_agent)
         if url_o:
-            url_o = actualiza_sitio(url_o, info, existe, sesion, bitacora, proxy)
+            url_o = actualiza_sitio(url_o, info, existe, sesion, bitacora, proxy, user_agent)
         urls.append(url_o)
-    if url:
-        url = actualiza_sitio(url, lista_info[-1], True, sesion, bitacora, proxy)
-        urls.append(url)
-    urls = urls[::-1]
     for x in range(len(urls)):
         if x < len(urls) - 1 and urls[x]:
             red = urls[x].obten_info_redireccion
@@ -616,6 +620,11 @@ def actualiza_lista_info(url, lista_info, sesion, bitacora, proxy):
                 red.redireccion = urls[x + 1]
                 red.redireccion_final = urls[-1]
                 red.save()
+    uf = urls[-1] if len(urls) > 0 else None
+    if uf.timestamp_desactivado:
+        for u in urls[:-1]:
+            if u and not u.timestamp_desactivado:
+                u.timestamp_desactivado = uf.timestamp_desactivado        
     return [u for u in urls if u]
 
 def verifica_urls(urls, bitacora):
@@ -637,7 +646,7 @@ def verifica_urls(urls, bitacora):
             url, lista_info, entidades, ofuscaciones, dominios_inactivos, sesion,
             settings.MAX_REDIRECCIONES, no_existe, True, bitacora, settings.USER_AGENT
         )
-        sitios += actualiza_lista_info(None, lista_info, sesion, bitacora, None)
+        sitios += actualiza_lista_info(None, lista_info, sesion, bitacora, None, settings.USER_AGENT)
     return [x for x in sitios if x]
         
 def verifica_urls_cron(urls):
@@ -652,7 +661,7 @@ def verifica_urls_cron(urls):
             url.url, lista_info, entidades, ofuscaciones, dominios_inactivos, sesion,
             settings.MAX_REDIRECCIONES, False, False, "monitoreo.log", settings.USER_AGENT
         )
-        sitios += actualiza_lista_info(url, lista_info, sesion, "monitoreo.log", None)
+        sitios += actualiza_lista_info(url, lista_info, sesion, "monitoreo.log", None, settings.USER_AGENT)
     return [x for x in sitios if x]
     
 def monitoreo(dominio, urls, proxy, user_agent):
@@ -668,12 +677,12 @@ def monitoreo(dominio, urls, proxy, user_agent):
     sitios = []
     if settings.DEBUG:
         mi_ip(sesion)
-    actualiza_dominio(dominio, scheme, sesion, "monitoreo.log")
+    actualiza_dominio(dominio, scheme, sesion, user_agent, "monitoreo.log")
     for url in urls:
         lista_info = []
         obten_info_sitio(
             url.url, lista_info, entidades, ofuscaciones, dominios_inactivos, sesion,
             settings.MAX_REDIRECCIONES, True, True, "monitoreo.log", user_agent
         )
-        sitios += actualiza_lista_info(url, lista_info, sesion, "monitoreo.log", proxy)
+        sitios += actualiza_lista_info(url, lista_info, sesion, "monitoreo.log", proxy, user_agent)
     return [x for x in sitios if x]

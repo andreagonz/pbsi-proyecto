@@ -5,7 +5,7 @@ from phishing.models import Dominio, Url, Ticket
 from phishing.forms import ProxyForm, MensajeForm
 from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
-from phishing.aux import phishing, correo
+from phishing.aux import phishing, correo, log
 from django.conf import settings
 
 @login_required(login_url=reverse_lazy('login'))
@@ -16,20 +16,24 @@ def monitoreo(request):
 
 def url_reporta(url, ticket):
     url.ticket = ticket
+    url.timestamp_actualizacion = ticket.timestamp
     url.save()
     i = url.obten_info
     if i and (i.deteccion != 'P' or i.deteccion != 'M'):
         i.deteccion = 'P'
         i.timestamp_deteccion = ticket.timestamp
         i.save()
+    log.log("URL '%s' reportada" % url.url, "monitoreo.log")
             
 def url_ignora(url):
     url.ignorado = True
+    url.timestamp_actualizacion = timezone.localtime(timezone.now())
     url.save()
     i = url.obten_info
     if i:
         i.deteccion = 'N'
         i.save()
+    log.log("URL '%s' ignorada" % url.url, "monitoreo.log")
     
 @login_required(login_url=reverse_lazy('login'))
 def monitoreo_id(request, pk):
@@ -53,8 +57,8 @@ def monitoreo_id(request, pk):
     datos = {
         'de': settings.CORREO_DE,
         'para': ', '.join(correos),
-        'asunto': correo.obten_asunto(dominio, ticket),
-        'mensaje': correo.obten_mensaje(dominio, ticket),
+        'asunto': correo.obten_asunto(dominio, urls, ticket),
+        'mensaje': correo.obten_mensaje(dominio, urls, ticket),
         'cco': settings.CORREO_CCO
     }
     mensaje_form = MensajeForm(initial=datos, urls=urls)
@@ -86,14 +90,15 @@ def monitoreo_id(request, pk):
                     if not proxies.https is None:
                         proxy['https'] = proxies.https
                 phishing.monitoreo(dominio, urls, proxy, user_agent)
-            cadena_urls = ''.join([x.identificador for x in dominio.urls_activas])
+            activas = dominio.urls_activas
+            cadena_urls = ''.join([x.identificador for x in activas])
             md = phishing.md5((dominio.dominio + cadena_urls).encode('utf-8', 'backslashreplace'))
             ticket = ('%d%02d%02d%s' % (hoy.year, hoy.month, hoy.day, md[:7])).upper()
             datos = {
                 'de': settings.CORREO_DE,
                 'para': ', '.join(correos),
-                'asunto': correo.obten_asunto(dominio, ticket),
-                'mensaje': correo.obten_mensaje(dominio, ticket),
+                'asunto': correo.obten_asunto(dominio, activas, ticket),
+                'mensaje': correo.obten_mensaje(dominio, activas, ticket),
                 'cco': settings.CORREO_CCO
             }
             mensaje_form = MensajeForm(initial=datos, urls=urls)
@@ -124,7 +129,7 @@ def monitoreo_id(request, pk):
                 mensaje = mensaje_form.cleaned_data['mensaje']
                 capturas = mensaje_form.cleaned_data['capturas']
                 urls_reportadas = mensaje_form.cleaned_data['urls']
-                msg = correo.genera_mensaje(dominio, de, para, cc, cco, asunto, mensaje, capturas)
+                msg = correo.genera_mensaje(de, para, cc, cco, asunto, mensaje, capturas)
                 enviado = correo.manda_correo(para, cc, cco, msg)
                 ts = timezone.localtime(timezone.now())
                 if not enviado:

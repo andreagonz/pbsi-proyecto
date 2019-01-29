@@ -24,6 +24,9 @@
       </dd>
       <dd>
         <a class="uk-button uk-button-default uk-button-small" href='{% url "actualiza-asn" pk=o.pk %}'><span uk-icon="pencil"></span></a>
+        {% if o.dominios.count == 0 %}
+          <a class="uk-button uk-button-danger uk-button-small" href='{% url "elimina-asn" pk=o.pk %}'><span uk-icon="close"></span></a>
+        {% endif %}
       </dd>
     {% endfor %}
   </dl>

@@ -59,9 +59,10 @@ class Command(BaseCommand):
                         para = ['anduin.tovar@cert.unam.mx', 'victor.arteaga@cert.unam.mx']
                         cc = []
                         cco = ['andrea.gonzalez@bec.seguridad.unam.mx'] #settings.CORREO_CCO.split()
-                        asunto = correo.obten_asunto(d, ticket)
-                        mensaje = correo.obten_mensaje(d, ticket)
-                        msg = correo.genera_mensaje(d, de, para, cc, cco, asunto, mensaje, sitios)
+                        urls_qs = Url.objects.filter(pk__in=[u.pk for u in urls])
+                        asunto = correo.obten_asunto(d, urls_qs, ticket)
+                        mensaje = correo.obten_mensaje(d, urls_qs, ticket)
+                        msg = correo.genera_mensaje(de, para, cc, cco, asunto, mensaje, sitios)
                         enviado = correo.manda_correo(para, cc, cco, msg)
                         if not enviado:
                             log.log("Error al reportar dominio %s" % d.dominio, "notificacion.log")

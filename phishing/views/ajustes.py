@@ -13,6 +13,7 @@ from django.forms import Textarea
 from subprocess import Popen, PIPE
 from django.conf import settings
 from django import forms
+from django.http import Http404
 
 def cambia_frecuencia(funcion, n):
     n = 1 if n < 1 or n > 24 else n
@@ -200,6 +201,14 @@ def asn_view(request):
         'asn': ASN.objects.all(),
     }
     return render(request, 'ajustes/asn.html', context)
+
+@login_required(login_url=reverse_lazy('login'))
+def elimina_asn(request, pk):
+    a = get_object_or_404(ASN, pk=pk)
+    if a.dominios.count() > 0:
+        raise Http404()
+    a.delete()
+    return redirect('asns')
 
 class ActualizaASN(LoginRequiredMixin, UpdateView):
     model = ASN

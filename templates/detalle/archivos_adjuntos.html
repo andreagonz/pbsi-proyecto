@@ -25,7 +25,7 @@
       <dt></dt>
       {% if archivo.archivo_url %}
         <dd><strong>Fecha de creación:</strong> {{ archivo.timestamp }}</dd>
-        <dd><strong>Nombre:</strong> <a href='{% url "archivo-adjunto" pk=archivo.pk %}'>{{ archivo.filename }}</a></dd>
+        <dd><strong>Nombre:</strong> <a href='{{ archivo.archivo_url }}'>{{ archivo.filename }}</a></dd>
       {% endif %}
     {% empty %}
       <div class="uk-alert-warning" uk-alert>
