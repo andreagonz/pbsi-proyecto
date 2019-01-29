@@ -30,7 +30,7 @@ class ChartData(APIView):
         lst = []
         for u in urls0:
             d = u.obten_info
-            if d and (d.deteccion == 'P' or d.deteccion == 'I'):
+            if d and (d.deteccion == 'P' or d.deteccion == 'M'):
                 lst.append(u.pk)
         urls = Url.objects.filter(pk__in=lst)
 
