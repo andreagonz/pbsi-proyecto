@@ -86,3 +86,31 @@ def archivos_adjuntos(request):
         'archivos': archivos
     }
     return render(request, 'detalle/archivos_adjuntos.html', context)
+
+@login_required(login_url=reverse_lazy('login'))
+def archivo_adjunto(request, pk):
+    if not request.user.is_superuser:
+        raise Http404()
+    archivo = get_object_or_404(ArchivoAdjunto, pk=pk)
+    if not archivo.archivo_url:
+        raise Http404()
+    if not os.path.exists(archivo.archivo.path) or not os.path.isfile(archivo.archivo.path):
+        raise Http404()
+    wrapper = FileWrapper(archivo.archivo)
+    response = HttpResponse(wrapper, content_type='application/force-download')
+    response['Content-Disposition'] = 'attachment; filename=%s' % archivo.filename
+    response['Content-Length'] = archivo.archivo.size
+    return response
+
+@login_required(login_url=reverse_lazy('login'))
+def archivo_url(request, pk):
+    ua = get_object_or_404(UrlActiva, pk=pk)
+    if not ua or not ua.archivo_url:
+        raise Http404()
+    if not os.path.exists(ua.archivo.path) or not os.path.isfile(ua.archivo.path):
+        raise Http404()
+    wrapper = FileWrapper(ua.archivo)
+    response = HttpResponse(wrapper, content_type='application/force-download')
+    response['Content-Disposition'] = 'attachment; filename=%s' % ua.filename
+    response['Content-Length'] = ua.archivo.size
+    return response

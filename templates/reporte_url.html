@@ -64,7 +64,7 @@
             <br/><span class='uk-text-bold'>Título:</span> {{ ua.titulo_str }}
             <br/><span class='uk-text-bold'>Ofuscación:</span> {{ ua.ofuscaciones_str }}
             {% if user.is_authenticated %}
-              <br/><span class='uk-text-bold'>Archivo:</span> <a href='{{ ua.archivo_url }}'>Descarga</a>
+              <br/><span class='uk-text-bold'>Archivo:</span> <a href='{% url 'archivo' pk=ua.pk %}'>Descarga</a>
               <br/><span class='uk-text-bold'>Hash MD5 de archivo:</span> {{ ua.hash_archivo_str }}
             {% endif %}
           {% endwith %}

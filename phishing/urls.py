@@ -36,4 +36,6 @@ urlpatterns = [
     path('dominio/<int:pk>', detalle.DominioView.as_view(), name='dominio'),
     path('actualiza-url/<int:pk>', detalle.actualiza_url, name='actualiza-url'),
     path('archivos-adjuntos', detalle.archivos_adjuntos, name='archivos-adjuntos'),
+    path('archivo-adjunto/<int:pk>', detalle.archivo_adjunto, name='archivo-adjunto'),
+    path('archivo/<int:pk>', detalle.archivo_url, name='archivo'),
 ]
