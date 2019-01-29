@@ -24,10 +24,10 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = '!+v7eriae)k^si!7phn=!x08mch!yxryd50i2=$e=ht93ps69k'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 #Servername
-ALLOWED_HOSTS = ['pocs.seguridad.unam.mx','127.0.0.1', 'localhost']
+ALLOWED_HOSTS = ['pocs.seguridad.unam.mx','127.0.0.1', 'localhost', '192.168.100.35']
 
 
 # Application definition
@@ -143,25 +143,43 @@ LOGIN_URL= reverse_lazy('login')
 
 LOGIN_REDIRECT_URL = reverse_lazy('home')
 
-USER_AGENT = 'Phish-Mon'
 
-MAX_REDIRECCIONES = 30
+# Variables especiales de la aplicación
+
+USER_AGENT = 'SAAPM'
+
+MAX_REDIRECCIONES = 25
 
 PLANTILLA_CORREO_ASUNTO = os.path.join(MEDIA_ROOT, 'plantillas', 'correo_asunto.txt')
 
 PLANTILLA_CORREO_MENSAJE = os.path.join(MEDIA_ROOT, 'plantillas', 'correo_mensaje.txt')
 
-CORREO_USR = 'phishing'
+PLANTILLA_UNAM_MENSAJE = os.path.join(MEDIA_ROOT, 'plantillas', 'unam_mensaje.txt')
 
-CORREO_PASS = 'ch1k4fr4nc3s4.'
+PLANTILLA_UNAM_ASUNTO = os.path.join(MEDIA_ROOT, 'plantillas', 'unam_asunto.txt')
+
+CORREO_USR = ''
+
+CORREO_PASS = ''
 
 CORREO_DE = 'phishing@pocs.seguridad.unam.mx'
 
-CORREO_TLS = False
+CORREO_SERVIDOR = '127.0.0.1'
 
-CORREO_SERVIDOR = 'localhost'
+CORREO_PUERTO = 587
 
-CORREO_PUERTO = 25
-#CORREO_PUERTO = 587
+CORREO_CCO = 'roberto.sanchez@cert.unam.mx, anduin.tovar@cert.unam.mx'
 
-DIR_CORREOS = '/home/phishing/mail/new'
+CORREO_RESPONDER_A = 'anduin.tovar@cert.unam.mx'
+
+CORREO_SSL = False
+
+DIR_CORREOS = '/directorio/de/correos'
+
+DIR_SALIDA = os.path.join(BASE_DIR, 'salida')
+
+DIR_LOG = os.path.join(BASE_DIR, 'log')
+
+VIRUSTOTAL_API_KEY = 'LLAVE_API_VIRUS_TOTAL'
+
+DIR_ENV = '/opt/env'
